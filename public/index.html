@@ -22,7 +22,7 @@
                 <h1 class="hero-title">Buy & Sell Crypto<br><span class="gradient-text">Like a Pro.</span></h1>
                 <p class="hero-subtitle">Trade over 500+ cryptocurrencies with the lowest fees and lightning-fast execution.</p>
                 <div class="hero-cta">
-                    <button class="btn-primary-large" onclick="requireAuth('trade', 'buy')">Get Started</button>
+                    <button class="btn-primary-large" onclick="requireAuth('tradeView', 'buy')">Get Started</button>
                     <button class="btn-outline-large" onclick="showView('guestView')">View Markets</button>
                 </div>
             </div>
@@ -73,12 +73,12 @@
         <div class="dash-container">
             <div class="portfolio-header"><p>Estimated Total Value</p><h1 id="totalPortfolioValue">$0.00</h1></div>
             <div class="quick-actions">
-                <div class="action-btn" onclick="showToast('Deposit coming soon')"><svg class="action-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg><span>Deposit</span></div>
-                <div class="action-btn" onclick="showToast('Withdraw coming soon')"><svg class="action-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg><span>Withdraw</span></div>
+                <div class="action-btn" onclick="showCustomAlert('Select Asset', 'Please tap on a specific asset in the list below to Deposit.')"><svg class="action-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg><span>Deposit</span></div>
+                <div class="action-btn" onclick="showCustomAlert('Select Asset', 'Please tap on a specific asset in the list below to Withdraw.')"><svg class="action-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg><span>Withdraw</span></div>
             </div>
             <div class="trade-buttons-grid">
-                <button class="btn-buy-large" onclick="requireAuth('trade', 'buy')">Buy</button>
-                <button class="btn-sell-large" onclick="requireAuth('trade', 'sell')">Sell</button>
+                <button class="btn-buy-large" onclick="requireAuth('tradeView', 'buy')">Buy</button>
+                <button class="btn-sell-large" onclick="requireAuth('tradeView', 'sell')">Sell</button>
             </div>
             
             <div class="assets-section">
