@@ -421,3 +421,21 @@ window.executeAssetAction = function(mode) {
         calcTrade();
     }, 100);
 };
+
+/* =====================================================
+   PHASE 5.1: REDIRECT ADMIN TO SEPARATE PAGE
+   ===================================================== */
+document.addEventListener('DOMContentLoaded', () => {
+    // Hide the old modal just in case
+    const oldModal = document.getElementById('adminModal');
+    if (oldModal) oldModal.style.display = 'none';
+
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+        const user = JSON.parse(userStr);
+        // If the logged-in user is an admin, redirect them immediately to /admin.html
+        if (user.isAdmin || user.email.includes('admin')) {
+            window.location.href = '/admin.html';
+        }
+    }
+});
