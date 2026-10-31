@@ -2045,3 +2045,58 @@ window.executeWithdrawal = function(symbol, balance) {
     showToast(`Withdrawal request of ${amount} ${symbol} submitted for approval.`);
     showView('dashboardView');
 };
+
+/* =====================================================
+   FIX: PREVENT NEGATIVE BALANCES ON DASHBOARD
+   ===================================================== */
+window.fetchBalances = async function() {
+    if (!currentUser) return;
+    try {
+        const res = await fetch(`/api/user/${currentUser.email}/balances`);
+        const balances = await res.json();
+        
+        const assetsHeader = Array.from(document.querySelectorAll('h3')).find(el => el.textContent.trim() === 'Your Assets');
+        if (!assetsHeader) return;
+        const assetsCard = assetsHeader.closest('.assets-section') || assetsHeader.parentElement;
+        
+        let html = `
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;">Your Assets</h3>
+            </div>
+            <div class="asset-table-header"><span>Asset</span><span style="text-align: right;">Amount</span><span style="text-align: right;">Value</span></div>
+        `;
+        
+        let totalValue = 0;
+        let assetRowsHtml = '';
+
+        markets.forEach(coin => {
+            // THE FIX: Force the amount to be 0 if it's negative
+            const rawAmount = balances[coin.symbol] || 0;
+            const amount = Math.max(0, rawAmount); 
+            
+            const value = amount * coin.price;
+            totalValue += value;
+            
+            assetRowsHtml += `
+                <div class="asset-row" onclick="showAssetActions('${coin.symbol}', '${coin.name}', ${amount}, ${value})" style="cursor: pointer; transition: background 0.2s; padding: 15px 0; border-bottom: 1px solid #2a2a3a; display: flex; justify-content: space-between; align-items: center;" onmouseover="this.style.background='#1a1a2a'" onmouseout="this.style.background='transparent'">
+                    <div class="asset-name" style="display: flex; align-items: center; gap: 10px;">
+                        <div class="market-icon" style="background:${coin.color}; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 16px; color: white;">${coin.icon}</div> 
+                        <span style="font-weight: 600; font-size: 14px;">${coin.name} (${coin.symbol})</span>
+                    </div>
+                    <div class="asset-amount" style="font-weight: 600; font-size: 14px;">${amount.toFixed(6)}</div>
+                    <div class="asset-value" style="color: #888; font-size: 14px;">$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                </div>
+            `;
+        });
+
+        assetsCard.innerHTML = html + assetRowsHtml;
+        
+        const totalEl = document.getElementById('totalPortfolioValue');
+        if (totalEl) {
+            // Also force total value to never show negative
+            const safeTotal = Math.max(0, totalValue);
+            totalEl.textContent = `$${safeTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        }
+
+    } catch (error) { console.log("Balance fetch error:", error); }
+};
