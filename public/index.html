@@ -3,22 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CoinWave Exchange</title>
+    <title>CoinWave Exchange - Buy & Sell Crypto</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Ticker -->
+    <div class="ticker-wrap">
+        <div class="ticker-move" id="ticker"></div>
+    </div>
+
+    <!-- Navigation -->
     <nav>
         <div class="logo">🌊 CoinWave</div>
         <div class="nav-links">
-            <a href="#" onclick="showSection('markets')">Markets</a>
+            <a href="#">Markets</a>
+            <a href="#">Trade</a>
             <a href="#" onclick="showSection('login')">Login</a>
             <a href="#" onclick="showSection('register')" class="btn-primary">Get Started</a>
         </div>
     </nav>
 
+    <!-- Main Hero & Market List -->
     <main id="app">
-        <h1>Welcome to CoinWave Exchange</h1>
-        <p>The safest place to buy and sell crypto.</p>
+        <div class="hero">
+            <h1>Buy & Sell Crypto in Minutes</h1>
+            <p>Join the world's largest digital asset exchange.</p>
+            <div class="hero-buttons">
+                <button class="btn-buy">Buy Crypto</button>
+                <button class="btn-sell">Sell Crypto</button>
+            </div>
+        </div>
+
+        <div class="market-section">
+            <div class="market-header">
+                <h2>Live Markets</h2>
+                <span class="live-indicator">● Live</span>
+            </div>
+            <div id="market-list" class="market-list"></div>
+        </div>
     </main>
 
     <script src="app.js"></script>
