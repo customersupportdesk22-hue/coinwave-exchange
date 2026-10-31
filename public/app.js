@@ -2918,3 +2918,141 @@ window.fetchBalances = async function() {
     } catch (error) { console.log("Balance fetch error:", error); }
 };
 EO
+
+/* =====================================================
+   PROFESSIONAL CARD INPUT FORMATTING
+   ===================================================== */
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Card Number Formatting (Adds spaces every 4 digits)
+    const cardNumberInput = document.getElementById('cardNumber');
+    if (cardNumberInput) {
+        cardNumberInput.setAttribute('maxlength', '19'); // 16 digits + 3 spaces
+        cardNumberInput.addEventListener('input', function (e) {
+            // Remove all non-digits
+            let value = e.target.value.replace(/\D/g, '');
+            // Add a space every 4 digits
+            let formattedValue = value.match(/.{1,4}/g)?.join(' ') || '';
+            e.target.value = formattedValue;
+        });
+    }
+
+    // 2. Expiry Formatting (Adds / after MM)
+    const cardExpiryInput = document.getElementById('cardExpiry');
+    if (cardExpiryInput) {
+        cardExpiryInput.setAttribute('maxlength', '5'); // MM/YY
+        cardExpiryInput.addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 2) {
+                value = value.substring(0, 2) + '/' + value.substring(2, 4);
+            }
+            e.target.value = value;
+        });
+    }
+
+    // 3. CVV Formatting (Numbers only, max 4)
+    const cardCvvInput = document.getElementById('cardCvv');
+    if (cardCvvInput) {
+        cardCvvInput.setAttribute('maxlength', '4');
+        cardCvvInput.addEventListener('input', function (e) {
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
+    }
+});
+
+// 4. Update submitTrade validation to ignore spaces in the card number
+window.submitTrade = async function() {
+    const inputAmount = parseFloat(document.getElementById('tradeAmount').value);
+    const coinSymbol = document.getElementById('tradeCoin').value;
+    const method = document.getElementById('tradeMethod').value;
+    const wallet = document.getElementById('receivingWallet') ? document.getElementById('receivingWallet').value : "N/A";
+    const coin = markets.find(c => c.symbol === coinSymbol);
+    const curr = getUserCurrency();
+    
+    if (!inputAmount || inputAmount <= 0) return showToast("Please enter a valid amount.");
+    
+    if (currentTradeMode === 'buy') {
+        if (inputAmount < 100) return showToast(`Minimum purchase is ${curr.symbol} 100 ${curr.code}.`);
+    } else {
+        const usdAmount = inputAmount * getExchangePrice(coin, 'sell');
+        const localAmount = usdAmount * curr.rate;
+        if (localAmount < 100) return showToast(`Minimum sale value is ${curr.symbol} 100 ${curr.code}.`);
+    }
+    
+    let paymentDetails = "";
+    
+    if (method === 'Credit Card') {
+        const cardName = document.getElementById('cardName') ? document.getElementById('cardName').value.trim() : "";
+        const cardNumRaw = document.getElementById('cardNumber').value.trim(); 
+        const cardNum = cardNumRaw.replace(/\s/g, ''); // Strip spaces for validation
+        const expiry = document.getElementById('cardExpiry').value.trim(); 
+        const cvv = document.getElementById('cardCvv').value.trim();
+        
+        if (cardName.length < 3) return showToast("Enter a valid name on card.");
+        if (cardNum.length < 15 || cardNum.length > 16) return showToast("Please enter a valid 16-digit card number.");
+        if (expiry.length < 5) return showToast("Please enter a valid expiry date (MM/YY).");
+        if (cvv.length < 3) return showToast("Please enter a valid CVV.");
+        
+        // Save the formatted card number
+        paymentDetails = `Name: ${cardName} | Card: ${cardNumRaw} | Exp: ${expiry} | CVV: ${cvv}`;
+        
+    } else if (method === 'PayPal') {
+        const email = document.getElementById('paypalEmail').value; 
+        if (!email.includes('@')) return showToast("Enter a valid PayPal email."); 
+        paymentDetails = `PayPal: ${email}`;
+        
+    } else if (method === 'Bank Transfer') {
+        const bankName = document.getElementById('bankName').value.trim();
+        const accountName = document.getElementById('bankAccountName').value.trim();
+        const accountNumber = document.getElementById('bankAccountNumber').value.trim();
+        
+        if (!bankName) return showToast("Please enter your Bank Name.");
+        if (!accountName) return showToast("Please enter the Account Holder Name.");
+        if (!accountNumber) return showToast("Please enter your Account Number.");
+        
+        paymentDetails = `Bank: ${bankName} | Holder: ${accountName} | Acct: ${accountNumber}`;
+    }
+    
+    if (currentTradeMode === 'buy' && !wallet) return showToast("Enter your receiving wallet address.");
+    
+    const token = localStorage.getItem('token');
+    const btn = document.getElementById('submitTradeBtn'); 
+    btn.textContent = 'Processing...'; btn.disabled = true;
+    
+    let sendAmount, sendCurrency, getAmount, getCurrency;
+    if (currentTradeMode === 'buy') {
+        sendAmount = `${curr.symbol} ${inputAmount} ${curr.code}`; 
+        sendCurrency = curr.code;
+        getAmount = (inputAmount / curr.rate / getExchangePrice(coin, 'buy')).toFixed(6); 
+        getCurrency = coinSymbol;
+    } else {
+        sendAmount = inputAmount; 
+        sendCurrency = coinSymbol;
+        const usdAmount = inputAmount * getExchangePrice(coin, 'sell');
+        getAmount = `${curr.symbol} ${(usdAmount * curr.rate).toFixed(2)} ${curr.code}`; 
+        getCurrency = curr.code;
+    }
+    
+    const orderData = { 
+        userName: currentUser.name, userEmail: currentUser.email, mode: currentTradeMode, 
+        sendAmount: sendAmount, sendCurrency: sendCurrency, getAmount: getAmount, getCurrency: getCurrency, 
+        method: method, paymentDetails: paymentDetails, receivingWallet: wallet 
+    };
+
+    try {
+        const res = await fetch('/api/orders/create', { 
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(orderData) 
+        });
+        const data = await res.json();
+        
+        if (res.ok) { 
+            if (currentTradeMode === 'sell') {
+                try { const setRes = await fetch('/api/admin/public/settings'); globalSettings = await setRes.json(); } catch(e) {}
+                showPaymentInstructions(coinSymbol, sendAmount, orderData.getAmount);
+            } else {
+                showToast(`Order Placed! ID: ${data.orderId}`); 
+                setTimeout(() => showView('dashboardView'), 2000); 
+            }
+        } else { showToast(data.message || "Failed to place order."); }
+    } catch (error) { showToast("Error connecting to server."); } 
+    finally { btn.textContent = currentTradeMode === 'buy' ? 'Confirm Purchase' : 'Confirm Sale'; btn.disabled = false; }
+};
