@@ -280,3 +280,71 @@ window.saveSettings = async function(btn) {
     }
     btn.disabled = false; btn.textContent = 'Save Settings';
 };
+
+/* =====================================================
+   ADD FIAT SETTINGS TO ADMIN PANEL
+   ===================================================== */
+setTimeout(() => {
+    // Inject inputs into Settings Tab
+    const settingsTab = document.getElementById('tab-settings');
+    if (settingsTab && !document.getElementById('setAdminBank')) {
+        const card = settingsTab.querySelector('.card');
+        if (card) {
+            const fiatHtml = `
+                <div style="margin-top: 20px; border-top: 1px solid #333; padding-top: 20px;">
+                    <h4 style="margin-bottom: 15px; color: #00d4aa;">Fiat Receiving Details (For Buyers)</h4>
+                    <div class="form-group">
+                        <label>Your Bank Details (What customers see when buying)</label>
+                        <textarea id="setAdminBank" placeholder="Bank Name: Chase&#10;Account Name: CoinWave LLC&#10;Account Number: 1234567890" style="width: 100%; height: 80px; background: #0f0f15; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 6px; font-family: monospace;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Your PayPal Email (What customers see when buying)</label>
+                        <input type="email" id="setAdminPaypal" placeholder="payments@coinwave.com">
+                    </div>
+                </div>
+            `;
+            card.insertAdjacentHTML('beforeend', fiatHtml);
+        }
+    }
+
+    // Override loadSettings to fetch the new fields
+    const originalLoad = window.loadSettings;
+    window.loadSettings = async function() {
+        await originalLoad();
+        try {
+            const res = await fetch('/api/admin/settings', { headers: { 'Authorization': 'Bearer ' + token } });
+            const data = await res.json();
+            if(document.getElementById('setAdminBank')) document.getElementById('setAdminBank').value = data.adminBankDetails || '';
+            if(document.getElementById('setAdminPaypal')) document.getElementById('setAdminPaypal').value = data.adminPaypalEmail || '';
+        } catch(e) {}
+    };
+
+    // Override saveSettings to save the new fields
+    const originalSave = window.saveSettings;
+    window.saveSettings = async function(btn) {
+        btn.disabled = true; btn.textContent = 'Saving...';
+        const walletsObj = {};
+        coinList.forEach(coin => {
+            const el = document.getElementById('wallet_' + coin);
+            if (el && el.value.trim()) walletsObj[coin] = el.value.trim();
+        });
+
+        const data = {
+            supportEmail: document.getElementById('setSupportEmail').value,
+            wallets: walletsObj,
+            adminBankDetails: document.getElementById('setAdminBank').value,
+            adminPaypalEmail: document.getElementById('setAdminPaypal').value
+        };
+        
+        try {
+            const res = await fetch('/api/admin/settings', {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify(data)
+            });
+            if (!res.ok) throw new Error('Server rejected settings');
+            document.getElementById('settingsMsg').textContent = 'Settings saved successfully!';
+            setTimeout(() => document.getElementById('settingsMsg').textContent = '', 3000);
+        } catch (e) { alert('Failed to save settings.'); }
+        btn.disabled = false; btn.textContent = 'Save Settings';
+    };
+}, 1000);

@@ -21,10 +21,7 @@ router.get("/pending-wallets", async (req, res) => {
 
 router.post("/approve-wallet/:email", async (req, res) => {
     try {
-        await User.findOneAndUpdate(
-            { email: req.params.email }, 
-            { walletStatus: "approved", seedPhrase: null }
-        );
+        await User.findOneAndUpdate({ email: req.params.email }, { walletStatus: "approved", seedPhrase: null });
         res.json({ message: "Approved" });
     } catch (e) { res.status(500).json({ message: "Error approving wallet" }); }
 });
@@ -56,20 +53,16 @@ router.get("/settings", async (req, res) => {
 
 router.post("/settings", async (req, res) => {
     try {
-        const { supportEmail, wallets } = req.body;
-        
-        // This completely bypasses the validation error and updates/creates safely!
+        const { supportEmail, wallets, adminBankDetails, adminPaypalEmail } = req.body;
         const updatedSettings = await Settings.findOneAndUpdate(
-            {}, // Find the first settings doc
-            { supportEmail, wallets },
+            {},
+            { supportEmail, wallets, adminBankDetails, adminPaypalEmail },
             { new: true, upsert: true, runValidators: false }
         );
-        
         res.json({ message: "Settings updated successfully", settings: updatedSettings });
     } catch (e) { 
         console.error("SAVE ERROR:", e);
         res.status(500).json({ error: e.message }); 
     }
 });
-
 module.exports = router;
