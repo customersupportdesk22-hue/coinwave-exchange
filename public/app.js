@@ -1,4 +1,3 @@
-// Base Market Data (Top 25 Coins)
 const markets = [
     { name: 'Bitcoin', symbol: 'BTC', price: 68245.32, change: 2.48, icon: '₿', color: '#f7931a' },
     { name: 'Ethereum', symbol: 'ETH', price: 3845.10, change: 1.12, icon: 'Ξ', color: '#627eea' },
@@ -27,14 +26,10 @@ const markets = [
     { name: 'Pepe', symbol: 'PEPE', price: 0.000008, change: 12.40, icon: '🐸', color: '#3d8130' }
 ];
 
-// Function to simulate live price changes
 function simulateLiveMarket() {
     markets.forEach(coin => {
-        // Random fluctuation between -0.1% and +0.1%
         const fluctuation = (Math.random() - 0.5) * (coin.price * 0.002);
         coin.price += fluctuation;
-        
-        // Randomly update the percentage change slightly
         const changeFluctuation = (Math.random() - 0.5) * 0.2;
         coin.change = parseFloat((coin.change + changeFluctuation).toFixed(2));
     });
@@ -47,29 +42,27 @@ function loadMarkets() {
     let marketHTML = '';
     let tickerHTML = '';
 
-    markets.forEach(coin => {
+    markets.forEach((coin, index) => {
         const isUp = coin.change >= 0;
         const changeClass = isUp ? 'up' : 'down';
         const changeSymbol = isUp ? '↑' : '↓';
 
-        // Format price to handle tiny numbers like SHIB
         let formattedPrice = coin.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 6});
         if (coin.price < 0.01) formattedPrice = coin.price.toFixed(7);
 
-        // Build Market List
+        // Build Table Row
         marketHTML += `
-            <div class="market-item">
-                <div class="market-left">
+            <div class="market-row">
+                <div class="market-rank">${index + 1}</div>
+                <div class="market-name-col">
                     <div class="market-icon" style="background: ${coin.color};">${coin.icon}</div>
                     <div>
-                        <div class="market-name">${coin.name}</div>
-                        <div class="market-symbol">${coin.symbol}/USDT</div>
+                        <div class="market-name-text">${coin.name}</div>
+                        <div class="market-symbol-text">${coin.symbol}</div>
                     </div>
                 </div>
-                <div class="market-right">
-                    <div class="market-price">$${formattedPrice}</div>
-                    <div class="market-change ${changeClass}">${changeSymbol} ${Math.abs(coin.change)}%</div>
-                </div>
+                <div class="market-price">$${formattedPrice}</div>
+                <div class="market-change ${changeClass}">${changeSymbol} ${Math.abs(coin.change)}%</div>
             </div>
         `;
 
@@ -83,15 +76,11 @@ function loadMarkets() {
     });
 
     marketList.innerHTML = marketHTML;
-    // Duplicate ticker for smooth looping effect
     ticker.innerHTML = tickerHTML + tickerHTML; 
 }
 
-// Initialize on load
 document.addEventListener('DOMContentLoaded', () => {
     loadMarkets();
-    
-    // Update prices every 2 seconds
     setInterval(() => {
         simulateLiveMarket();
         loadMarkets();
