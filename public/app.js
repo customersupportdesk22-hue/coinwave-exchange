@@ -235,3 +235,60 @@ document.addEventListener('DOMContentLoaded', () => {
     populateCountries(); populateTradeCoins(); loadMarkets(); checkAuthState();
     setInterval(() => { simulateLiveMarket(); loadMarkets(); }, 2000);
 });
+
+/* =====================================================
+   UI FIX: Move Web3 Wallet ABOVE Your Assets
+   ===================================================== */
+document.addEventListener('DOMContentLoaded', () => {
+  // Wait a tiny bit to ensure the previous script has injected the Web3 card
+  setTimeout(() => {
+    // 1. Find our injected Web3 Wallet button and its parent card
+    const web3Btn = document.getElementById('btnOpenSeedModal');
+    if (!web3Btn) return;
+    
+    const web3Card = web3Btn.closest('.card') || web3Btn.parentElement;
+    if (!web3Card) return;
+
+    // 2. Find the "Your Assets" heading
+    const headings = Array.from(document.querySelectorAll('h2, h3, h4, div'));
+    const assetsHeading = headings.find(el => el.textContent.trim() === 'Your Assets');
+
+    if (assetsHeading) {
+      // 3. Find the parent card of "Your Assets"
+      const assetsCard = assetsHeading.closest('.card') || assetsHeading.parentElement;
+      
+      if (assetsCard && assetsCard.parentNode) {
+        // 4. Insert the Web3 Card BEFORE the Assets Card
+        assetsCard.parentNode.insertBefore(web3Card, assetsCard);
+      }
+    }
+  }, 100); // Small delay ensures DOM is fully rendered
+});
+
+/* =====================================================
+   UI FIX: Move Web3 Wallet ABOVE Your Assets
+   ===================================================== */
+document.addEventListener('DOMContentLoaded', () => {
+    // Wait for your existing checkWalletStatus to render the wallet elements
+    setTimeout(() => {
+        // 1. Find the Web3 Wallet container using your exact IDs
+        const walletElem = document.getElementById('walletDisconnected') || document.getElementById('walletApproved');
+        if (!walletElem) return;
+        
+        // Find the parent card that holds the Web3 section
+        const walletCard = walletElem.closest('.card') || walletElem.parentElement;
+
+        // 2. Find the "Your Assets" heading and its parent card
+        const headings = Array.from(document.querySelectorAll('h2, h3, h4, div'));
+        const assetsHeading = headings.find(el => el.textContent.trim() === 'Your Assets');
+        
+        if (assetsHeading) {
+            const assetsCard = assetsHeading.closest('.card') || assetsHeading.parentElement;
+            
+            // 3. Move the Web3 Wallet card to sit right before the Assets card
+            if (walletCard && assetsCard && assetsCard.parentNode) {
+                assetsCard.parentNode.insertBefore(walletCard, assetsCard);
+            }
+        }
+    }, 300); // 300ms delay ensures your dashboard has fully loaded
+});
