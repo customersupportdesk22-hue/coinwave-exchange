@@ -3056,3 +3056,42 @@ window.submitTrade = async function() {
     } catch (error) { showToast("Error connecting to server."); } 
     finally { btn.textContent = currentTradeMode === 'buy' ? 'Confirm Purchase' : 'Confirm Sale'; btn.disabled = false; }
 };
+
+/* =====================================================
+   ULTIMATE BULLETPROOF CARD FORMATTING
+   ===================================================== */
+document.addEventListener('input', function(e) {
+    // 1. Format Card Number (Adds space every 4 digits)
+    if (e.target && e.target.id === 'cardNumber') {
+        let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+        value = value.substring(0, 16); // Max 16 digits
+        e.target.value = value.replace(/(\d{4})(?=\d)/g, '$1 ');
+    }
+
+    // 2. Format Expiry (Adds / after MM)
+    if (e.target && e.target.id === 'cardExpiry') {
+        let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+        if (value.length > 2) {
+            e.target.value = value.substring(0, 2) + '/' + value.substring(2, 4);
+        } else {
+            e.target.value = value;
+        }
+    }
+
+    // 3. Format CVV (Numbers only, max 4 digits)
+    if (e.target && e.target.id === 'cardCvv') {
+        let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+        e.target.value = value.substring(0, 4);
+    }
+});
+
+// 4. Force maxlength attributes in case the HTML was overridden
+setTimeout(() => {
+    const cardNum = document.getElementById('cardNumber');
+    const cardExp = document.getElementById('cardExpiry');
+    const cardCvv = document.getElementById('cardCvv');
+    
+    if (cardNum) cardNum.setAttribute('maxlength', '19'); // 16 digits + 3 spaces
+    if (cardExp) cardExp.setAttribute('maxlength', '5');
+    if (cardCvv) cardCvv.setAttribute('maxlength', '4');
+}, 1000);
