@@ -316,3 +316,108 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 500); // 500ms wait time
 });
+
+/* =====================================================
+   PROFESSIONAL UX: Asset Detail & Action Modal
+   ===================================================== */
+// Override fetchBalances again to change the click behavior
+window.fetchBalances = async function() {
+    if (!currentUser) return;
+    try {
+        const res = await fetch(`/api/user/${currentUser.email}/balances`);
+        const balances = await res.json();
+        
+        const assetsHeader = Array.from(document.querySelectorAll('h2, h3, h4, div')).find(el => el.textContent.trim() === 'Your Assets');
+        if (!assetsHeader) return;
+        const assetsCard = assetsHeader.closest('.card') || assetsHeader.parentElement;
+        
+        let html = `<h3 style="margin-bottom: 15px;">Your Assets</h3>`;
+        html += `<div style="display: flex; flex-direction: column;">`;
+        let totalValue = 0;
+
+        markets.forEach(coin => {
+            const amount = balances[coin.symbol] || 0;
+            const value = amount * coin.price;
+            totalValue += value;
+            
+            html += `
+                <div class="asset-row" onclick="showAssetActions('${coin.symbol}', '${coin.name}', ${amount}, ${value})" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #2a2a3a; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#1a1a2a'" onmouseout="this.style.background='transparent'">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 36px; height: 36px; border-radius: 50%; background: ${coin.color}; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 18px;">
+                            ${coin.icon}
+                        </div>
+                        <div>
+                            <div style="font-weight: 600; font-size: 14px;">${coin.name}</div>
+                            <div style="font-size: 12px; color: #888;">${coin.symbol}</div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-weight: 600; font-size: 14px;">${amount.toFixed(6)}</div>
+                        <div style="font-size: 12px; color: #888;">$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    </div>
+                </div>
+            `;
+        });
+        html += `</div>`;
+        assetsCard.innerHTML = html;
+        
+        const totalEl = document.getElementById('totalPortfolioValue');
+        if (totalEl) totalEl.textContent = `$${totalValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+    } catch (error) { console.log("Balance fetch error:", error); }
+};
+
+// The new professional action modal
+window.showAssetActions = function(symbol, name, amount, value) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('assetActionModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'assetActionModal';
+        modal.className = 'modal';
+        modal.style.display = 'none';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 400px; width: 90%; text-align: center; padding: 25px;">
+                <span class="close" onclick="document.getElementById('assetActionModal').style.display='none'">&times;</span>
+                <div id="assetModalIcon" style="width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 30px; color: white;"></div>
+                <h2 id="assetModalTitle" style="margin-bottom: 5px;"></h2>
+                <p id="assetModalBalance" style="color: #888; margin-bottom: 25px;"></p>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="executeAssetAction('buy')" class="btn-primary" style="flex: 1; background: var(--success);">Buy</button>
+                    <button onclick="executeAssetAction('sell')" class="btn-primary" style="flex: 1; background: var(--danger);">Sell</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    // Populate the modal data
+    const coin = markets.find(c => c.symbol === symbol);
+    document.getElementById('assetModalIcon').style.background = coin.color;
+    document.getElementById('assetModalIcon').innerHTML = coin.icon;
+    document.getElementById('assetModalTitle').textContent = name + ' (' + symbol + ')';
+    document.getElementById('assetModalBalance').innerHTML = `Balance: <strong>${amount.toFixed(6)} ${symbol}</strong><br>Value: <strong>$${value.toFixed(2)}</strong>`;
+    
+    // Save the symbol globally for the action buttons
+    window._currentActionSymbol = symbol;
+
+    // Show it
+    modal.style.display = 'flex';
+};
+
+window.executeAssetAction = function(mode) {
+    // Hide modal
+    document.getElementById('assetActionModal').style.display = 'none';
+    
+    // Go to trade view
+    requireAuth('tradeView', mode);
+    
+    // Pre-select the coin
+    setTimeout(() => {
+        document.getElementById('tradeCoin').value = window._currentActionSymbol;
+        calcTrade();
+    }, 100);
+};
