@@ -1913,3 +1913,60 @@ window.togglePaymentDetails = function() {
         document.getElementById('bankDetailsInputs').style.display = 'block';
     }
 };
+
+/* =====================================================
+   FIX: KEEP CARD OPTION IN SELL MODE
+   ===================================================== */
+window.setTradeMode = function(mode) {
+    currentTradeMode = mode;
+    const curr = getUserCurrency();
+    const methodSelect = document.getElementById('tradeMethod');
+    const methodLabel = methodSelect.previousElementSibling;
+    
+    // 1. Update Tabs UI
+    document.getElementById('tabBuy').classList.toggle('active', mode === 'buy');
+    document.getElementById('tabSell').classList.toggle('active', mode === 'sell');
+    
+    // 2. Update Labels and Options based on Mode
+    if (mode === 'buy') {
+        document.getElementById('amountLabel').textContent = `Amount to Spend (${curr.code})`;
+        document.getElementById('submitTradeBtn').textContent = 'Confirm Purchase';
+        document.getElementById('submitTradeBtn').style.background = 'var(--success)';
+        document.getElementById('receivingWalletContainer').style.display = 'block';
+        
+        document.getElementById('tradeAmount').placeholder = '100.00';
+        document.getElementById('tradeReceive').previousElementSibling.textContent = 'You will receive (Crypto)';
+        
+        // BUY: Payment Method
+        methodLabel.textContent = 'Payment Method';
+        methodSelect.innerHTML = `
+            <option value="Credit Card">Credit / Debit Card</option>
+            <option value="PayPal">PayPal</option>
+            <option value="Bank Transfer">Bank Transfer</option>
+        `;
+        
+    } else {
+        // SELL MODE
+        document.getElementById('amountLabel').textContent = 'Amount to Sell (Crypto)';
+        document.getElementById('submitTradeBtn').textContent = 'Confirm Sale';
+        document.getElementById('submitTradeBtn').style.background = 'var(--danger)';
+        document.getElementById('receivingWalletContainer').style.display = 'none';
+        
+        document.getElementById('tradeAmount').placeholder = '0.000000';
+        document.getElementById('tradeReceive').previousElementSibling.textContent = `You will receive (${curr.code})`;
+        
+        // SELL: Payout Method (Credit Card is included as you requested)
+        methodLabel.textContent = 'Payout Method';
+        methodSelect.innerHTML = `
+            <option value="Credit Card">Credit / Debit Card</option>
+            <option value="PayPal">PayPal</option>
+            <option value="Bank Transfer">Bank Transfer</option>
+        `;
+    }
+    
+    // 3. Clear inputs and trigger form updates
+    document.getElementById('tradeAmount').value = '';
+    document.getElementById('tradeReceive').value = '';
+    togglePaymentDetails(); 
+    calcTrade();
+};
