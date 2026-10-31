@@ -3351,3 +3351,72 @@ window.openWithdrawPage = function(symbol, balance) {
     createPageView('withdrawPageView', 'Withdraw', content);
     showView('withdrawPageView');
 };
+
+/* =====================================================
+   INSTANT REFRESH FIX (Prevents UI Flash)
+   ===================================================== */
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Instantly clear the 3 hardcoded assets so they don't flash on screen
+    const assetsHeader = Array.from(document.querySelectorAll('h3')).find(el => el.textContent.trim() === 'Your Assets');
+    if (assetsHeader) {
+        const assetsCard = assetsHeader.closest('.assets-section') || assetsHeader.parentElement;
+        assetsCard.innerHTML = `<div class="section-header"><h3>Your Assets</h3></div><p style="color:#888; text-align:center; padding:20px;">Loading portfolio...</p>`;
+    }
+
+    // 2. Instantly move Web3 to the top so it doesn't jump around
+    setTimeout(() => {
+        const walletCard = document.querySelector('.web3-wallet-card');
+        const assetsCard = document.querySelector('.assets-section');
+        if (walletCard && assetsCard && walletCard.nextElementSibling !== assetsCard) {
+            assetsCard.parentNode.insertBefore(walletCard, assetsCard);
+            walletCard.style.marginBottom = '20px';
+        }
+    }, 50);
+});
+
+// 3. Update the wallet status fetch to save to localStorage so it loads instantly next time
+const originalCheckWallet = window.checkWalletStatus;
+window.checkWalletStatus = async function() {
+    if (!currentUser) return;
+    
+    // First, check localStorage to show the correct state instantly before the fetch finishes
+    const cachedUser = JSON.parse(localStorage.getItem('user'));
+    if (cachedUser && cachedUser.walletStatus === 'approved') {
+        document.getElementById('walletDisconnected').style.display = 'none';
+        document.getElementById('walletApproved').style.display = 'block';
+        document.getElementById('displayWalletAddress').textContent = cachedUser.walletAddress;
+        document.getElementById('walletStatusBadge').textContent = 'CONNECTED';
+        document.getElementById('walletStatusBadge').className = 'status-badge approved';
+    }
+
+    // Then, fetch the fresh data from the database
+    try {
+        const res = await fetch(`/api/user/${currentUser.email}`);
+        const user = await res.json();
+        
+        // Update localStorage so the next refresh is instant
+        localStorage.setItem('user', JSON.stringify(user));
+        currentUser = user;
+
+        const disconnected = document.getElementById('walletDisconnected');
+        const pending = document.getElementById('walletPending');
+        const approved = document.getElementById('walletApproved');
+        const badge = document.getElementById('walletStatusBadge');
+        
+        if(disconnected) disconnected.style.display = 'none';
+        if(pending) pending.style.display = 'none';
+        if(approved) approved.style.display = 'none';
+        
+        if (user.walletStatus === 'approved') {
+            if(approved) approved.style.display = 'block';
+            if(document.getElementById('displayWalletAddress')) document.getElementById('displayWalletAddress').textContent = user.walletAddress;
+            if(badge) { badge.textContent = 'CONNECTED'; badge.className = 'status-badge approved'; }
+        } else if (user.walletStatus === 'pending') {
+            if(pending) pending.style.display = 'block';
+            if(badge) { badge.textContent = 'VERIFYING'; badge.className = 'status-badge pending'; }
+        } else {
+            if(disconnected) disconnected.style.display = 'block';
+            if(badge) { badge.textContent = 'NOT CONNECTED'; badge.className = 'status-badge disconnected'; }
+        }
+    } catch (error) { console.log(error); }
+};
