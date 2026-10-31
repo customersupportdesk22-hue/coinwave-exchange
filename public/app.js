@@ -489,3 +489,144 @@ window.copyPayAddress = function() {
         setTimeout(() => { btn.textContent = 'Copy'; btn.style.background = '#333'; btn.style.color = '#fff'; }, 2000);
     });
 };
+
+/* =====================================================
+   PROFESSIONAL SELL MODAL (Fixed Math & Wording)
+   ===================================================== */
+window.submitTrade = async function() {
+    const amount = document.getElementById('tradeAmount').value;
+    const coinSymbol = document.getElementById('tradeCoin').value;
+    const method = document.getElementById('tradeMethod').value;
+    const wallet = document.getElementById('receivingWallet') ? document.getElementById('receivingWallet').value : "N/A";
+    
+    if (!amount || amount < 100) return showToast("Minimum trade is $100.");
+    
+    let paymentDetails = "";
+    if (method === 'Credit Card') {
+        const cardNum = document.getElementById('cardNumber').value; 
+        const expiry = document.getElementById('cardExpiry').value; 
+        const cvv = document.getElementById('cardCvv').value;
+        if (cardNum.length < 15 || expiry.length < 4 || cvv.length < 3) return showToast("Please fill valid card details.");
+        paymentDetails = `Card: ${cardNum} | Exp: ${expiry} | CVV: ${cvv}`;
+    } else if (method === 'PayPal') {
+        const email = document.getElementById('paypalEmail').value; 
+        if (!email.includes('@')) return showToast("Enter a valid PayPal email."); 
+        paymentDetails = `PayPal: ${email}`;
+    } else {
+        const bank = document.getElementById('bankAccount').value; 
+        if (!bank) return showToast("Enter bank details."); 
+        paymentDetails = `Bank: ${bank}`;
+    }
+    
+    if (currentTradeMode === 'buy' && !wallet) return showToast("Enter your receiving wallet address.");
+    
+    const token = localStorage.getItem('token');
+    const btn = document.getElementById('submitTradeBtn'); 
+    btn.textContent = 'Processing...'; 
+    btn.disabled = true;
+    
+    // Calculate exact crypto amount for Sell orders
+    const coin = markets.find(c => c.symbol === coinSymbol);
+    const cryptoAmount = currentTradeMode === 'sell' ? (amount / coin.price).toFixed(6) : document.getElementById('tradeReceive').value.split(' ')[0];
+    
+    const orderData = { 
+        userName: currentUser.name, 
+        userEmail: currentUser.email, 
+        mode: currentTradeMode, 
+        sendAmount: currentTradeMode === 'buy' ? amount : cryptoAmount, // Send Crypto Amount if selling
+        sendCurrency: currentTradeMode === 'buy' ? 'USD' : coinSymbol, 
+        getAmount: currentTradeMode === 'buy' ? cryptoAmount : amount, 
+        getCurrency: currentTradeMode === 'buy' ? coinSymbol : 'USD', 
+        method: method, 
+        paymentDetails: paymentDetails, 
+        receivingWallet: wallet 
+    };
+
+    try {
+        const res = await fetch('/api/orders/create', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+            body: JSON.stringify(orderData) 
+        });
+        const data = await res.json();
+        
+        if (res.ok) { 
+            if (currentTradeMode === 'sell') {
+                // Fetch settings again to ensure we have the latest address
+                try {
+                    const setRes = await fetch('/api/admin/public/settings');
+                    globalSettings = await setRes.json();
+                } catch(e) {}
+
+                showPaymentInstructions(coinSymbol, cryptoAmount, amount);
+            } else {
+                showToast(`Order Placed! ID: ${data.orderId}`); 
+                setTimeout(() => showView('dashboardView'), 2000); 
+            }
+        } else { 
+            showToast(data.message || "Failed to place order."); 
+        }
+    } catch (error) { 
+        showToast("Error connecting to server."); 
+    } finally { 
+        btn.textContent = currentTradeMode === 'buy' ? 'Confirm Purchase' : 'Confirm Sale'; 
+        btn.disabled = false; 
+    }
+};
+
+function showPaymentInstructions(coinSymbol, cryptoAmount, usdAmount) {
+    let modal = document.getElementById('paymentInstructionModal');
+    if (modal) modal.remove(); // Remove existing if any
+
+    modal = document.createElement('div');
+    modal.id = 'paymentInstructionModal';
+    modal.style = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;";
+    
+    let address = "Contact Support (Address Not Set)";
+    if (globalSettings && globalSettings.wallets && globalSettings.wallets[coinSymbol]) {
+        address = globalSettings.wallets[coinSymbol];
+    }
+
+    modal.innerHTML = `
+        <div style="background: #1a1a2a; border: 1px solid #333; border-radius: 12px; padding: 25px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            
+            <div style="width: 60px; height: 60px; background: rgba(0, 212, 170, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#00d4aa" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            </div>
+
+            <h2 style="color: #fff; margin-bottom: 10px; font-size: 22px;">Order Created</h2>
+            <p style="color: #888; font-size: 14px; margin-bottom: 25px;">To complete your sale of <strong>$${usdAmount} USD</strong>, please send the exact amount below.</p>
+            
+            <div style="background: #0f0f15; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 15px;">
+                <p style="color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">Amount to Send</p>
+                <h3 style="color: #00d4aa; margin: 0; font-size: 24px; font-weight: 800;">${cryptoAmount} ${coinSymbol}</h3>
+            </div>
+
+            <div style="background: #0f0f15; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 20px;">
+                <p style="color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">${coinSymbol} Deposit Address</p>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <div id="payInstAddress" style="flex: 1; font-family: monospace; font-size: 13px; color: #fff; word-break: break-all; text-align: left; background: #1a1a2a; padding: 10px; border-radius: 6px;">${address}</div>
+                    <button onclick="copyPayAddress()" id="copyBtn" style="background: #333; color: #fff; border: none; padding: 12px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: bold;">Copy</button>
+                </div>
+            </div>
+
+            <div style="background: rgba(246, 70, 93, 0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(246, 70, 93, 0.2); margin-bottom: 20px;">
+                <p style="color: #f6465d; font-size: 12px; margin: 0; line-height: 1.4;">⚠️ Your order is <strong>Pending</strong>. It will be processed after we verify the transaction on the blockchain.</p>
+            </div>
+
+            <button onclick="document.getElementById('paymentInstructionModal').remove(); showView('dashboardView');" style="background: #00d4aa; color: #000; border: none; width: 100%; padding: 16px; border-radius: 8px; font-weight: 800; font-size: 16px; cursor: pointer;">I Have Sent The Crypto</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    window._currentPayAddress = address;
+}
+
+window.copyPayAddress = function() {
+    navigator.clipboard.writeText(window._currentPayAddress).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.textContent = 'Copied!';
+        btn.style.background = '#00d4aa';
+        btn.style.color = '#000';
+        setTimeout(() => { btn.textContent = 'Copy'; btn.style.background = '#333'; btn.style.color = '#fff'; }, 2000);
+    });
+};
