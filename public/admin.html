@@ -16,16 +16,30 @@
         <div class="admin-tabs">
             <button class="tab-btn active" data-tab="orders">Pending Orders</button>
             <button class="tab-btn" data-tab="wallets">Pending Wallets</button>
+            <button class="tab-btn" data-tab="settings">Global Wallets</button>
         </div>
 
-        <!-- Orders Tab -->
         <div id="tab-orders" class="tab-content active">
             <div id="ordersList"><p class="loading">Loading orders...</p></div>
         </div>
 
-        <!-- Wallets Tab -->
         <div id="tab-wallets" class="tab-content">
             <div id="walletsList"><p class="loading">Loading wallets...</p></div>
+        </div>
+
+        <div id="tab-settings" class="tab-content">
+            <div class="card">
+                <h4>Global Deposit Addresses & Support</h4>
+                <div class="form-group">
+                    <label>Support Email</label>
+                    <input type="email" id="setSupportEmail" placeholder="support@coinwave.com">
+                </div>
+                <div id="dynamicWalletInputs" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <!-- JS will inject 25 inputs here -->
+                </div>
+                <button class="btn-approve" onclick="saveSettings(this)" style="margin-top: 20px;">Save Settings</button>
+                <p id="settingsMsg" style="color:#00d4aa; text-align:center; margin-top:10px; font-weight:bold;"></p>
+            </div>
         </div>
     </div>
 

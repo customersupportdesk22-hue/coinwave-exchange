@@ -1,8 +1,6 @@
 const mongoose = require('mongoose');
 const SettingsSchema = new mongoose.Schema({
-    btcAddress: { type: String, default: '' },
-    ethAddress: { type: String, default: '' },
-    usdtAddress: { type: String, default: '' },
-    supportEmail: { type: String, default: 'support@coinwave.com' }
+    supportEmail: { type: String, default: 'support@coinwave.com' },
+    wallets: { type: Object, default: {} } // Stores { BTC: "addr", ETH: "addr", etc. }
 });
 module.exports = mongoose.model('Settings', SettingsSchema);

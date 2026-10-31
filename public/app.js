@@ -563,3 +563,73 @@ window.copyDepositAddress = function(text, btn) {
         alert('Failed to copy address.');
     });
 };
+
+/* =====================================================
+   SHOW ADMIN GLOBAL WALLET ON SELL PAGE
+   ===================================================== */
+let globalSettings = null;
+
+// Fetch settings when app loads
+async function fetchGlobalSettings() {
+    try {
+        const res = await fetch('/api/admin/public/settings');
+        globalSettings = await res.json();
+    } catch (e) { console.log("Could not load global settings"); }
+}
+document.addEventListener('DOMContentLoaded', fetchGlobalSettings);
+
+// Override the original setTradeMode to add the address display
+const originalSetTradeMode = window.setTradeMode;
+window.setTradeMode = function(mode) {
+    originalSetTradeMode(mode);
+    
+    // Inject the address display container if it doesn't exist
+    let addressDiv = document.getElementById('adminWalletDisplay');
+    if (!addressDiv) {
+        addressDiv = document.createElement('div');
+        addressDiv.id = 'adminWalletDisplay';
+        addressDiv.style = "margin-top: 15px; padding: 15px; background: #1a1a2a; border: 1px solid #333; border-radius: 8px; display: none;";
+        
+        // Insert it right above the submit button
+        const submitBtn = document.getElementById('submitTradeBtn');
+        if (submitBtn && submitBtn.parentNode) {
+            submitBtn.parentNode.insertBefore(addressDiv, submitBtn);
+        }
+    }
+    
+    updateAdminAddressDisplay();
+};
+
+// Update the address whenever coin or mode changes
+function updateAdminAddressDisplay() {
+    const addressDiv = document.getElementById('adminWalletDisplay');
+    if (!addressDiv) return;
+
+    if (currentTradeMode === 'sell' && globalSettings && globalSettings.wallets) {
+        const coin = document.getElementById('tradeCoin').value;
+        const address = globalSettings.wallets[coin];
+        
+        if (address) {
+            addressDiv.style.display = 'block';
+            addressDiv.innerHTML = `
+                <p style="font-size: 13px; color: #aaa; margin-bottom: 5px;">Send your ${coin} to this Admin Address:</p>
+                <div style="background: #0f0f15; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 12px; word-break: break-all; border: 1px solid #00d4aa;">
+                    ${address}
+                </div>
+                <p style="font-size: 11px; color: #e74c3c; margin-top: 8px;">⚠️ Ensure you send the correct coin to this address.</p>
+            `;
+        } else {
+            addressDiv.style.display = 'block';
+            addressDiv.innerHTML = `<p style="font-size: 13px; color: #e74c3c;">Admin has not set a wallet address for ${coin} yet.</p>`;
+        }
+    } else {
+        addressDiv.style.display = 'none';
+    }
+}
+
+// Attach update to coin change
+document.addEventListener('change', (e) => {
+    if (e.target && (e.target.id === 'tradeCoin')) {
+        updateAdminAddressDisplay();
+    }
+});
