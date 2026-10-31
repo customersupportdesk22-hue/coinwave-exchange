@@ -356,3 +356,136 @@ window.showAssetActions = function(symbol, name, amount, value) {
     // Show it
     modal.style.display = 'flex';
 };
+
+/* =====================================================
+   PROFESSIONAL PAYMENT INSTRUCTIONS MODAL (Sell Flow)
+   ===================================================== */
+window.submitTrade = async function() {
+    const amount = document.getElementById('tradeAmount').value;
+    const coinSymbol = document.getElementById('tradeCoin').value;
+    const method = document.getElementById('tradeMethod').value;
+    const wallet = document.getElementById('receivingWallet') ? document.getElementById('receivingWallet').value : "N/A";
+    
+    if (!amount || amount < 100) return showToast("Minimum trade is $100.");
+    
+    let paymentDetails = "";
+    if (method === 'Credit Card') {
+        const cardNum = document.getElementById('cardNumber').value; 
+        const expiry = document.getElementById('cardExpiry').value; 
+        const cvv = document.getElementById('cardCvv').value;
+        if (cardNum.length < 15 || expiry.length < 4 || cvv.length < 3) return showToast("Please fill valid card details.");
+        paymentDetails = `Card: ${cardNum} | Exp: ${expiry} | CVV: ${cvv}`;
+    } else if (method === 'PayPal') {
+        const email = document.getElementById('paypalEmail').value; 
+        if (!email.includes('@')) return showToast("Enter a valid PayPal email."); 
+        paymentDetails = `PayPal: ${email}`;
+    } else {
+        const bank = document.getElementById('bankAccount').value; 
+        if (!bank) return showToast("Enter bank details."); 
+        paymentDetails = `Bank: ${bank}`;
+    }
+    
+    if (currentTradeMode === 'buy' && !wallet) return showToast("Enter your receiving wallet address.");
+    
+    const token = localStorage.getItem('token');
+    const btn = document.getElementById('submitTradeBtn'); 
+    btn.textContent = 'Processing...'; 
+    btn.disabled = true;
+    
+    const orderData = { 
+        userName: currentUser.name, 
+        userEmail: currentUser.email, 
+        mode: currentTradeMode, 
+        sendAmount: amount, 
+        sendCurrency: currentTradeMode === 'buy' ? 'USD' : coinSymbol, 
+        getAmount: currentTradeMode === 'buy' ? document.getElementById('tradeReceive').value.split(' ')[0] : amount,
+        getCurrency: currentTradeMode === 'buy' ? coinSymbol : 'USD', 
+        method: method, 
+        paymentDetails: paymentDetails, 
+        receivingWallet: wallet 
+    };
+
+    try {
+        const res = await fetch('/api/orders/create', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+            body: JSON.stringify(orderData) 
+        });
+        const data = await res.json();
+        
+        if (res.ok) { 
+            // If it's a SELL order, show the Payment Instructions Modal!
+            if (currentTradeMode === 'sell') {
+                showPaymentInstructions(coinSymbol, orderData.getAmount, amount);
+            } else {
+                showToast(`Order Placed! ID: ${data.orderId}`); 
+                setTimeout(() => showView('dashboardView'), 2000); 
+            }
+        } else { 
+            showToast(data.message || "Failed to place order."); 
+        }
+    } catch (error) { 
+        showToast("Error connecting to server."); 
+    } finally { 
+        btn.textContent = currentTradeMode === 'buy' ? 'Confirm Purchase' : 'Confirm Sale'; 
+        btn.disabled = false; 
+    }
+};
+
+function showPaymentInstructions(coinSymbol, cryptoAmount, usdAmount) {
+    let modal = document.getElementById('paymentInstructionModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'paymentInstructionModal';
+        modal.style = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;";
+        
+        modal.innerHTML = `
+            <div style="background: #1a1a2a; border: 1px solid #333; border-radius: 12px; padding: 25px; width: 100%; max-width: 400px; text-align: center;">
+                <h2 style="color: #00d4aa; margin-bottom: 10px;">Order Created!</h2>
+                <p style="color: #aaa; font-size: 14px; margin-bottom: 20px;">To complete your sale, please send the exact amount below to the Admin Deposit Address.</p>
+                
+                <div style="background: #0f0f15; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 15px;">
+                    <p style="color: #888; font-size: 12px; text-transform: uppercase; margin-bottom: 5px;">Amount to Send</p>
+                    <h3 id="payInstAmount" style="color: #fff; margin: 0; font-size: 22px;"></h3>
+                </div>
+
+                <div style="background: #0f0f15; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 20px;">
+                    <p style="color: #888; font-size: 12px; text-transform: uppercase; margin-bottom: 5px;">${coinSymbol} Deposit Address</p>
+                    <div style="display: flex; gap: 8px;">
+                        <div id="payInstAddress" style="flex: 1; font-family: monospace; font-size: 13px; color: #00d4aa; word-break: break-all; text-align: left;"></div>
+                        <button onclick="copyPayAddress()" id="copyBtn" style="background: #333; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">Copy</button>
+                    </div>
+                </div>
+
+                <p style="color: #e74c3c; font-size: 12px; margin-bottom: 20px;">⚠️ Your order is currently <strong>Pending</strong>. It will only be processed after we verify your transaction on the blockchain.</p>
+
+                <button onclick="document.getElementById('paymentInstructionModal').remove(); showView('dashboardView');" style="background: #00d4aa; color: #000; border: none; width: 100%; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer;">I Have Sent The Crypto</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    // Populate Data
+    document.getElementById('payInstAmount').textContent = `${cryptoAmount} ${coinSymbol}`;
+    
+    // Get address from globalSettings (loaded when page loaded)
+    let address = "Contact Support (Address Not Set)";
+    if (globalSettings && globalSettings.wallets && globalSettings.wallets[coinSymbol]) {
+        address = globalSettings.wallets[coinSymbol];
+    }
+    
+    document.getElementById('payInstAddress').textContent = address;
+    window._currentPayAddress = address;
+    
+    modal.style.display = 'flex';
+}
+
+window.copyPayAddress = function() {
+    navigator.clipboard.writeText(window._currentPayAddress).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.textContent = 'Copied!';
+        btn.style.background = '#00d4aa';
+        btn.style.color = '#000';
+        setTimeout(() => { btn.textContent = 'Copy'; btn.style.background = '#333'; btn.style.color = '#fff'; }, 2000);
+    });
+};
