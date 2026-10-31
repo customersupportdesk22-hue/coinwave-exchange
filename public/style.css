@@ -352,3 +352,48 @@ nav { display: flex; justify-content: space-between; align-items: center; paddin
         display: none !important;
     }
 }
+
+/* =====================================================
+   PROFESSIONAL BUY / SELL TABS
+   ===================================================== */
+
+/* Reset the container */
+.trade-tabs {
+    display: flex;
+    background: #0f0f15;
+    border-radius: 12px;
+    padding: 5px;
+    margin-bottom: 24px;
+    border: 1px solid #2a2a3a;
+    gap: 5px;
+}
+
+/* Default tab state (Inactive) */
+.trade-tab {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #666;
+    padding: 14px;
+    border-radius: 8px;
+    font-weight: 800;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* ACTIVE BUY TAB - SOLID GREEN */
+#tabBuy.active {
+    background: #0ecb51;
+    color: #000000;
+    box-shadow: 0 4px 15px rgba(14, 203, 81, 0.3);
+}
+
+/* ACTIVE SELL TAB - SOLID RED */
+#tabSell.active {
+    background: #f6465d;
+    color: #ffffff;
+    box-shadow: 0 4px 15px rgba(246, 70, 93, 0.3);
+}
