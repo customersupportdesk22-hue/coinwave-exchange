@@ -1792,3 +1792,51 @@ window.executeWithdrawal = function(symbol, balance) {
         }, 10);
     };
 })();
+
+/* =====================================================
+   ULTIMATE PROFESSIONAL PAGE HEADER (SVG Back Arrow)
+   ===================================================== */
+window.createPageView = function(id, title, contentHtml) {
+    let view = document.getElementById(id);
+    if (view) view.remove(); // Remove old view to refresh content
+    
+    view = document.createElement('main');
+    view.id = id;
+    view.className = 'app-view';
+    view.style.display = 'none'; 
+    
+    view.innerHTML = `
+        <div class="dash-container" style="max-width: 500px; margin: 0 auto; padding: 20px;">
+            
+            <!-- Professional Header with Circular Back Button -->
+            <div style="display: flex; align-items: center; margin-bottom: 25px;">
+                <button onclick="showView('dashboardView')" style="
+                    width: 42px; 
+                    height: 42px; 
+                    border-radius: 50%; 
+                    background: #1a1a2a; 
+                    border: 1px solid #2a2a3a; 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    cursor: pointer; 
+                    margin-right: 15px; 
+                    padding: 0; 
+                    color: #fff; 
+                    transition: background 0.2s, border-color 0.2s;
+                " onmouseover="this.style.background='#2a2a3a'" onmouseout="this.style.background='#1a1a2a'">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+                <h2 style="margin: 0; font-size: 20px; color: #fff; font-weight: 700;">${title}</h2>
+            </div>
+
+            <!-- Main Content Card -->
+            <div class="card" style="background: #1a1a2a; border-radius: 16px; padding: 25px; border: 1px solid #2a2a3a; box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
+                ${contentHtml}
+            </div>
+        </div>
+    `;
+    document.body.appendChild(view);
+};
