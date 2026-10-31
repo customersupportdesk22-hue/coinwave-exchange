@@ -397,3 +397,10 @@ nav { display: flex; justify-content: space-between; align-items: center; paddin
     color: #ffffff;
     box-shadow: 0 4px 15px rgba(246, 70, 93, 0.3);
 }
+
+/* =====================================================
+   ZERO-LAG TOGGLE CSS
+   ===================================================== */
+.hide-zeros .zero-row {
+    display: none !important;
+}

@@ -2651,3 +2651,113 @@ window.fetchBalances = async function() {
 
     } catch (error) { console.log("Balance fetch error:", error); }
 };
+
+/* =====================================================
+   ZERO-LAG ASSET TOGGLE (Client-Side CSS Filtering)
+   ===================================================== */
+window.fetchBalances = async function() {
+    if (!currentUser) return;
+    try {
+        // 1. Fetch data from the server ONCE
+        const res = await fetch(`/api/user/${currentUser.email}/balances`);
+        const balances = await res.json();
+        
+        const assetsHeader = Array.from(document.querySelectorAll('h3')).find(el => el.textContent.trim() === 'Your Assets');
+        if (!assetsHeader) return;
+        const assetsCard = assetsHeader.closest('.assets-section') || assetsHeader.parentElement;
+        
+        let hideZero = localStorage.getItem('hideZeroBalances') === 'true';
+
+        // 2. Build the HTML Header with the Toggle
+        let html = `
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; font-size: 18px; font-weight: 600;">Your Assets</h3>
+                
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;">
+                    <span style="font-size: 13px; color: #aaa; font-weight: 500;">Hide Zero</span>
+                    <div style="position: relative; width: 44px; height: 24px;">
+                        <input type="checkbox" id="hideZeroToggle" ${hideZero ? 'checked' : ''} style="opacity: 0; width: 0; height: 0; position: absolute;">
+                        <span id="toggleTrack" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: ${hideZero ? '#00d4aa' : '#3a3a4a'}; border-radius: 24px; transition: background-color 0.3s ease;"></span>
+                        <span id="toggleThumb" style="position: absolute; height: 20px; width: 20px; left: ${hideZero ? '21px' : '2px'}; bottom: 2px; background-color: #fff; border-radius: 50%; transition: left 0.3s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></span>
+                    </div>
+                </label>
+            </div>
+            <div class="asset-table-header" style="display: flex; justify-content: space-between; padding: 0 10px 10px 10px; border-bottom: 1px solid #2a2a3a; font-size: 12px; color: #888; text-transform: uppercase;">
+                <span style="flex: 2;">Asset</span>
+                <span style="flex: 1; text-align: right;">Amount</span>
+                <span style="flex: 1; text-align: right;">Value</span>
+            </div>
+            <div id="assetsListContainer" class="${hideZero ? 'hide-zeros' : ''}" style="display: flex; flex-direction: column;">
+        `;
+        
+        let totalValue = 0;
+        let assetRowsHtml = '';
+
+        // 3. Build ALL rows, but tag zero-balance rows with a class
+        markets.forEach(coin => {
+            const rawAmount = balances[coin.symbol] || 0;
+            const amount = Math.max(0, rawAmount); 
+            const value = amount * coin.price;
+            totalValue += value;
+            
+            // Add the 'zero-row' class so we can hide them with CSS
+            const rowClass = amount === 0 ? 'asset-row zero-row' : 'asset-row';
+
+            assetRowsHtml += `
+                <div class="${rowClass}" onclick="showAssetActions('${coin.symbol}', '${coin.name}', ${amount}, ${value})" 
+                     style="cursor: pointer; padding: 15px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    
+                    <div class="asset-name" style="flex: 2; display: flex; align-items: center; gap: 12px;">
+                        <div class="market-icon" style="background:${coin.color}; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 18px; color: white;">${coin.icon}</div> 
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-weight: 600; font-size: 14px; color: #fff;">${coin.name}</span>
+                            <span style="font-weight: 500; font-size: 12px; color: #888;">${coin.symbol}</span>
+                        </div>
+                    </div>
+                    
+                    <div style="flex: 1; text-align: right;">
+                        <div style="font-weight: 600; font-size: 14px; color: #fff;">${amount.toFixed(6)}</div>
+                    </div>
+                    
+                    <div style="flex: 1; text-align: right;">
+                        <div style="font-size: 14px; color: #888;">$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        // Close container
+        html += assetRowsHtml + `</div>`;
+
+        assetsCard.innerHTML = html;
+        
+        const totalEl = document.getElementById('totalPortfolioValue');
+        if (totalEl) {
+            const safeTotal = Math.max(0, totalValue);
+            totalEl.textContent = `$${safeTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        }
+
+        // 4. The Toggle Event: Pure CSS Manipulation (0ms delay)
+        const toggle = document.getElementById('hideZeroToggle');
+        const listContainer = document.getElementById('assetsListContainer');
+        
+        if (toggle) {
+            toggle.addEventListener('change', (e) => {
+                const isChecked = e.target.checked;
+                localStorage.setItem('hideZeroBalances', isChecked);
+                
+                // Instantly toggle the CSS class on the list container
+                if (isChecked) {
+                    listContainer.classList.add('hide-zeros');
+                } else {
+                    listContainer.classList.remove('hide-zeros');
+                }
+
+                // Update the switch UI instantly
+                document.getElementById('toggleTrack').style.backgroundColor = isChecked ? '#00d4aa' : '#3a3a4a';
+                document.getElementById('toggleThumb').style.left = isChecked ? '21px' : '2px';
+            });
+        }
+
+    } catch (error) { console.log("Balance fetch error:", error); }
+};
