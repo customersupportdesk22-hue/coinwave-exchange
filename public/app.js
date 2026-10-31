@@ -760,3 +760,60 @@ window.submitTrade = async function() {
         if (btn) { btn.textContent = 'Confirm Purchase'; btn.disabled = false; }
     }
 };
+
+/* =====================================================
+   BULLETPROOF MARKET LOADER (Fixes empty homepage list)
+   ===================================================== */
+window.loadMarkets = function() {
+    const marketList = document.getElementById('market-list'); 
+    const ticker = document.getElementById('ticker');
+    
+    // If the market list container doesn't exist, stop.
+    if (!marketList) return;
+
+    let marketHTML = ''; 
+    let tickerHTML = '';
+    
+    // 'markets' is defined at the top of your file
+    if (typeof markets !== 'undefined') {
+        markets.forEach((coin, index) => {
+            const isUp = coin.change >= 0; 
+            const changeClass = isUp ? 'up' : 'down'; 
+            const changeSymbol = isUp ? '↑' : '↓';
+            let formattedPrice = coin.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 6});
+            
+            marketHTML += `
+                <div class="market-row" onclick="quickTrade('${coin.symbol}')">
+                    <div class="market-rank">${index + 1}</div>
+                    <div class="market-name-col">
+                        <div class="market-icon" style="background: ${coin.color};">${coin.icon}</div>
+                        <div>
+                            <div class="market-name-text">${coin.name}</div>
+                            <div class="market-symbol-text">${coin.symbol}</div>
+                        </div>
+                    </div>
+                    <div class="market-price">$${formattedPrice}</div>
+                    <div class="market-change ${changeClass}">${changeSymbol} ${Math.abs(coin.change)}%</div>
+                </div>`;
+                
+            tickerHTML += `<div class="ticker-item"><b>${coin.symbol}</b> $${formattedPrice} <span class="${changeClass}">${changeSymbol}${Math.abs(coin.change)}%</span></div>`;
+        });
+    }
+
+    // Inject the HTML
+    marketList.innerHTML = marketHTML; 
+    
+    // Only update ticker if it actually exists on the page (prevents crashes)
+    if (ticker) {
+        ticker.innerHTML = tickerHTML + tickerHTML; 
+    }
+};
+
+// Call it immediately when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    window.loadMarkets();
+    setInterval(() => { 
+        if(typeof simulateLiveMarket === 'function') simulateLiveMarket(); 
+        window.loadMarkets(); 
+    }, 2000);
+});
