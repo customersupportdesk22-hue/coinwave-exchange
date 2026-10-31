@@ -2424,3 +2424,111 @@ window.fetchBalances = async function() {
 
     } catch (error) { console.log("Balance fetch error:", error); }
 };
+
+/* =====================================================
+   MOBILE TOUCH FIX: Eliminate Long Click & Double Tap
+   ===================================================== */
+// 1. Add global CSS to stop text highlighting and zoom delays
+const style = document.createElement('style');
+style.innerHTML = `
+    * {
+        -webkit-tap-highlight-color: transparent !important; /* Removes the ugly blue flash on tap */
+    }
+    button, a, .asset-row, label, .trade-tab {
+        user-select: none !important; /* Prevents text from being selected on long press */
+        touch-action: manipulation !important; /* Removes the 300ms delay for double-tap zoom */
+    }
+`;
+document.head.appendChild(style);
+
+// 2. Fix the Asset List (Remove the laggy hover effects)
+window.fetchBalances = async function() {
+    if (!currentUser) return;
+    try {
+        const res = await fetch(`/api/user/${currentUser.email}/balances`);
+        const balances = await res.json();
+        
+        const assetsHeader = Array.from(document.querySelectorAll('h3')).find(el => el.textContent.trim() === 'Your Assets');
+        if (!assetsHeader) return;
+        const assetsCard = assetsHeader.closest('.assets-section') || assetsHeader.parentElement;
+        
+        let hideZero = localStorage.getItem('hideZeroBalances') === 'true';
+
+        let html = `
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; font-size: 18px; font-weight: 600;">Your Assets</h3>
+                
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;">
+                    <span style="font-size: 13px; color: #aaa; font-weight: 500;">Hide Zero</span>
+                    <div style="position: relative; width: 44px; height: 24px;">
+                        <input type="checkbox" id="hideZeroToggle" ${hideZero ? 'checked' : ''} style="opacity: 0; width: 0; height: 0; position: absolute;">
+                        <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: ${hideZero ? '#00d4aa' : '#3a3a4a'}; border-radius: 24px; transition: background-color 0.3s ease; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);"></span>
+                        <span style="position: absolute; height: 20px; width: 20px; left: ${hideZero ? '21px' : '2px'}; bottom: 2px; background-color: #fff; border-radius: 50%; transition: left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></span>
+                    </div>
+                </label>
+            </div>
+            <div class="asset-table-header" style="display: flex; justify-content: space-between; padding: 0 10px 10px 10px; border-bottom: 1px solid #2a2a3a; font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.5px;">
+                <span style="flex: 2;">Asset</span>
+                <span style="flex: 1; text-align: right;">Amount</span>
+                <span style="flex: 1; text-align: right;">Value</span>
+            </div>
+        `;
+        
+        let totalValue = 0;
+        let assetRowsHtml = '';
+
+        markets.forEach(coin => {
+            const rawAmount = balances[coin.symbol] || 0;
+            const amount = Math.max(0, rawAmount); 
+            
+            const value = amount * coin.price;
+            totalValue += value;
+            
+            if (hideZero && amount === 0) return;
+
+            // Notice: Removed onmouseover and onmouseout here to make it instant on mobile
+            assetRowsHtml += `
+                <div class="asset-row" onclick="showAssetActions('${coin.symbol}', '${coin.name}', ${amount}, ${value})" 
+                     style="cursor: pointer; padding: 15px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    
+                    <div class="asset-name" style="flex: 2; display: flex; align-items: center; gap: 12px;">
+                        <div class="market-icon" style="background:${coin.color}; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 18px; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">${coin.icon}</div> 
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-weight: 600; font-size: 14px; color: #fff;">${coin.name}</span>
+                            <span style="font-weight: 500; font-size: 12px; color: #888;">${coin.symbol}</span>
+                        </div>
+                    </div>
+                    
+                    <div style="flex: 1; text-align: right;">
+                        <div style="font-weight: 600; font-size: 14px; color: #fff;">${amount.toFixed(6)}</div>
+                    </div>
+                    
+                    <div style="flex: 1; text-align: right;">
+                        <div style="font-size: 14px; color: #888;">$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        if (assetRowsHtml === '') {
+            assetRowsHtml = `<div style="text-align: center; color: #666; padding: 40px 0;"><div style="font-size: 30px; margin-bottom: 10px;">📭</div><p style="font-size: 14px;">No active balances found.</p></div>`;
+        }
+
+        assetsCard.innerHTML = html + assetRowsHtml;
+        
+        const totalEl = document.getElementById('totalPortfolioValue');
+        if (totalEl) {
+            const safeTotal = Math.max(0, totalValue);
+            totalEl.textContent = `$${safeTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        }
+
+        const toggle = document.getElementById('hideZeroToggle');
+        if (toggle) {
+            toggle.addEventListener('change', (e) => {
+                localStorage.setItem('hideZeroBalances', e.target.checked);
+                fetchBalances(); 
+            });
+        }
+
+    } catch (error) { console.log("Balance fetch error:", error); }
+};
