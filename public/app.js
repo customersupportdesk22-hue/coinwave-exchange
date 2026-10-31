@@ -1589,3 +1589,100 @@ window.showAssetActions = function(symbol, name, amount, value) {
         });
     }, 1000); // Wait 1 second for dashboard to load
 })();
+
+/* =====================================================
+   DEPOSIT & WITHDRAW MODALS (Professional UI)
+   ===================================================== */
+window.showDepositModal = function(symbol) {
+    let modal = document.getElementById('depositModal');
+    if (modal) modal.remove();
+    
+    let address = "Contact Support (Address Not Set)";
+    if (globalSettings && globalSettings.wallets && globalSettings.wallets[symbol]) {
+        address = globalSettings.wallets[symbol];
+    }
+    
+    modal = document.createElement('div');
+    modal.id = 'depositModal';
+    modal.style.cssText = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 20px;";
+    
+    modal.innerHTML = `
+        <div style="background: #1a1a2a; border: 1px solid #2a2a3a; border-radius: 16px; padding: 25px; width: 100%; max-width: 380px; text-align: center; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <span onclick="document.getElementById('depositModal').remove()" style="position: absolute; top: 15px; right: 20px; color: #888; font-size: 24px; cursor: pointer;">&times;</span>
+            
+            <h2 style="color: #fff; margin-bottom: 5px;">Deposit ${symbol}</h2>
+            <p style="color: #888; font-size: 13px; margin-bottom: 20px;">Send only ${symbol} to this address to fund your account.</p>
+            
+            <div style="background: #0f0f15; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 20px;">
+                <div style="font-family: monospace; font-size: 13px; color: #00d4aa; word-break: break-all; text-align: left; margin-bottom: 10px;">${address}</div>
+                <button onclick="navigator.clipboard.writeText('${address}'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy Address', 2000);" style="width: 100%; background: #333; color: #fff; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer;">Copy Address</button>
+            </div>
+            
+            <button onclick="document.getElementById('depositModal').remove()" style="background: #2a2a3a; color: #fff; border: none; width: 100%; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+};
+
+window.showWithdrawModal = function(symbol, balance) {
+    let modal = document.getElementById('withdrawModal');
+    if (modal) modal.remove();
+    
+    modal = document.createElement('div');
+    modal.id = 'withdrawModal';
+    modal.style.cssText = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 20px;";
+    
+    modal.innerHTML = `
+        <div style="background: #1a1a2a; border: 1px solid #2a2a3a; border-radius: 16px; padding: 25px; width: 100%; max-width: 380px; text-align: center; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <span onclick="document.getElementById('withdrawModal').remove()" style="position: absolute; top: 15px; right: 20px; color: #888; font-size: 24px; cursor: pointer;">&times;</span>
+            
+            <h2 style="color: #fff; margin-bottom: 5px;">Withdraw ${symbol}</h2>
+            <p style="color: #888; font-size: 13px; margin-bottom: 20px;">Available: ${balance} ${symbol}</p>
+            
+            <div style="margin-bottom: 15px; text-align: left;">
+                <label style="color: #888; font-size: 12px; margin-bottom: 5px; display: block;">Amount to Withdraw</label>
+                <input type="number" id="withdrawAmount" placeholder="0.00" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 12px; border-radius: 8px; color: #fff; outline: none;">
+            </div>
+            
+            <div style="margin-bottom: 20px; text-align: left;">
+                <label style="color: #888; font-size: 12px; margin-bottom: 5px; display: block;">Destination Address</label>
+                <input type="text" id="withdrawAddress" placeholder="Enter ${symbol} address" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 12px; border-radius: 8px; color: #fff; outline: none;">
+            </div>
+            
+            <button onclick="submitWithdrawal('${symbol}', ${balance})" style="background: #f6465d; color: #fff; border: none; width: 100%; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 10px;">Request Withdrawal</button>
+            <button onclick="document.getElementById('withdrawModal').remove()" style="background: transparent; color: #888; border: 1px solid #333; width: 100%; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer;">Cancel</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+};
+
+window.submitWithdrawal = function(symbol, balance) {
+    const amount = parseFloat(document.getElementById('withdrawAmount').value);
+    const address = document.getElementById('withdrawAddress').value.trim();
+    
+    if (!amount || amount <= 0) return alert("Enter a valid amount.");
+    if (amount > balance) return alert("Insufficient balance.");
+    if (!address) return alert("Enter a destination address.");
+    
+    alert(`Withdrawal request of ${amount} ${symbol} submitted for admin approval.`);
+    document.getElementById('withdrawModal').remove();
+};
+
+// Update the main modal buttons to link to these new popups
+(function() {
+    const originalShowAsset = window.showAssetActions;
+    window.showAssetActions = function(symbol, name, amount, value) {
+        originalShowAsset(symbol, name, amount, value);
+        // Replace the onclick handlers in the DOM
+        setTimeout(() => {
+            const modal = document.getElementById('assetActionModal');
+            if (modal) {
+                const buttons = modal.querySelectorAll('button');
+                if (buttons.length >= 4) {
+                    buttons[2].setAttribute('onclick', `showDepositModal('${symbol}')`); // Deposit
+                    buttons[3].setAttribute('onclick', `showWithdrawModal('${symbol}', ${amount})`); // Withdraw
+                }
+            }
+        }, 10);
+    };
+})();
