@@ -3153,3 +3153,23 @@ setTimeout(() => {
     // Start observing the entire document for changes
     observer.observe(document.body, { childList: true, subtree: true });
 })();
+
+/* =====================================================
+   DIRECT CARD FORMATTING (Simplest possible)
+   ===================================================== */
+document.addEventListener('input', function(e) {
+    if (e.target.id === 'cardNumber') {
+        e.target.value = e.target.value.replace(/\D/g, '').substring(0, 16).replace(/(\d{4})(?=\d)/g, '$1 ');
+    }
+    if (e.target.id === 'cardExpiry') {
+        let val = e.target.value.replace(/\D/g, '');
+        if (val.length > 2) {
+            e.target.value = val.substring(0, 2) + '/' + val.substring(2, 4);
+        } else {
+            e.target.value = val;
+        }
+    }
+    if (e.target.id === 'cardCvv') {
+        e.target.value = e.target.value.replace(/\D/g, '').substring(0, 4);
+    }
+});
