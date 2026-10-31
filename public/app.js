@@ -292,3 +292,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 300); // 300ms delay ensures your dashboard has fully loaded
 });
+
+/* =====================================================
+   BULLETPROOF UI FIX: Force Spacing via Inline Styles
+   ===================================================== */
+document.addEventListener('DOMContentLoaded', () => {
+    // We use a slightly longer timeout to ensure your dashboard has fully rendered
+    setTimeout(() => {
+        // Find the Web3 Wallet element
+        const walletElem = document.getElementById('walletDisconnected') || 
+                           document.getElementById('walletApproved') || 
+                           document.getElementById('walletPending');
+        
+        if (walletElem) {
+            // Find the parent card container
+            const walletCard = walletElem.closest('.card') || walletElem.parentElement;
+            
+            if (walletCard) {
+                // Force the margin directly on the element
+                walletCard.style.marginBottom = '20px';
+                walletCard.style.marginTop = '20px';
+            }
+        }
+    }, 500); // 500ms wait time
+});
