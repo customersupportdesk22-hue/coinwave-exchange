@@ -3,56 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CoinWave Exchange - Buy & Sell Crypto</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <title>CoinWave - Auth Test</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Ticker -->
-    <div class="ticker-wrap">
-        <div class="ticker-move" id="ticker"></div>
-    </div>
-
     <!-- Navigation -->
     <nav>
         <div class="logo">🌊 CoinWave</div>
         <div class="nav-links">
-            <a href="#">Markets</a>
-            <a href="#">Trade</a>
-            <a href="#" onclick="showSection('login')">Login</a>
-            <a href="#" onclick="showSection('register')" class="btn-primary">Get Started</a>
+            <!-- These buttons trigger the popup -->
+            <a href="#" onclick="openModal('login')">Login</a>
+            <a href="#" onclick="openModal('register')" class="btn-primary">Get Started</a>
         </div>
     </nav>
 
-    <!-- Main Hero & Market Table -->
-    <main id="app">
+    <main>
         <div class="hero">
-            <h1>Buy & Sell Crypto in Minutes</h1>
-            <p>Join the world's largest digital asset exchange.</p>
-            <div class="hero-buttons">
-                <button class="btn-buy">Buy Crypto</button>
-                <button class="btn-sell">Sell Crypto</button>
-            </div>
-        </div>
-
-        <div class="market-section">
-            <div class="market-header">
-                <h2>Live Markets</h2>
-                <span class="live-indicator">● Live</span>
-            </div>
-            
-            <!-- Table Headers -->
-            <div class="market-table-header">
-                <span>#</span>
-                <span>Name</span>
-                <span style="text-align: right;">Price</span>
-                <span style="text-align: right;">24h Change</span>
-            </div>
-            
-            <!-- Market Rows go here -->
-            <div id="market-list" class="market-list"></div>
+            <h1>Registration & Login Test</h1>
+            <p>Click Get Started to open the form.</p>
         </div>
     </main>
+
+    <!-- THE POPUP MODAL -->
+    <div id="authModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            
+            <!-- Login Form -->
+            <div id="loginForm" style="display: none;">
+                <h2>Welcome Back</h2>
+                <input type="email" id="loginEmail" placeholder="Email Address" class="auth-input">
+                <input type="password" id="loginPassword" placeholder="Password" class="auth-input">
+                <button class="btn-primary auth-btn" onclick="handleLogin()">Log In</button>
+                <p class="switch-auth">No account? <a href="#" onclick="switchModal('register')">Sign Up</a></p>
+            </div>
+
+            <!-- Register Form -->
+            <div id="registerForm" style="display: none;">
+                <h2>Create Account</h2>
+                <input type="text" id="regName" placeholder="Full Name" class="auth-input">
+                <input type="text" id="regCountry" placeholder="Country" class="auth-input">
+                <input type="email" id="regEmail" placeholder="Email Address" class="auth-input">
+                <input type="password" id="regPassword" placeholder="Password" class="auth-input">
+                <button class="btn-primary auth-btn" onclick="handleRegister()">Register</button>
+                <p class="switch-auth">Have an account? <a href="#" onclick="switchModal('login')">Log In</a></p>
+            </div>
+        </div>
+    </div>
 
     <script src="app.js"></script>
 </body>

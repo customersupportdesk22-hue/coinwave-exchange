@@ -104,3 +104,31 @@ main { padding: 30px; max-width: 1200px; margin: 0 auto; }
     .market-price { font-size: 13px; }
     .market-change { font-size: 12px; }
 }
+
+/* MODAL STYLES */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+.modal-overlay.active { display: flex; }
+.modal-content {
+    background: var(--bg-card);
+    padding: 30px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 400px;
+    position: relative;
+    border: 1px solid var(--border);
+}
+.close-btn { position: absolute; top: 10px; right: 15px; font-size: 24px; color: var(--text-muted); cursor: pointer; }
+.modal-content h2 { color: white; margin-bottom: 20px; }
+.auth-input { width: 100%; padding: 12px; margin-bottom: 15px; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 8px; color: white; outline: none; }
+.auth-input:focus { border-color: var(--accent); }
+.auth-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; background: var(--accent); color: black; }
+.switch-auth { text-align: center; margin-top: 15px; font-size: 14px; color: var(--text-muted); }
+.switch-auth a { color: var(--accent); text-decoration: none; }
