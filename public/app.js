@@ -633,3 +633,57 @@ document.addEventListener('change', (e) => {
         updateAdminAddressDisplay();
     }
 });
+
+/* =====================================================
+   PROFESSIONAL UI UPGRADE: Deposit Address & Copy Button
+   ===================================================== */
+// This overrides the previous function with a professional exchange UI
+window.updateAdminAddressDisplay = function() {
+    const addressDiv = document.getElementById('adminWalletDisplay');
+    if (!addressDiv) return;
+
+    if (currentTradeMode === 'sell' && globalSettings && globalSettings.wallets) {
+        const coin = document.getElementById('tradeCoin').value;
+        const address = globalSettings.wallets[coin];
+        
+        if (address) {
+            addressDiv.style.display = 'block';
+            addressDiv.innerHTML = `
+                <p style="font-size: 13px; color: #aaa; margin-bottom: 5px; font-weight: 600;">
+                    ${coin} Deposit Address
+                </p>
+                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                    <div style="flex: 1; background: #0f0f15; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 13px; word-break: break-all; border: 1px solid #333; color: #fff; display: flex; align-items: center;">
+                        ${address}
+                    </div>
+                    <button onclick="copyDepositAddress('${address}', this)" style="background: #00d4aa; color: #000; border: none; padding: 0 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">
+                        Copy
+                    </button>
+                </div>
+                <p style="font-size: 11px; color: #e74c3c; line-height: 1.4;">
+                    ⚠️ Only send ${coin} to this address. Sending any other coin or using the wrong network will result in permanent loss of funds.
+                </p>
+            `;
+        } else {
+            addressDiv.style.display = 'block';
+            addressDiv.innerHTML = `<p style="font-size: 13px; color: #e74c3c; padding: 10px; background: #2a1a1a; border-radius: 6px;">Deposit address for ${coin} is currently unavailable. Please contact support.</p>`;
+        }
+    } else {
+        addressDiv.style.display = 'none';
+    }
+};
+
+// Copy to clipboard function
+window.copyDepositAddress = function(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.style.background = '#2ecc71';
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.background = '#00d4aa';
+        }, 2000);
+    }).catch(err => {
+        alert('Failed to copy address.');
+    });
+};
