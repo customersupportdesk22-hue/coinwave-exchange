@@ -1464,3 +1464,60 @@ window.showAssetActions = function(symbol, name, amount, value) {
     window._currentActionSymbol = symbol;
     document.body.appendChild(modal);
 };
+
+/* =====================================================
+   BULLETPROOF ISOLATED MODAL FIX
+   ===================================================== */
+(function() {
+    // 1. Force define the modal function
+    window.showAssetActions = function(symbol, name, amount, value) {
+        let modal = document.getElementById('assetActionModal');
+        if (modal) modal.remove(); 
+        
+        modal = document.createElement('div');
+        modal.id = 'assetActionModal';
+        modal.style.cssText = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 20px;";
+        
+        modal.innerHTML = `
+            <div style="background: #1a1a2a; border: 1px solid #2a2a3a; border-radius: 16px; padding: 25px; width: 100%; max-width: 380px; text-align: center; position: relative;">
+                <span onclick="document.getElementById('assetActionModal').remove()" style="position: absolute; top: 15px; right: 20px; color: #888; font-size: 24px; cursor: pointer;">&times;</span>
+                <div style="width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 15px; background: #333; display: flex; align-items: center; justify-content: center; font-size: 30px; color: white;">${name.charAt(0)}</div>
+                <h2 style="color: #fff; margin-bottom: 5px;">${name} (${symbol})</h2>
+                <p style="color: #00d4aa; font-weight: bold; margin-bottom: 20px;">Balance: ${amount} ${symbol}</p>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="executeAssetAction('buy')" style="flex: 1; background: #0ecb51; color: #fff; border: none; padding: 14px; border-radius: 8px; font-weight: bold;">Buy</button>
+                    <button onclick="executeAssetAction('sell')" style="flex: 1; background: #f6465d; color: #fff; border: none; padding: 14px; border-radius: 8px; font-weight: bold;">Sell</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        window._currentActionSymbol = symbol;
+    };
+
+    // 2. Force define the action executor
+    window.executeAssetAction = function(mode) {
+        document.getElementById('assetActionModal').remove();
+        requireAuth('tradeView', mode);
+        setTimeout(() => { 
+            document.getElementById('tradeCoin').value = window._currentActionSymbol; 
+            calcTrade(); 
+        }, 100);
+    };
+    
+    // 3. Attach click listeners directly to all existing rows
+    setTimeout(() => {
+        document.querySelectorAll('.asset-row').forEach(row => {
+            row.onclick = null; // Remove old broken click
+            row.style.cursor = 'pointer';
+            row.addEventListener('click', function() {
+                const text = this.innerText.split('\n');
+                const nameSymbol = this.querySelector('.asset-name span').innerText;
+                const symbol = nameSymbol.match(/\((.*?)\)/)[1];
+                const name = nameSymbol.split(' (')[0];
+                const amount = parseFloat(this.querySelector('.asset-amount').innerText);
+                const value = parseFloat(this.querySelector('.asset-value').innerText.replace('$', '').replace(',', ''));
+                window.showAssetActions(symbol, name, amount, value);
+            });
+        });
+    }, 1000);
+})();
