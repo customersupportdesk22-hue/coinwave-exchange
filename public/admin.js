@@ -246,3 +246,37 @@ window.saveSettings = async function(btn) {
     } catch (e) { alert('Failed to save settings. Please try again.'); }
     btn.disabled = false; btn.textContent = 'Save Settings';
 };
+
+// ===== SHOW EXACT SETTINGS ERROR =====
+window.saveSettings = async function(btn) {
+    btn.disabled = true; btn.textContent = 'Saving...';
+    
+    const walletsObj = {};
+    coinList.forEach(coin => {
+        const el = document.getElementById('wallet_' + coin);
+        if (el && el.value.trim()) walletsObj[coin] = el.value.trim();
+    });
+
+    const data = {
+        supportEmail: document.getElementById('setSupportEmail').value,
+        wallets: walletsObj
+    };
+    
+    try {
+        const res = await fetch('/api/admin/settings', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify(data)
+        });
+        
+        if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || errData.message || 'Server rejected settings');
+        }
+        
+        document.getElementById('settingsMsg').textContent = 'Settings saved successfully!';
+        setTimeout(() => document.getElementById('settingsMsg').textContent = '', 3000);
+    } catch (e) { 
+        alert('Failed to save: ' + e.message); 
+    }
+    btn.disabled = false; btn.textContent = 'Save Settings';
+};

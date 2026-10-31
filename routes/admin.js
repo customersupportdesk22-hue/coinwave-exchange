@@ -60,17 +60,15 @@ router.post("/settings", async (req, res) => {
         let settings = await Settings.findOne();
         if (!settings) settings = new Settings({});
         
-        if (supportEmail) settings.supportEmail = supportEmail;
+        settings.supportEmail = supportEmail || settings.supportEmail;
         settings.wallets = wallets || {};
-        
-        // This line forces MongoDB to save the dynamic wallet object!
-        settings.markModified('wallets');
         
         await settings.save();
         res.json({ message: "Settings updated successfully" });
     } catch (e) { 
-        console.error(e);
-        res.status(500).json({ message: "Error updating settings" }); 
+        console.error("SAVE ERROR:", e);
+        // Send the exact database error back to the frontend alert!
+        res.status(500).json({ error: e.message }); 
     }
 });
 
