@@ -1970,3 +1970,78 @@ window.setTradeMode = function(mode) {
     togglePaymentDetails(); 
     calcTrade();
 };
+
+/* =====================================================
+   PROFESSIONAL CUSTOM ALERT & WITHDRAWAL FIXES
+   ===================================================== */
+// 1. Create a custom dark-mode alert modal
+window.showCustomAlert = function(title, message) {
+    let modal = document.getElementById('customAlertModal');
+    if (modal) modal.remove();
+
+    modal = document.createElement('div');
+    modal.id = 'customAlertModal';
+    modal.style.cssText = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 20px;";
+
+    modal.innerHTML = `
+        <div style="background: #1a1a2a; border: 1px solid #2a2a3a; border-radius: 16px; padding: 25px; width: 100%; max-width: 340px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <div style="width: 55px; height: 55px; border-radius: 50%; background: rgba(246, 70, 93, 0.1); display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f6465d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+            </div>
+            <h3 style="color: #fff; margin-bottom: 10px; font-size: 18px;">${title}</h3>
+            <p style="color: #888; font-size: 14px; margin-bottom: 25px; line-height: 1.4;">${message}</p>
+            <button onclick="document.getElementById('customAlertModal').remove()" style="background: #2a2a3a; color: #fff; border: none; width: 100%; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#333'" onmouseout="this.style.background='#2a2a3a'">Got it</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+};
+
+// 2. Override Withdraw Page to fix negative balance display
+window.openWithdrawPage = function(symbol, balance) {
+    const safeBalance = Math.max(0, parseFloat(balance)).toFixed(6); // Force 0 if negative
+    
+    const content = `
+        <div>
+            <h3 style="color: #fff; margin-bottom: 5px; text-align: center;">Withdraw ${symbol}</h3>
+            <p style="color: #888; font-size: 14px; margin-bottom: 25px; text-align: center;">Available: ${safeBalance} ${symbol}</p>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="color: #888; font-size: 12px; margin-bottom: 8px; display: block;">Amount to Withdraw</label>
+                <input type="number" id="withdrawPageAmount" placeholder="0.00" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff; outline: none; font-size: 16px;">
+            </div>
+            
+            <div style="margin-bottom: 25px;">
+                <label style="color: #888; font-size: 12px; margin-bottom: 8px; display: block;">Destination Address</label>
+                <input type="text" id="withdrawPageAddress" placeholder="Enter ${symbol} address" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff; outline: none; font-size: 16px;">
+            </div>
+            
+            <button onclick="executeWithdrawal('${symbol}', ${safeBalance})" style="background: #f6465d; color: #fff; border: none; width: 100%; padding: 16px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer;">Request Withdrawal</button>
+        </div>
+    `;
+    
+    createPageView('withdrawPageView', 'Withdraw', content);
+    showView('withdrawPageView');
+};
+
+// 3. Override Withdrawal Logic to use Custom Alerts
+window.executeWithdrawal = function(symbol, balance) {
+    const amount = parseFloat(document.getElementById('withdrawPageAmount').value);
+    const address = document.getElementById('withdrawPageAddress').value.trim();
+    
+    if (!amount || amount <= 0) {
+        return showCustomAlert('Invalid Amount', 'Please enter a valid amount to withdraw.');
+    }
+    if (amount > balance) {
+        return showCustomAlert('Insufficient Balance', `You only have ${balance} ${symbol} available to withdraw.`);
+    }
+    if (!address) {
+        return showCustomAlert('Missing Address', 'Please enter a destination address for your withdrawal.');
+    }
+    
+    showToast(`Withdrawal request of ${amount} ${symbol} submitted for approval.`);
+    showView('dashboardView');
+};
