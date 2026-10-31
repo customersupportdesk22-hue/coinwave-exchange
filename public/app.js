@@ -3680,3 +3680,194 @@ window.fetchBalances = async function() {
         }
     } catch (error) { console.log("Balance fetch error:", error); }
 };
+
+/* =====================================================
+   FINAL MASTER FIX: Buy Payment, Asset Clicks, & Withdraw
+   ===================================================== */
+
+// 1. FIX THE BUY PAYMENT METHOD (Shows Admin Details)
+window.togglePaymentDetails = function() {
+    const method = document.getElementById('tradeMethod').value;
+    const container = document.getElementById('paymentDetailsContainer');
+    const cardInputs = document.getElementById('cardDetailsInputs');
+    const paypalInputs = document.getElementById('paypalDetailsInputs');
+    const bankInputs = document.getElementById('bankDetailsInputs');
+
+    if(cardInputs) cardInputs.style.display = 'none';
+    if(paypalInputs) paypalInputs.style.display = 'none';
+    if(bankInputs) bankInputs.style.display = 'none';
+
+    const oldAdminBox = document.getElementById('adminFiatDetails');
+    if (oldAdminBox) oldAdminBox.remove();
+
+    if (currentTradeMode === 'buy') {
+        // BUY MODE: Show Admin's Details
+        if (method === 'Bank Transfer') {
+            const bankDetails = (globalSettings && globalSettings.adminBankDetails) ? globalSettings.adminBankDetails : "Bank details not set. Please contact support.";
+            const adminBox = document.createElement('div');
+            adminBox.id = 'adminFiatDetails';
+            adminBox.innerHTML = `
+                <div style="background: #1a1a2a; border: 1px solid #333; padding: 15px; border-radius: 8px; margin-top: 10px;">
+                    <p style="color: #00d4aa; font-size: 12px; font-weight: bold; margin-bottom: 5px;">Send Fiat to this Bank Account:</p>
+                    <p style="color: #fff; font-size: 14px; white-space: pre-wrap; font-family: monospace;">${bankDetails}</p>
+                </div>
+            `;
+            if(container) container.appendChild(adminBox);
+        } else if (method === 'PayPal') {
+            const paypalEmail = (globalSettings && globalSettings.adminPaypalEmail) ? globalSettings.adminPaypalEmail : "PayPal not set. Please contact support.";
+            const adminBox = document.createElement('div');
+            adminBox.id = 'adminFiatDetails';
+            adminBox.innerHTML = `
+                <div style="background: #1a1a2a; border: 1px solid #333; padding: 15px; border-radius: 8px; margin-top: 10px;">
+                    <p style="color: #00d4aa; font-size: 12px; font-weight: bold; margin-bottom: 5px;">Send Fiat to this PayPal Email:</p>
+                    <p style="color: #fff; font-size: 14px; font-family: monospace;">${paypalEmail}</p>
+                </div>
+            `;
+            if(container) container.appendChild(adminBox);
+        } else if (method === 'Credit Card') {
+            if(cardInputs) cardInputs.style.display = 'block';
+        }
+    } else {
+        // SELL MODE: Customer provides payout details
+        if (method === 'Credit Card') {
+            if(cardInputs) cardInputs.style.display = 'block';
+        } else if (method === 'PayPal') {
+            if(paypalInputs) paypalInputs.style.display = 'block';
+        } else if (method === 'Bank Transfer') {
+            if(bankInputs) bankInputs.style.display = 'block';
+        }
+    }
+};
+
+// 2. FIX ASSET CLICKS (Inline onclick with window. prefix)
+window.fetchBalances = async function() {
+    if (!currentUser) return;
+    try {
+        const res = await fetch(`/api/user/${currentUser.email}/balances`);
+        const balances = await res.json();
+        
+        const assetsHeader = Array.from(document.querySelectorAll('h3')).find(el => el.textContent.trim() === 'Your Assets');
+        if (!assetsHeader) return;
+        const assetsCard = assetsHeader.closest('.assets-section') || assetsHeader.parentElement;
+        
+        let hideZero = localStorage.getItem('hideZeroBalances') === 'true';
+
+        let html = `
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; font-size: 18px; font-weight: 600;">Your Assets</h3>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;">
+                    <span style="font-size: 13px; color: #aaa; font-weight: 500;">Hide Zero</span>
+                    <div style="position: relative; width: 44px; height: 24px;">
+                        <input type="checkbox" id="hideZeroToggle" ${hideZero ? 'checked' : ''} style="opacity: 0; width: 0; height: 0; position: absolute;">
+                        <span id="toggleTrack" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: ${hideZero ? '#00d4aa' : '#3a3a4a'}; border-radius: 24px; transition: background-color 0.3s ease;"></span>
+                        <span id="toggleThumb" style="position: absolute; height: 20px; width: 20px; left: ${hideZero ? '21px' : '2px'}; bottom: 2px; background-color: #fff; border-radius: 50%; transition: left 0.3s ease;"></span>
+                    </div>
+                </label>
+            </div>
+            <div class="asset-table-header" style="display: flex; justify-content: space-between; padding: 0 10px 10px 10px; border-bottom: 1px solid #2a2a3a; font-size: 12px; color: #888; text-transform: uppercase;">
+                <span style="flex: 2;">Asset</span>
+                <span style="flex: 1; text-align: right;">Amount</span>
+                <span style="flex: 1; text-align: right;">Value</span>
+            </div>
+            <div id="assetsListContainer" class="${hideZero ? 'hide-zeros' : ''}" style="display: flex; flex-direction: column;">
+        `;
+        
+        let totalValue = 0;
+        let assetRowsHtml = '';
+
+        markets.forEach(coin => {
+            const rawAmount = balances[coin.symbol] || 0;
+            const amount = Math.max(0, rawAmount); 
+            const value = amount * coin.price;
+            totalValue += value;
+            
+            const rowClass = amount === 0 ? 'asset-row zero-row' : 'asset-row';
+
+            assetRowsHtml += `
+                <div class="${rowClass}" onclick="window.showAssetActions('${coin.symbol}', '${coin.name}', ${amount}, ${value})" 
+                     style="cursor: pointer; padding: 15px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <div class="asset-name" style="flex: 2; display: flex; align-items: center; gap: 12px; pointer-events: none;">
+                        <div class="market-icon" style="background:${coin.color}; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 18px; color: white;">${coin.icon}</div> 
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-weight: 600; font-size: 14px; color: #fff;">${coin.name}</span>
+                            <span style="font-weight: 500; font-size: 12px; color: #888;">${coin.symbol}</span>
+                        </div>
+                    </div>
+                    <div style="flex: 1; text-align: right; pointer-events: none;">
+                        <div style="font-weight: 600; font-size: 14px; color: #fff;">${amount.toFixed(6)}</div>
+                    </div>
+                    <div style="flex: 1; text-align: right; pointer-events: none;">
+                        <div style="font-size: 14px; color: #888;">$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += assetRowsHtml + `</div>`;
+        assetsCard.innerHTML = html;
+        
+        const totalEl = document.getElementById('totalPortfolioValue');
+        if (totalEl) totalEl.textContent = `$${Math.max(0, totalValue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+        const toggle = document.getElementById('hideZeroToggle');
+        if (toggle) {
+            toggle.addEventListener('change', (e) => {
+                const isChecked = e.target.checked;
+                localStorage.setItem('hideZeroBalances', isChecked);
+                const listContainer = document.getElementById('assetsListContainer');
+                if (isChecked) listContainer.classList.add('hide-zeros');
+                else listContainer.classList.remove('hide-zeros');
+                document.getElementById('toggleTrack').style.backgroundColor = isChecked ? '#00d4aa' : '#3a3a4a';
+                document.getElementById('toggleThumb').style.left = isChecked ? '21px' : '2px';
+            });
+        }
+    } catch (error) { console.log("Balance fetch error:", error); }
+};
+
+// 3. FIX ASSET MODAL POPUP
+window.showAssetActions = function(symbol, name, amount, value) {
+    let modal = document.getElementById('assetActionModal');
+    if (modal) modal.remove(); 
+
+    modal = document.createElement('div');
+    modal.id = 'assetActionModal';
+    modal.style.cssText = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 20px;";
+    modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+
+    modal.innerHTML = `
+        <div style="background: #1a1a2a; border: 1px solid #2a2a3a; border-radius: 16px; padding: 30px 25px; width: 100%; max-width: 400px; text-align: center; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <span onclick="document.getElementById('assetActionModal').remove()" style="position: absolute; top: 15px; right: 20px; color: #888; font-size: 24px; cursor: pointer; font-weight: bold;">&times;</span>
+            
+            <div id="assetModalIcon" style="width: 70px; height: 70px; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 35px; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.3);"></div>
+            
+            <h2 id="assetModalTitle" style="margin: 0 0 5px 0; color: #fff; font-size: 22px; font-weight: 700;"></h2>
+            
+            <div style="margin-bottom: 25px; margin-top: 15px;">
+                <p style="color: #888; font-size: 13px; margin-bottom: 5px;">Total Balance</p>
+                <h3 id="assetModalBalance" style="color: #fff; margin: 0; font-size: 18px;"></h3>
+                <p id="assetModalValue" style="color: #00d4aa; margin: 5px 0 0 0; font-size: 14px; font-weight: 600;"></p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <button onclick="executeAssetAction('buy')" style="background: rgba(14, 203, 81, 0.1); color: #0ecb51; border: 1px solid #0ecb51; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer;">Buy</button>
+                <button onclick="executeAssetAction('sell')" style="background: rgba(246, 70, 93, 0.1); color: #f6465d; border: 1px solid #f6465d; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer;">Sell</button>
+                
+                <button onclick="document.getElementById('assetActionModal').remove(); openDepositPage('${symbol}');" style="background: #2a2a3a; color: #fff; border: none; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer;">Deposit</button>
+                
+                <button onclick="document.getElementById('assetActionModal').remove(); window.showNewWithdrawPage('${symbol}', ${amount});" style="background: #2a2a3a; color: #fff; border: none; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer;">Withdraw</button>
+            </div>
+        </div>
+    `;
+
+    const coin = markets.find(c => c.symbol === symbol);
+    if(coin) {
+        document.getElementById('assetModalIcon').style.background = coin.color;
+        document.getElementById('assetModalIcon').innerHTML = coin.icon;
+    }
+    document.getElementById('assetModalTitle').textContent = name;
+    document.getElementById('assetModalBalance').textContent = `${amount.toFixed(6)} ${symbol}`;
+    document.getElementById('assetModalValue').textContent = `≈ $${value.toFixed(2)} USD`;
+    
+    window._currentActionSymbol = symbol;
+    document.body.appendChild(modal);
+};
