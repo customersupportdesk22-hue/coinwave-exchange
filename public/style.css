@@ -34,31 +34,105 @@ nav { display: flex; justify-content: space-between; align-items: center; paddin
 .app-view { max-width: 1200px; margin: 0 auto; padding: 30px; animation: fadeIn 0.3s ease; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-/* Hero */
-.hero { text-align: center; padding: 60px 10px; }
-.hero h1 { font-size: 42px; font-weight: 900; margin-bottom: 15px; color: white; letter-spacing: -1px; line-height: 1.1; }
-.hero p { font-size: 18px; color: var(--text-muted); margin-bottom: 30px; }
-.hero-buttons { display: flex; justify-content: center; gap: 15px; }
-.btn-buy, .btn-sell { padding: 14px 30px; border-radius: 8px; font-size: 15px; font-weight: 700; border: none; cursor: pointer; color: white; transition: 0.2s; }
-.btn-buy { background: var(--success); }
-.btn-sell { background: var(--danger); }
+/* =========================================
+   PREMIUM HERO SECTION
+   ========================================= */
+.hero-container { 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    gap: 50px; 
+    padding: 60px 10px; 
+}
 
-/* Markets Table */
-.market-section { margin-top: 40px; }
+.hero-content { flex: 1; text-align: left; }
+
+.trust-badge {
+    display: inline-block; background: rgba(14, 203, 129, 0.1); color: var(--success);
+    padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-bottom: 20px;
+    border: 1px solid rgba(14, 203, 129, 0.2);
+}
+
+.hero-title { 
+    font-size: 56px; 
+    font-weight: 900; 
+    line-height: 1.1; 
+    letter-spacing: -1.5px; 
+    margin-bottom: 20px; 
+    color: white; 
+}
+
+.gradient-text { 
+    background: linear-gradient(90deg, #fcd535, #0ecb81); 
+    -webkit-background-clip: text; 
+    -webkit-text-fill-color: transparent; 
+}
+
+.hero-subtitle { 
+    font-size: 18px; 
+    color: var(--text-muted); 
+    margin-bottom: 35px; 
+    line-height: 1.5; 
+    max-width: 500px; 
+}
+
+.hero-cta { display: flex; gap: 15px; }
+
+.btn-primary-large { 
+    background: var(--accent); color: black; border: none; 
+    padding: 16px 32px; border-radius: 8px; font-size: 16px; font-weight: 800; 
+    cursor: pointer; transition: 0.2s; 
+}
+.btn-primary-large:hover { background: var(--accent-hover); transform: translateY(-2px); }
+
+.btn-outline-large { 
+    background: transparent; color: white; border: 1px solid var(--border); 
+    padding: 16px 32px; border-radius: 8px; font-size: 16px; font-weight: 700; 
+    cursor: pointer; transition: 0.2s; 
+}
+.btn-outline-large:hover { border-color: var(--text-muted); background: var(--bg-card); }
+
+/* Floating Visual Card */
+.hero-visual { flex: 1; position: relative; display: flex; justify-content: center; }
+.floating-card { 
+    background: linear-gradient(145deg, #1e2329, #12151e); 
+    border: 1px solid var(--border); 
+    padding: 25px; border-radius: 20px; 
+    width: 100%; max-width: 350px; 
+    box-shadow: 0 30px 60px rgba(0,0,0,0.6); 
+    position: relative;
+    animation: float 4s ease-in-out infinite;
+}
+@keyframes float { 0% { transform: translateY(0); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0); } }
+
+.card-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+.card-pair { color: white; font-weight: 700; font-size: 16px; }
+.card-change { color: var(--success); font-weight: 600; font-size: 14px; }
+.card-price { color: white; font-size: 32px; font-weight: 900; margin-bottom: 25px; letter-spacing: -1px; }
+
+.card-chart { display: flex; align-items: flex-end; gap: 8px; height: 100px; }
+.chart-bar { flex: 1; border-radius: 4px; }
+.chart-bar.green { background: var(--success); }
+.chart-bar.red { background: var(--danger); }
+
+/* =========================================
+   MARKETS & REST OF UI
+   ========================================= */
+.market-section { margin-top: 20px; }
 .market-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-.market-header h2 { font-size: 20px; color: white; }
+.market-header h2 { font-size: 24px; color: white; font-weight: 800; }
 .live-indicator { color: var(--success); font-size: 12px; font-weight: bold; }
-.market-table-header { display: grid; grid-template-columns: 30px 2fr 1fr 1fr; font-size: 12px; color: var(--text-muted); padding: 12px 0; border-bottom: 1px solid var(--border); font-weight: 600; }
+.market-table-header { display: grid; grid-template-columns: 30px 2fr 1fr 1fr; font-size: 12px; color: var(--text-muted); padding: 15px 0; border-bottom: 1px solid var(--border); font-weight: 600; }
 .market-list { display: flex; flex-direction: column; }
-.market-row { display: grid; grid-template-columns: 30px 2fr 1fr 1fr; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--border); transition: background 0.2s; cursor: pointer; }
+.market-row { display: grid; grid-template-columns: 30px 2fr 1fr 1fr; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--border); transition: background 0.2s; cursor: pointer; }
 .market-row:hover { background: var(--bg-card); border-radius: 8px;}
-.market-rank { color: var(--text-muted); font-size: 13px; }
+.market-rank { color: var(--text-muted); font-size: 14px; }
 .market-name-col { display: flex; align-items: center; gap: 12px; }
-.market-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; color: white; flex-shrink: 0;}
-.market-name-text { font-size: 15px; font-weight: 700; color: white; }
+.market-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; color: white; flex-shrink: 0;}
+.market-name-text { font-size: 16px; font-weight: 700; color: white; }
 .market-symbol-text { font-size: 12px; color: var(--text-muted); }
-.market-price { font-size: 15px; font-weight: 700; color: white; text-align: right; }
-.market-change { font-size: 13px; font-weight: 600; text-align: right; }
+.market-price { font-size: 16px; font-weight: 700; color: white; text-align: right; }
+.market-change { font-size: 14px; font-weight: 600; text-align: right; }
 .market-change.up { color: var(--success); }
 .market-change.down { color: var(--danger); }
 
@@ -81,23 +155,15 @@ nav { display: flex; justify-content: space-between; align-items: center; paddin
 .portfolio-header { margin-bottom: 40px; }
 .portfolio-header p { color: var(--text-muted); font-size: 14px; margin-bottom: 10px; }
 .portfolio-header h1 { color: white; font-size: 48px; font-weight: 900; }
-
-/* Professional Quick Actions */
 .quick-actions { display: flex; gap: 20px; margin-bottom: 30px; }
 .action-btn { display: flex; align-items: center; gap: 10px; background: var(--bg-card); border: 1px solid var(--border); padding: 15px 25px; border-radius: 12px; cursor: pointer; transition: 0.2s; flex: 1; justify-content: center;}
 .action-btn:hover { border-color: var(--accent); background: var(--bg-dark); }
 .action-svg { width: 20px; height: 20px; stroke: var(--text-main); }
 .action-btn span { font-size: 15px; font-weight: 600; color: var(--text-main); }
-
-/* Prominent Buy/Sell Buttons */
 .trade-buttons-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 40px; }
 .btn-buy-large, .btn-sell-large { padding: 20px; border: none; border-radius: 12px; font-size: 18px; font-weight: 800; cursor: pointer; color: white; transition: 0.2s; }
 .btn-buy-large { background: var(--success); }
-.btn-buy-large:hover { background: #0baf70; }
 .btn-sell-large { background: var(--danger); }
-.btn-sell-large:hover { background: #d93c50; }
-
-/* Assets */
 .assets-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
 .section-header h3 { color: white; font-size: 18px; }
@@ -131,16 +197,22 @@ nav { display: flex; justify-content: space-between; align-items: center; paddin
     .nav-links { gap: 10px; }
     .nav-links a { font-size: 13px; }
     .app-view { padding: 20px 15px; }
-    .hero h1 { font-size: 32px; }
-    .hero-buttons { flex-direction: column; }
+    
+    /* Mobile Hero Adjustments */
+    .hero-container { flex-direction: column; text-align: center; padding: 40px 10px; gap: 40px; }
+    .hero-content { text-align: center; }
+    .hero-title { font-size: 38px; }
+    .hero-subtitle { margin: 0 auto 30px auto; font-size: 16px; }
+    .hero-cta { justify-content: center; flex-direction: column; width: 100%; }
+    .btn-primary-large, .btn-outline-large { width: 100%; }
+    
     .market-table-header, .market-row { grid-template-columns: 20px 1.5fr 1fr 1fr; }
-    .market-name-text { font-size: 13px; }
-    .market-price { font-size: 13px; }
+    .market-name-text { font-size: 14px; }
+    .market-price { font-size: 14px; }
     
     .quick-actions { flex-direction: column; gap: 10px; }
     .portfolio-header h1 { font-size: 36px; }
     .trade-buttons-grid { grid-template-columns: 1fr; }
-    
     .trade-layout { flex-direction: column; align-items: center; }
     .trade-chart-panel { width: 100%; height: 300px; }
     .input-row { flex-direction: column; gap: 0; }

@@ -17,14 +17,39 @@
 
     <!-- GUEST HOMEPAGE -->
     <main id="guestView" class="app-view">
-        <div class="hero">
-            <h1>Buy & Sell Crypto in Minutes</h1>
-            <p>Join the world's largest digital asset exchange.</p>
-            <div class="hero-buttons">
-                <button class="btn-buy" onclick="requireAuth('trade', 'buy')">Buy Crypto</button>
-                <button class="btn-sell" onclick="requireAuth('trade', 'sell')">Sell Crypto</button>
+        <div class="hero-container">
+            <!-- Left Side: Text -->
+            <div class="hero-content">
+                <div class="trust-badge">🛡️ Trusted by 10M+ users globally</div>
+                <h1 class="hero-title">Buy & Sell Crypto<br><span class="gradient-text">Like a Pro.</span></h1>
+                <p class="hero-subtitle">Trade over 500+ cryptocurrencies with the lowest fees and lightning-fast execution.</p>
+                
+                <div class="hero-cta">
+                    <button class="btn-primary-large" onclick="requireAuth('trade', 'buy')">Get Started</button>
+                    <button class="btn-outline-large" onclick="showView('guestView')">View Markets</button>
+                </div>
+            </div>
+
+            <!-- Right Side: Floating Visual -->
+            <div class="hero-visual">
+                <div class="floating-card">
+                    <div class="card-header">
+                        <span class="card-pair">BTC / USDT</span>
+                        <span class="card-change">+2.48%</span>
+                    </div>
+                    <div class="card-price">$85,245.32</div>
+                    <div class="card-chart">
+                        <div class="chart-bar green" style="height: 40%;"></div>
+                        <div class="chart-bar green" style="height: 60%;"></div>
+                        <div class="chart-bar red" style="height: 30%;"></div>
+                        <div class="chart-bar green" style="height: 80%;"></div>
+                        <div class="chart-bar green" style="height: 100%;"></div>
+                        <div class="chart-bar green" style="height: 95%;"></div>
+                    </div>
+                </div>
             </div>
         </div>
+
         <div class="market-section">
             <div class="market-header"><h2>Live Markets</h2><span class="live-indicator">● Live</span></div>
             <div class="market-table-header"><span>#</span><span>Name</span><span style="text-align: right;">Price</span><span style="text-align: right;">24h Change</span></div>
@@ -65,7 +90,6 @@
                 <h1 id="totalPortfolioValue">$0.00</h1>
             </div>
             
-            <!-- Quick Actions with SVG Icons -->
             <div class="quick-actions">
                 <div class="action-btn" onclick="showToast('Deposit coming soon')">
                     <svg class="action-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
@@ -77,32 +101,17 @@
                 </div>
             </div>
 
-            <!-- Prominent Buy/Sell Buttons -->
             <div class="trade-buttons-grid">
                 <button class="btn-buy-large" onclick="requireAuth('trade', 'buy')">Buy</button>
                 <button class="btn-sell-large" onclick="requireAuth('trade', 'sell')">Sell</button>
             </div>
 
-            <!-- Assets List -->
             <div class="assets-section">
                 <div class="section-header"><h3>Your Assets</h3></div>
                 <div class="asset-table-header"><span>Asset</span><span style="text-align: right;">Amount</span><span style="text-align: right;">Value</span></div>
-                
-                <div class="asset-row">
-                    <div class="asset-name"><div class="market-icon" style="background:#f7931a;">₿</div> Bitcoin (BTC)</div>
-                    <div class="asset-amount" id="balance-BTC">0.0000</div>
-                    <div class="asset-value" id="value-BTC">$0.00</div>
-                </div>
-                <div class="asset-row">
-                    <div class="asset-name"><div class="market-icon" style="background:#627eea;">Ξ</div> Ethereum (ETH)</div>
-                    <div class="asset-amount" id="balance-ETH">0.0000</div>
-                    <div class="asset-value" id="value-ETH">$0.00</div>
-                </div>
-                <div class="asset-row">
-                    <div class="asset-name"><div class="market-icon" style="background:#26a17b;">₮</div> Tether (USDT)</div>
-                    <div class="asset-amount" id="balance-USDT">0.0000</div>
-                    <div class="asset-value" id="value-USDT">$0.00</div>
-                </div>
+                <div class="asset-row"><div class="asset-name"><div class="market-icon" style="background:#f7931a;">₿</div> Bitcoin (BTC)</div><div class="asset-amount" id="balance-BTC">0.0000</div><div class="asset-value" id="value-BTC">$0.00</div></div>
+                <div class="asset-row"><div class="asset-name"><div class="market-icon" style="background:#627eea;">Ξ</div> Ethereum (ETH)</div><div class="asset-amount" id="balance-ETH">0.0000</div><div class="asset-value" id="value-ETH">$0.00</div></div>
+                <div class="asset-row"><div class="asset-name"><div class="market-icon" style="background:#26a17b;">₮</div> Tether (USDT)</div><div class="asset-amount" id="balance-USDT">0.0000</div><div class="asset-value" id="value-USDT">$0.00</div></div>
             </div>
         </div>
     </main>
@@ -136,15 +145,14 @@
         </div>
     </main>
 
+    <!-- ADMIN & TOASTS -->
     <div id="adminModal" class="modal-overlay" style="display: none;">
         <div class="modal-content" style="max-width: 500px; max-height: 80vh; overflow-y: auto;">
             <span class="close-btn" onclick="document.getElementById('adminModal').style.display='none'">&times;</span>
             <h2>Admin Dashboard</h2>
-            <p style="color: var(--text-muted); margin-bottom: 20px;">Pending Web3 Wallet Approvals</p>
             <div id="adminPendingList"></div>
         </div>
     </div>
-
     <div id="toast" class="toast">Message</div>
     <script src="app.js"></script>
 </body>

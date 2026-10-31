@@ -1,4 +1,3 @@
-// --- LIVE MARKET DATA (ALL 25 COINS) ---
 const markets = [
     { name: 'Bitcoin', symbol: 'BTC', price: 85245.32, change: 2.48, icon: '₿', color: '#f7931a' },
     { name: 'Ethereum', symbol: 'ETH', price: 5245.10, change: 1.12, icon: 'Ξ', color: '#627eea' },
@@ -28,12 +27,10 @@ const markets = [
 ];
 
 const countries = [
-    { name: "United States", flag: "🇺🇸" }, { name: "United Kingdom", flag: "🇬🇧" },
-    { name: "Canada", flag: "🇨🇦" }, { name: "Australia", flag: "🇦🇺" },
-    { name: "Nigeria", flag: "🇳🇬" }, { name: "Kenya", flag: "🇰🇪" },
-    { name: "South Africa", flag: "🇿🇦" }, { name: "Ghana", flag: "🇬🇭" },
-    { name: "India", flag: "🇮🇳" }, { name: "Germany", flag: "🇩🇪" },
-    { name: "France", flag: "🇫🇷" }, { name: "Japan", flag: "🇯🇵" },
+    { name: "United States", flag: "🇺🇸" }, { name: "United Kingdom", flag: "🇬🇧" }, { name: "Canada", flag: "🇨🇦" },
+    { name: "Australia", flag: "🇦🇺" }, { name: "Nigeria", flag: "🇳🇬" }, { name: "Kenya", flag: "🇰🇪" },
+    { name: "South Africa", flag: "🇿🇦" }, { name: "Ghana", flag: "🇬🇭" }, { name: "India", flag: "🇮🇳" },
+    { name: "Germany", flag: "🇩🇪" }, { name: "France", flag: "🇫🇷" }, { name: "Japan", flag: "🇯🇵" },
     { name: "UAE", flag: "🇦🇪" }, { name: "Brazil", flag: "🇧🇷" }
 ];
 
