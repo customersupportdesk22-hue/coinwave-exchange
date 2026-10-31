@@ -1120,3 +1120,57 @@ window.showPaymentInstructions = function(coinSymbol, cryptoAmount, formattedUsd
     document.body.appendChild(modal);
     window._currentPayAddress = address;
 };
+
+/* =====================================================
+   ULTIMATE PROFESSIONAL ASSET MODAL (2x2 Grid)
+   ===================================================== */
+window.showAssetActions = function(symbol, name, amount, value) {
+    let modal = document.getElementById('assetActionModal');
+    
+    if (modal) modal.remove(); // Remove old modal if it exists
+
+    modal = document.createElement('div');
+    modal.id = 'assetActionModal';
+    modal.style = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;";
+    
+    modal.onclick = function(e) {
+        if (e.target === modal) modal.remove();
+    };
+
+    modal.innerHTML = `
+        <div style="background: #1a1a2a; border: 1px solid #2a2a3a; border-radius: 16px; padding: 30px 25px; width: 100%; max-width: 400px; text-align: center; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            
+            <span onclick="document.getElementById('assetActionModal').remove()" style="position: absolute; top: 15px; right: 20px; color: #888; font-size: 24px; cursor: pointer; font-weight: bold;">&times;</span>
+            
+            <div id="assetModalIcon" style="width: 70px; height: 70px; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 35px; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.3);"></div>
+            
+            <h2 id="assetModalTitle" style="margin: 0 0 5px 0; color: #fff; font-size: 22px; font-weight: 700;"></h2>
+            
+            <div style="margin-bottom: 25px; margin-top: 15px;">
+                <p style="color: #888; font-size: 13px; margin-bottom: 5px;">Total Balance</p>
+                <h3 id="assetModalBalance" style="color: #fff; margin: 0; font-size: 18px;"></h3>
+                <p id="assetModalValue" style="color: #00d4aa; margin: 5px 0 0 0; font-size: 14px; font-weight: 600;"></p>
+            </div>
+
+            <!-- 2x2 Action Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <button onclick="executeAssetAction('buy')" style="background: rgba(14, 203, 81, 0.1); color: #0ecb51; border: 1px solid #0ecb51; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; transition: 0.2s;">Buy</button>
+                <button onclick="executeAssetAction('sell')" style="background: rgba(246, 70, 93, 0.1); color: #f6465d; border: 1px solid #f6465d; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; transition: 0.2s;">Sell</button>
+                
+                <button onclick="showToast('Deposit feature coming soon!');" style="background: #2a2a3a; color: #fff; border: none; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; transition: 0.2s;">Deposit</button>
+                <button onclick="showToast('Withdraw feature coming soon!');" style="background: #2a2a3a; color: #fff; border: none; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; transition: 0.2s;">Withdraw</button>
+            </div>
+        </div>
+    `;
+
+    // Populate Data
+    const coin = markets.find(c => c.symbol === symbol);
+    document.getElementById('assetModalIcon').style.background = coin.color;
+    document.getElementById('assetModalIcon').innerHTML = coin.icon;
+    document.getElementById('assetModalTitle').textContent = name;
+    document.getElementById('assetModalBalance').textContent = `${amount.toFixed(6)} ${symbol}`;
+    document.getElementById('assetModalValue').textContent = `≈ $${value.toFixed(2)} USD`;
+    
+    window._currentActionSymbol = symbol;
+    document.body.appendChild(modal);
+};
