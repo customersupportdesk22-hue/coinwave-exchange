@@ -630,3 +630,78 @@ window.copyPayAddress = function() {
         setTimeout(() => { btn.textContent = 'Copy'; btn.style.background = '#333'; btn.style.color = '#fff'; }, 2000);
     });
 };
+
+/* =====================================================
+   BINANCE-STYLE ASSETS LIST (With Hide Zero Toggle)
+   ===================================================== */
+window.fetchBalances = async function() {
+    if (!currentUser) return;
+    try {
+        const res = await fetch(`/api/user/${currentUser.email}/balances`);
+        const balances = await res.json();
+        
+        const assetsHeader = Array.from(document.querySelectorAll('h3')).find(el => el.textContent.trim() === 'Your Assets');
+        if (!assetsHeader) return;
+        const assetsCard = assetsHeader.closest('.assets-section') || assetsHeader.parentElement;
+        
+        // Check if user prefers hiding zero balances
+        let hideZero = localStorage.getItem('hideZeroBalances') === 'true';
+
+        // Build the header with the Toggle
+        let html = `
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;">Your Assets</h3>
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; color: #888;">
+                    <span>Hide Zero Balances</span>
+                    <div style="position: relative; width: 36px; height: 20px;">
+                        <input type="checkbox" id="hideZeroToggle" ${hideZero ? 'checked' : ''} style="opacity: 0; width: 0; height: 0;">
+                        <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: ${hideZero ? '#00d4aa' : '#333'}; border-radius: 20px; transition: .4s;"></span>
+                        <span style="position: absolute; content: ''; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: .4s; transform: ${hideZero ? 'translateX(16px)' : 'translateX(0)'};"></span>
+                    </div>
+                </label>
+            </div>
+            <div class="asset-table-header"><span>Asset</span><span style="text-align: right;">Amount</span><span style="text-align: right;">Value</span></div>
+        `;
+        
+        let totalValue = 0;
+        let assetRowsHtml = '';
+
+        markets.forEach(coin => {
+            const amount = balances[coin.symbol] || 0;
+            const value = amount * coin.price;
+            totalValue += value;
+            
+            // Skip if hideZero is true and amount is exactly 0
+            if (hideZero && amount === 0) return;
+
+            assetRowsHtml += `
+                <div class="asset-row" onclick="showAssetActions('${coin.symbol}', '${coin.name}', ${amount}, ${value})" style="cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#1a1a2a'" onmouseout="this.style.background='transparent'">
+                    <div class="asset-name"><div class="market-icon" style="background:${coin.color};">${coin.icon}</div> ${coin.name} (${coin.symbol})</div>
+                    <div class="asset-amount">${amount.toFixed(6)}</div>
+                    <div class="asset-value">$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                </div>
+            `;
+        });
+
+        // If all assets are zero and hideZero is true, show a message
+        if (assetRowsHtml === '') {
+            assetRowsHtml = `<p style="text-align: center; color: #666; padding: 20px 0; font-size: 14px;">No active balances found.</p>`;
+        }
+
+        assetsCard.innerHTML = html + assetRowsHtml;
+        
+        // Update total portfolio value at the top
+        const totalEl = document.getElementById('totalPortfolioValue');
+        if (totalEl) totalEl.textContent = `$${totalValue.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+
+        // Add event listener to the new toggle
+        const toggle = document.getElementById('hideZeroToggle');
+        if (toggle) {
+            toggle.addEventListener('change', (e) => {
+                localStorage.setItem('hideZeroBalances', e.target.checked);
+                fetchBalances(); // Re-render the list instantly
+            });
+        }
+
+    } catch (error) { console.log("Balance fetch error:", error); }
+};
