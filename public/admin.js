@@ -178,3 +178,71 @@ async function saveSettings(btn) {
 
 // Initial Load
 loadOrders();
+
+// ===== FIX UI GLITCHES =====
+const originalLoadOrders = window.loadOrders;
+window.loadOrders = async function() {
+    const container = document.getElementById('ordersList');
+    container.innerHTML = '<p class="loading">Loading orders...</p>';
+    try {
+        const res = await fetch('/api/admin/pending-orders', { headers: { 'Authorization': 'Bearer ' + token } });
+        const orders = await res.json();
+        
+        if (!orders || orders.length === 0) return container.innerHTML = '<p class="loading">No pending orders.</p>';
+        
+        container.innerHTML = orders.map(o => `
+            <div class="card" id="order-${o._id}" style="border-left: 4px solid ${o.mode === 'buy' ? '#00d4aa' : '#e74c3c'};">
+                <h4>Order ID: ${o.orderId || o._id}</h4>
+                <div style="background: #222233; padding: 10px; border-radius: 6px; margin-bottom: 12px;">
+                    <p style="margin: 0 0 5px 0;"><span style="color:#888;">Customer:</span> <strong>${o.userName}</strong></p>
+                    <p style="margin: 0;"><span style="color:#888;">Email:</span> ${o.userEmail}</p>
+                </div>
+                <p><span>Action:</span> <strong style="color:${o.mode === 'buy' ? '#00d4aa' : '#e74c3c'}">${(o.mode || 'buy').toUpperCase()}</strong></p>
+                <p><span>Sending:</span> ${o.sendAmount} ${o.sendCurrency}</p>
+                <p><span>Receiving:</span> ${o.getAmount || 'Market Amount'} ${o.getCurrency}</p>
+                <div style="margin-top: 15px; border-top: 1px dashed #333; padding-top: 15px;">
+                    <p style="margin-bottom: 5px;"><span>Method:</span> ${o.method}</p>
+                    <div style="background: #1a1a2a; border: 1px solid #444; padding: 12px; border-radius: 6px; margin-top: 8px;">
+                        <span style="color: #00d4aa; font-size: 12px; font-weight: bold; display: block; margin-bottom: 5px; text-transform: uppercase;">Customer Payment Details:</span>
+                        <code style="color: #fff; font-size: 13px; word-break: break-all; display: block; line-height: 1.5;">${o.paymentDetails || 'No details provided'}</code>
+                    </div>
+                    ${o.mode === 'buy' ? `
+                    <div style="background: #1a1a2a; border: 1px solid #444; padding: 12px; border-radius: 6px; margin-top: 8px;">
+                        <span style="color: #f39c12; font-size: 12px; font-weight: bold; display: block; margin-bottom: 5px; text-transform: uppercase;">User's Receiving Wallet:</span>
+                        <code style="color: #fff; font-size: 13px; word-break: break-all;">${o.receivingWallet || 'N/A'}</code>
+                    </div>
+                    ` : ''}
+                </div>
+                <button class="btn-approve" onclick="approveOrder('${o._id}', this)">Approve Order</button>
+            </div>
+        `).join('');
+    } catch (e) { container.innerHTML = '<p class="loading" style="color:red">Error loading orders.</p>'; }
+};
+
+const originalSaveSettings = window.saveSettings;
+window.saveSettings = async function(btn) {
+    btn.disabled = true; btn.textContent = 'Saving...';
+    
+    const walletsObj = {};
+    coinList.forEach(coin => {
+        const el = document.getElementById('wallet_' + coin);
+        if (el && el.value.trim()) walletsObj[coin] = el.value.trim();
+    });
+
+    const data = {
+        supportEmail: document.getElementById('setSupportEmail').value,
+        wallets: walletsObj
+    };
+    
+    try {
+        const res = await fetch('/api/admin/settings', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error('Server rejected settings');
+        
+        document.getElementById('settingsMsg').textContent = 'Settings saved successfully!';
+        setTimeout(() => document.getElementById('settingsMsg').textContent = '', 3000);
+    } catch (e) { alert('Failed to save settings. Please try again.'); }
+    btn.disabled = false; btn.textContent = 'Save Settings';
+};
