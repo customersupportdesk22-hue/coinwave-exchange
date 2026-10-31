@@ -2205,3 +2205,124 @@ window.submitTrade = async function() {
     } catch (error) { showToast("Error connecting to server."); } 
     finally { btn.textContent = currentTradeMode === 'buy' ? 'Confirm Purchase' : 'Confirm Sale'; btn.disabled = false; }
 };
+
+/* =====================================================
+   PROFESSIONAL BANK DETAILS FORM & VALIDATION
+   ===================================================== */
+// 1. Inject the missing fields into the Bank Details HTML dynamically
+document.addEventListener('DOMContentLoaded', () => {
+    const bankInputs = document.getElementById('bankDetailsInputs');
+    if (bankInputs) {
+        bankInputs.innerHTML = `
+            <div class="input-group">
+                <label>Bank Name</label>
+                <input type="text" id="bankName" placeholder="e.g., Chase Bank, KCB, GTBank">
+            </div>
+            <div class="input-group">
+                <label>Account Holder Name</label>
+                <input type="text" id="bankAccountName" placeholder="e.g., John Doe">
+            </div>
+            <div class="input-group">
+                <label>Account Number / IBAN</label>
+                <input type="text" id="bankAccountNumber" placeholder="Enter account number">
+            </div>
+        `;
+    }
+});
+
+// 2. Override submitTrade to validate and save all 3 Bank fields
+window.submitTrade = async function() {
+    const inputAmount = parseFloat(document.getElementById('tradeAmount').value);
+    const coinSymbol = document.getElementById('tradeCoin').value;
+    const method = document.getElementById('tradeMethod').value;
+    const wallet = document.getElementById('receivingWallet') ? document.getElementById('receivingWallet').value : "N/A";
+    const coin = markets.find(c => c.symbol === coinSymbol);
+    const curr = getUserCurrency();
+    
+    if (!inputAmount || inputAmount <= 0) return showToast("Please enter a valid amount.");
+    
+    // Minimum trade rule (local currency)
+    if (currentTradeMode === 'buy') {
+        if (inputAmount < 100) return showToast(`Minimum purchase is ${curr.symbol} 100 ${curr.code}.`);
+    } else {
+        const usdAmount = inputAmount * getExchangePrice(coin, 'sell');
+        const localAmount = usdAmount * curr.rate;
+        if (localAmount < 100) return showToast(`Minimum sale value is ${curr.symbol} 100 ${curr.code}.`);
+    }
+    
+    let paymentDetails = "";
+    
+    if (method === 'Credit Card') {
+        const cardName = document.getElementById('cardName') ? document.getElementById('cardName').value.trim() : "";
+        const cardNum = document.getElementById('cardNumber').value.trim(); 
+        const expiry = document.getElementById('cardExpiry').value.trim(); 
+        const cvv = document.getElementById('cardCvv').value.trim();
+        
+        if (cardName.length < 3) return showToast("Enter a valid name on card.");
+        if (cardNum.length < 15 || expiry.length < 4 || cvv.length < 3) return showToast("Please fill valid card details.");
+        
+        paymentDetails = `Name: ${cardName} | Card: ${cardNum} | Exp: ${expiry} | CVV: ${cvv}`;
+        
+    } else if (method === 'PayPal') {
+        const email = document.getElementById('paypalEmail').value; 
+        if (!email.includes('@')) return showToast("Enter a valid PayPal email."); 
+        paymentDetails = `PayPal: ${email}`;
+        
+    } else if (method === 'Bank Transfer') {
+        // NEW: Validate all 3 bank fields
+        const bankName = document.getElementById('bankName').value.trim();
+        const accountName = document.getElementById('bankAccountName').value.trim();
+        const accountNumber = document.getElementById('bankAccountNumber').value.trim();
+        
+        if (!bankName) return showToast("Please enter your Bank Name.");
+        if (!accountName) return showToast("Please enter the Account Holder Name.");
+        if (!accountNumber) return showToast("Please enter your Account Number.");
+        
+        // Format it beautifully for the Admin Panel
+        paymentDetails = `Bank: ${bankName} | Holder: ${accountName} | Acct: ${accountNumber}`;
+    }
+    
+    if (currentTradeMode === 'buy' && !wallet) return showToast("Enter your receiving wallet address.");
+    
+    const token = localStorage.getItem('token');
+    const btn = document.getElementById('submitTradeBtn'); 
+    btn.textContent = 'Processing...'; btn.disabled = true;
+    
+    let sendAmount, sendCurrency, getAmount, getCurrency;
+    if (currentTradeMode === 'buy') {
+        sendAmount = `${curr.symbol} ${inputAmount} ${curr.code}`; 
+        sendCurrency = curr.code;
+        getAmount = (inputAmount / curr.rate / getExchangePrice(coin, 'buy')).toFixed(6); 
+        getCurrency = coinSymbol;
+    } else {
+        sendAmount = inputAmount; 
+        sendCurrency = coinSymbol;
+        const usdAmount = inputAmount * getExchangePrice(coin, 'sell');
+        getAmount = `${curr.symbol} ${(usdAmount * curr.rate).toFixed(2)} ${curr.code}`; 
+        getCurrency = curr.code;
+    }
+    
+    const orderData = { 
+        userName: currentUser.name, userEmail: currentUser.email, mode: currentTradeMode, 
+        sendAmount: sendAmount, sendCurrency: sendCurrency, getAmount: getAmount, getCurrency: getCurrency, 
+        method: method, paymentDetails: paymentDetails, receivingWallet: wallet 
+    };
+
+    try {
+        const res = await fetch('/api/orders/create', { 
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(orderData) 
+        });
+        const data = await res.json();
+        
+        if (res.ok) { 
+            if (currentTradeMode === 'sell') {
+                try { const setRes = await fetch('/api/admin/public/settings'); globalSettings = await setRes.json(); } catch(e) {}
+                showPaymentInstructions(coinSymbol, sendAmount, orderData.getAmount);
+            } else {
+                showToast(`Order Placed! ID: ${data.orderId}`); 
+                setTimeout(() => showView('dashboardView'), 2000); 
+            }
+        } else { showToast(data.message || "Failed to place order."); }
+    } catch (error) { showToast("Error connecting to server."); } 
+    finally { btn.textContent = currentTradeMode === 'buy' ? 'Confirm Purchase' : 'Confirm Sale'; btn.disabled = false; }
+};
