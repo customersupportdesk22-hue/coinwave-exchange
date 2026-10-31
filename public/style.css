@@ -216,3 +216,139 @@ nav { display: flex; justify-content: space-between; align-items: center; paddin
 .card:has(#walletPending) {
     margin-bottom: 20px !important;
 }
+
+/* =====================================================
+   PROFESSIONAL TRADE VIEW STYLING
+   ===================================================== */
+
+/* Center the trade layout and give it breathing room */
+.trade-layout {
+    display: flex;
+    justify-content: center;
+    padding: 20px 15px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Style the main form container as a premium card */
+.trade-box {
+    background: #1a1a2a;
+    border: 1px solid #2a2a3a;
+    border-radius: 16px;
+    padding: 24px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+/* Make the Buy/Sell tabs look like a modern toggle switch */
+.trade-tabs {
+    display: flex;
+    background: #0f0f15;
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 24px;
+    border: 1px solid #2a2a3a;
+}
+
+.trade-tab {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #888;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.trade-tab.active {
+    background: #1a1a2a;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* Clean up the inputs */
+.trade-box .input-group {
+    margin-bottom: 16px;
+}
+
+.trade-box label {
+    font-size: 12px;
+    color: #aaa;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.trade-box input, 
+.trade-box select {
+    width: 100%;
+    background: #0f0f15;
+    border: 1px solid #2a2a3a;
+    border-radius: 10px;
+    padding: 14px 16px;
+    color: #fff;
+    font-size: 15px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.trade-box input:focus, 
+.trade-box select:focus {
+    outline: none;
+    border-color: #00d4aa;
+    box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.1);
+}
+
+/* Read-only receive field */
+.trade-box input[readonly] {
+    background: #14141d;
+    color: #00d4aa;
+    font-weight: bold;
+    cursor: not-allowed;
+}
+
+/* Style the Confirm Button */
+#submitTradeBtn {
+    margin-top: 24px;
+    padding: 16px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+}
+
+#submitTradeBtn:active {
+    transform: scale(0.98);
+}
+
+/* Style the Cancel Button to be subtle */
+.trade-box .btn-outline {
+    background: transparent;
+    border: 1px solid #2a2a3a;
+    color: #888;
+    margin-top: 12px;
+    padding: 14px;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.trade-box .btn-outline:hover {
+    background: #2a2a3a;
+    color: #fff;
+}
+
+/* Hide the ugly placeholder chart on mobile */
+@media (max-width: 768px) {
+    .trade-chart-panel {
+        display: none !important;
+    }
+}
