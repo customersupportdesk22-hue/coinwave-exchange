@@ -207,3 +207,12 @@ nav { display: flex; justify-content: space-between; align-items: center; paddin
 .status-badge.approved { background: rgba(14, 203, 129, 0.1); color: var(--success); border: 1px solid rgba(14, 203, 129, 0.3); }
 
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* =====================================================
+   FIX: Add spacing between moved Web3 Wallet and Assets
+   ===================================================== */
+.card:has(#walletDisconnected), 
+.card:has(#walletApproved),
+.card:has(#walletPending) {
+    margin-bottom: 20px !important;
+}
