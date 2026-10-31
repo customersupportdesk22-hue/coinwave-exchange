@@ -296,3 +296,63 @@ document.addEventListener('DOMContentLoaded', () => {
     populateCountries(); populateTradeCoins(); loadMarkets(); checkAuthState(); fetchGlobalSettings();
     setInterval(() => { simulateLiveMarket(); loadMarkets(); }, 2000);
 });
+
+/* =====================================================
+   PROFESSIONAL ASSET MODAL (Fixed Overlay)
+   ===================================================== */
+window.showAssetActions = function(symbol, name, amount, value) {
+    let modal = document.getElementById('assetActionModal');
+    
+    // Create the modal if it doesn't exist
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'assetActionModal';
+        
+        // Forcefully apply full-screen overlay styles inline
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100vw';
+        modal.style.height = '100vh';
+        modal.style.backgroundColor = 'rgba(0, 0, 0, 0.75)';
+        modal.style.backdropFilter = 'blur(4px)';
+        modal.style.zIndex = '9999';
+        modal.style.display = 'none'; 
+        modal.style.alignItems = 'center'; 
+        modal.style.justifyContent = 'center';
+        
+        // Close if user clicks outside the white box
+        modal.onclick = function(e) {
+            if (e.target === modal) modal.style.display = 'none';
+        };
+
+        modal.innerHTML = `
+            <div style="background: #1a1a2a; border: 1px solid #333; border-radius: 12px; padding: 25px; width: 90%; max-width: 380px; text-align: center; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+                <span onclick="document.getElementById('assetActionModal').style.display='none'" style="position: absolute; top: 10px; right: 15px; color: #888; font-size: 24px; cursor: pointer; font-weight: bold;">&times;</span>
+                
+                <div id="assetModalIcon" style="width: 70px; height: 70px; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 35px; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.3);"></div>
+                
+                <h2 id="assetModalTitle" style="margin: 0 0 5px 0; color: #fff; font-size: 20px;"></h2>
+                <p id="assetModalBalance" style="color: #888; margin: 0 0 25px 0; font-size: 14px; line-height: 1.5;"></p>
+                
+                <div style="display: flex; gap: 12px;">
+                    <button onclick="executeAssetAction('buy')" style="flex: 1; background: var(--success, #0ecb51); color: #fff; border: none; padding: 14px; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer;">Buy</button>
+                    <button onclick="executeAssetAction('sell')" style="flex: 1; background: var(--danger, #f6465d); color: #fff; border: none; padding: 14px; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer;">Sell</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    // Populate data
+    const coin = markets.find(c => c.symbol === symbol);
+    document.getElementById('assetModalIcon').style.background = coin.color;
+    document.getElementById('assetModalIcon').innerHTML = coin.icon;
+    document.getElementById('assetModalTitle').textContent = name + ' (' + symbol + ')';
+    document.getElementById('assetModalBalance').innerHTML = `Balance: <strong style="color: #fff;">${amount.toFixed(6)} ${symbol}</strong><br>Value: <strong style="color: #fff;">$${value.toFixed(2)}</strong>`;
+    
+    window._currentActionSymbol = symbol;
+
+    // Show it
+    modal.style.display = 'flex';
+};
