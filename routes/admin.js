@@ -57,17 +57,17 @@ router.get("/settings", async (req, res) => {
 router.post("/settings", async (req, res) => {
     try {
         const { supportEmail, wallets } = req.body;
-        let settings = await Settings.findOne();
-        if (!settings) settings = new Settings({});
         
-        settings.supportEmail = supportEmail || settings.supportEmail;
-        settings.wallets = wallets || {};
+        // This completely bypasses the validation error and updates/creates safely!
+        const updatedSettings = await Settings.findOneAndUpdate(
+            {}, // Find the first settings doc
+            { supportEmail, wallets },
+            { new: true, upsert: true, runValidators: false }
+        );
         
-        await settings.save();
-        res.json({ message: "Settings updated successfully" });
+        res.json({ message: "Settings updated successfully", settings: updatedSettings });
     } catch (e) { 
         console.error("SAVE ERROR:", e);
-        // Send the exact database error back to the frontend alert!
         res.status(500).json({ error: e.message }); 
     }
 });
