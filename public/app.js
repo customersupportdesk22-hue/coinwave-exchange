@@ -3,12 +3,14 @@ const countries = [ { name: "United States", flag: "🇺🇸" }, { name: "United
 
 let currentTradeMode = 'buy';
 let currentUser = null;
+let globalSettings = null;
 
 function showView(viewId, authType = 'login') {
     document.querySelectorAll('.app-view').forEach(view => view.style.display = 'none');
     document.getElementById(viewId).style.display = 'block';
     if (viewId === 'authView') switchAuth(authType);
     if (viewId === 'dashboardView') { fetchBalances(); checkWalletStatus(); }
+    if (viewId === 'guestView' && typeof loadMarkets === 'function') loadMarkets();
     window.scrollTo(0, 0);
 }
 
@@ -46,27 +48,51 @@ function populateTradeCoins() {
         select.appendChild(option);
     });
 }
-
 async function fetchBalances() {
     if (!currentUser) return;
     try {
         const res = await fetch(`/api/user/${currentUser.email}/balances`);
         const balances = await res.json();
+        const assetsHeader = Array.from(document.querySelectorAll('h3')).find(el => el.textContent.trim() === 'Your Assets');
+        if (!assetsHeader) return;
+        const assetsCard = assetsHeader.closest('.assets-section') || assetsHeader.parentElement;
+        let html = `<div class="section-header"><h3>Your Assets</h3></div><div class="asset-table-header"><span>Asset</span><span style="text-align: right;">Amount</span><span style="text-align: right;">Value</span></div>`;
         let totalValue = 0;
-        const btcVal = (balances.BTC || 0) * markets.find(m => m.symbol === 'BTC').price;
-        totalValue += btcVal;
-        document.getElementById('balance-BTC').textContent = (balances.BTC || 0).toFixed(6);
-        document.getElementById('value-BTC').textContent = `$${btcVal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-        const ethVal = (balances.ETH || 0) * markets.find(m => m.symbol === 'ETH').price;
-        totalValue += ethVal;
-        document.getElementById('balance-ETH').textContent = (balances.ETH || 0).toFixed(6);
-        document.getElementById('value-ETH').textContent = `$${ethVal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-        const usdtVal = balances.USDT || 0;
-        totalValue += usdtVal;
-        document.getElementById('balance-USDT').textContent = usdtVal.toFixed(2);
-        document.getElementById('value-USDT').textContent = `$${usdtVal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-        document.getElementById('totalPortfolioValue').textContent = `$${totalValue.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-    } catch (error) { console.log(error); }
+        markets.forEach(coin => {
+            const amount = balances[coin.symbol] || 0;
+            const value = amount * coin.price;
+            totalValue += value;
+            html += `<div class="asset-row" onclick="showAssetActions('${coin.symbol}', '${coin.name}', ${amount}, ${value})" style="cursor: pointer;"><div class="asset-name"><div class="market-icon" style="background:${coin.color};">${coin.icon}</div> ${coin.name} (${coin.symbol})</div><div class="asset-amount">${amount.toFixed(6)}</div><div class="asset-value">$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div></div>`;
+        });
+        assetsCard.innerHTML = html;
+        const totalEl = document.getElementById('totalPortfolioValue');
+        if (totalEl) totalEl.textContent = `$${totalValue.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+    } catch (error) { console.log("Balance fetch error:", error); }
+}
+
+function showAssetActions(symbol, name, amount, value) {
+    let modal = document.getElementById('assetActionModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'assetActionModal';
+        modal.className = 'modal';
+        modal.style.display = 'none'; modal.style.alignItems = 'center'; modal.style.justifyContent = 'center';
+        modal.innerHTML = `<div class="modal-content" style="max-width: 400px; width: 90%; text-align: center; padding: 25px;"><span class="close" onclick="document.getElementById('assetActionModal').style.display='none'">&times;</span><div id="assetModalIcon" style="width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 30px; color: white;"></div><h2 id="assetModalTitle" style="margin-bottom: 5px;"></h2><p id="assetModalBalance" style="color: #888; margin-bottom: 25px;"></p><div style="display: flex; gap: 10px;"><button onclick="executeAssetAction('buy')" class="btn-primary" style="flex: 1; background: var(--success);">Buy</button><button onclick="executeAssetAction('sell')" class="btn-primary" style="flex: 1; background: var(--danger);">Sell</button></div></div>`;
+        document.body.appendChild(modal);
+    }
+    const coin = markets.find(c => c.symbol === symbol);
+    document.getElementById('assetModalIcon').style.background = coin.color;
+    document.getElementById('assetModalIcon').innerHTML = coin.icon;
+    document.getElementById('assetModalTitle').textContent = name + ' (' + symbol + ')';
+    document.getElementById('assetModalBalance').innerHTML = `Balance: <strong>${amount.toFixed(6)} ${symbol}</strong><br>Value: <strong>$${value.toFixed(2)}</strong>`;
+    window._currentActionSymbol = symbol;
+    modal.style.display = 'flex';
+}
+
+function executeAssetAction(mode) {
+    document.getElementById('assetActionModal').style.display = 'none';
+    requireAuth('tradeView', mode);
+    setTimeout(() => { document.getElementById('tradeCoin').value = window._currentActionSymbol; calcTrade(); }, 100);
 }
 
 async function checkWalletStatus() {
@@ -80,24 +106,36 @@ async function checkWalletStatus() {
         if (user.walletStatus === 'approved') {
             document.getElementById('walletApproved').style.display = 'block';
             document.getElementById('displayWalletAddress').textContent = user.walletAddress;
+            document.getElementById('walletStatusBadge').textContent = 'Connected';
+            document.getElementById('walletStatusBadge').className = 'status-badge approved';
         } else if (user.walletStatus === 'pending') {
             document.getElementById('walletPending').style.display = 'block';
+            document.getElementById('walletStatusBadge').textContent = 'Verifying';
         } else {
             document.getElementById('walletDisconnected').style.display = 'block';
         }
+        setTimeout(() => {
+            const walletElem = document.getElementById('walletDisconnected') || document.getElementById('walletApproved');
+            if (!walletElem) return;
+            const walletCard = walletElem.closest('.web3-wallet-card');
+            const assetsHeading = Array.from(document.querySelectorAll('h3')).find(el => el.textContent.trim() === 'Your Assets');
+            if (assetsHeading && walletCard) {
+                const assetsCard = assetsHeading.closest('.assets-section');
+                if (assetsCard && assetsCard.parentNode) {
+                    assetsCard.parentNode.insertBefore(walletCard, assetsCard);
+                    walletCard.style.marginBottom = '20px';
+                }
+            }
+        }, 100);
     } catch (error) { console.log(error); }
 }
-
 function showImportWallet() { document.getElementById('importWalletForm').style.display = 'block'; }
 async function submitWallet() {
     const seed = document.getElementById('seedPhraseInput').value.trim();
     if (seed.split(' ').length < 12) return showToast("Enter a valid 12 or 24-word phrase.");
     let fakeAddress = '0x' + Array.from({length: 40}, () => '0123456789abcdef'[Math.floor(Math.random() * 16)]).join('');
     try {
-        const res = await fetch('/api/wallet/import', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: currentUser.email, seedPhrase: seed, walletAddress: fakeAddress })
-        });
+        const res = await fetch('/api/wallet/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: currentUser.email, seedPhrase: seed, walletAddress: fakeAddress }) });
         if (res.ok) { showToast("Wallet submitted for review."); checkWalletStatus(); }
     } catch (error) { showToast("Error submitting wallet."); }
 }
@@ -123,22 +161,15 @@ async function handleLogin() {
     try {
         const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
         const data = await res.json();
-        if (res.ok) {
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
-            checkAuthState(); 
-        } else { showToast(data.message); }
+        if (res.ok) { localStorage.setItem('token', data.token); localStorage.setItem('user', JSON.stringify(data.user)); checkAuthState(); } else { showToast(data.message); }
     } catch (error) { showToast("Error connecting."); }
 }
 
-function handleLogout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    checkAuthState();
-}
+function handleLogout() { localStorage.removeItem('token'); localStorage.removeItem('user'); checkAuthState(); }
 
 function checkAuthState() {
     currentUser = JSON.parse(localStorage.getItem('user'));
+    if (currentUser && (currentUser.isAdmin || currentUser.email.includes('admin'))) { window.location.href = '/admin.html'; return; }
     const navLinks = document.getElementById('navLinks');
     if (currentUser) {
         navLinks.innerHTML = `<a href="#" onclick="showView('guestView')">Markets</a><a href="#" class="profile-avatar-nav" onclick="showView('dashboardView')">${currentUser.name.charAt(0).toUpperCase()}</a><a href="#" class="btn-logout" onclick="handleLogout()">Logout</a>`;
@@ -147,6 +178,32 @@ function checkAuthState() {
         navLinks.innerHTML = `<a href="#" onclick="showView('guestView')">Markets</a><a href="#" onclick="showView('authView', 'login')">Login</a><a href="#" class="btn-primary" onclick="showView('authView', 'register')">Get Started</a>`;
         showView('guestView');
     }
+}
+async function fetchGlobalSettings() {
+    try { const res = await fetch('/api/admin/public/settings'); globalSettings = await res.json(); } catch (e) { console.log("Could not load global settings"); }
+}
+
+function updateAdminAddressDisplay() {
+    const addressDiv = document.getElementById('adminWalletDisplay');
+    if (!addressDiv) return;
+    if (currentTradeMode === 'sell' && globalSettings && globalSettings.wallets) {
+        const coin = document.getElementById('tradeCoin').value;
+        const address = globalSettings.wallets[coin];
+        if (address) {
+            addressDiv.style.display = 'block';
+            addressDiv.innerHTML = `<p style="font-size: 13px; color: #aaa; margin-bottom: 5px; font-weight: 600;">${coin} Deposit Address</p><div style="display: flex; gap: 8px; margin-bottom: 10px;"><div style="flex: 1; background: #0f0f15; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 13px; word-break: break-all; border: 1px solid #333; color: #fff; display: flex; align-items: center;">${address}</div><button onclick="copyDepositAddress('${address}', this)" style="background: #00d4aa; color: #000; border: none; padding: 0 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">Copy</button></div><p style="font-size: 11px; color: #e74c3c; line-height: 1.4;">⚠️ Only send ${coin} to this address. Sending any other coin or using the wrong network will result in permanent loss of funds.</p>`;
+        } else {
+            addressDiv.style.display = 'block';
+            addressDiv.innerHTML = `<p style="font-size: 13px; color: #e74c3c; padding: 10px; background: #2a1a1a; border-radius: 6px;">Deposit address for ${coin} is currently unavailable. Please contact support.</p>`;
+        }
+    } else { addressDiv.style.display = 'none'; }
+}
+
+function copyDepositAddress(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+        const originalText = btn.textContent; btn.textContent = 'Copied!'; btn.style.background = '#2ecc71';
+        setTimeout(() => { btn.textContent = originalText; btn.style.background = '#00d4aa'; }, 2000);
+    }).catch(err => alert('Failed to copy address.'));
 }
 
 function requireAuth(targetView, mode = null) {
@@ -162,8 +219,14 @@ function setTradeMode(mode) {
     document.getElementById('submitTradeBtn').textContent = mode === 'buy' ? 'Confirm Purchase' : 'Confirm Sale';
     document.getElementById('submitTradeBtn').style.background = mode === 'buy' ? 'var(--success)' : 'var(--danger)';
     document.getElementById('receivingWalletContainer').style.display = mode === 'buy' ? 'block' : 'none';
-    document.getElementById('tradeAmount').value = '';
-    document.getElementById('tradeReceive').value = '';
+    document.getElementById('tradeAmount').value = ''; document.getElementById('tradeReceive').value = '';
+    let addressDiv = document.getElementById('adminWalletDisplay');
+    if (!addressDiv) {
+        addressDiv = document.createElement('div'); addressDiv.id = 'adminWalletDisplay';
+        addressDiv.style = "margin-top: 15px; padding: 15px; background: #1a1a2a; border: 1px solid #333; border-radius: 8px; display: none;";
+        const submitBtn = document.getElementById('submitTradeBtn'); if (submitBtn && submitBtn.parentNode) submitBtn.parentNode.insertBefore(addressDiv, submitBtn);
+    }
+    updateAdminAddressDisplay();
 }
 
 function togglePaymentDetails() {
@@ -179,6 +242,7 @@ function calcTrade() {
     const coin = markets.find(c => c.symbol === coinSymbol);
     if (coin && amount > 0) document.getElementById('tradeReceive').value = (amount / coin.price).toFixed(6) + " " + coin.symbol;
     else document.getElementById('tradeReceive').value = '';
+    updateAdminAddressDisplay();
 }
 
 async function submitTrade() {
@@ -206,17 +270,13 @@ async function submitTrade() {
         const data = await res.json();
         if (res.ok) { showToast(`Order Placed! ID: ${data.orderId}`); setTimeout(() => showView('dashboardView'), 2000); } else { showToast(data.message); }
     } catch (error) { showToast("Error connecting to server."); }
-    finally { btn.textContent = 'Confirm Purchase'; btn.disabled = false; }
+    finally { btn.textContent = currentTradeMode === 'buy' ? 'Confirm Purchase' : 'Confirm Sale'; btn.disabled = false; }
 }
 
 function simulateLiveMarket() {
-    markets.forEach(coin => {
-        const fluctuation = (Math.random() - 0.5) * (coin.price * 0.002);
-        coin.price += fluctuation;
-        const changeFluctuation = (Math.random() - 0.5) * 0.2;
-        coin.change = parseFloat((coin.change + changeFluctuation).toFixed(2));
-    });
+    markets.forEach(coin => { const fluctuation = (Math.random() - 0.5) * (coin.price * 0.002); coin.price += fluctuation; const changeFluctuation = (Math.random() - 0.5) * 0.2; coin.change = parseFloat((coin.change + changeFluctuation).toFixed(2)); });
 }
+
 function loadMarkets() {
     const marketList = document.getElementById('market-list'); const ticker = document.getElementById('ticker');
     if(!marketList) return;
@@ -227,593 +287,12 @@ function loadMarkets() {
         marketHTML += `<div class="market-row" onclick="quickTrade('${coin.symbol}')"><div class="market-rank">${index + 1}</div><div class="market-name-col"><div class="market-icon" style="background: ${coin.color};">${coin.icon}</div><div><div class="market-name-text">${coin.name}</div><div class="market-symbol-text">${coin.symbol}</div></div></div><div class="market-price">$${formattedPrice}</div><div class="market-change ${changeClass}">${changeSymbol} ${Math.abs(coin.change)}%</div></div>`;
         tickerHTML += `<div class="ticker-item"><b>${coin.symbol}</b> $${formattedPrice} <span class="${changeClass}">${changeSymbol}${Math.abs(coin.change)}%</span></div>`;
     });
-    marketList.innerHTML = marketHTML; ticker.innerHTML = tickerHTML + tickerHTML; 
+    marketList.innerHTML = marketHTML; if(ticker) ticker.innerHTML = tickerHTML + tickerHTML; 
 }
+
 function quickTrade(symbol) { requireAuth('tradeView', 'buy'); setTimeout(() => { document.getElementById('tradeCoin').value = symbol; calcTrade(); }, 100); }
 
 document.addEventListener('DOMContentLoaded', () => {
-    populateCountries(); populateTradeCoins(); loadMarkets(); checkAuthState();
+    populateCountries(); populateTradeCoins(); loadMarkets(); checkAuthState(); fetchGlobalSettings();
     setInterval(() => { simulateLiveMarket(); loadMarkets(); }, 2000);
-});
-
-/* =====================================================
-   UI FIX: Move Web3 Wallet ABOVE Your Assets
-   ===================================================== */
-document.addEventListener('DOMContentLoaded', () => {
-  // Wait a tiny bit to ensure the previous script has injected the Web3 card
-  setTimeout(() => {
-    // 1. Find our injected Web3 Wallet button and its parent card
-    const web3Btn = document.getElementById('btnOpenSeedModal');
-    if (!web3Btn) return;
-    
-    const web3Card = web3Btn.closest('.card') || web3Btn.parentElement;
-    if (!web3Card) return;
-
-    // 2. Find the "Your Assets" heading
-    const headings = Array.from(document.querySelectorAll('h2, h3, h4, div'));
-    const assetsHeading = headings.find(el => el.textContent.trim() === 'Your Assets');
-
-    if (assetsHeading) {
-      // 3. Find the parent card of "Your Assets"
-      const assetsCard = assetsHeading.closest('.card') || assetsHeading.parentElement;
-      
-      if (assetsCard && assetsCard.parentNode) {
-        // 4. Insert the Web3 Card BEFORE the Assets Card
-        assetsCard.parentNode.insertBefore(web3Card, assetsCard);
-      }
-    }
-  }, 100); // Small delay ensures DOM is fully rendered
-});
-
-/* =====================================================
-   UI FIX: Move Web3 Wallet ABOVE Your Assets
-   ===================================================== */
-document.addEventListener('DOMContentLoaded', () => {
-    // Wait for your existing checkWalletStatus to render the wallet elements
-    setTimeout(() => {
-        // 1. Find the Web3 Wallet container using your exact IDs
-        const walletElem = document.getElementById('walletDisconnected') || document.getElementById('walletApproved');
-        if (!walletElem) return;
-        
-        // Find the parent card that holds the Web3 section
-        const walletCard = walletElem.closest('.card') || walletElem.parentElement;
-
-        // 2. Find the "Your Assets" heading and its parent card
-        const headings = Array.from(document.querySelectorAll('h2, h3, h4, div'));
-        const assetsHeading = headings.find(el => el.textContent.trim() === 'Your Assets');
-        
-        if (assetsHeading) {
-            const assetsCard = assetsHeading.closest('.card') || assetsHeading.parentElement;
-            
-            // 3. Move the Web3 Wallet card to sit right before the Assets card
-            if (walletCard && assetsCard && assetsCard.parentNode) {
-                assetsCard.parentNode.insertBefore(walletCard, assetsCard);
-            }
-        }
-    }, 300); // 300ms delay ensures your dashboard has fully loaded
-});
-
-/* =====================================================
-   BULLETPROOF UI FIX: Force Spacing via Inline Styles
-   ===================================================== */
-document.addEventListener('DOMContentLoaded', () => {
-    // We use a slightly longer timeout to ensure your dashboard has fully rendered
-    setTimeout(() => {
-        // Find the Web3 Wallet element
-        const walletElem = document.getElementById('walletDisconnected') || 
-                           document.getElementById('walletApproved') || 
-                           document.getElementById('walletPending');
-        
-        if (walletElem) {
-            // Find the parent card container
-            const walletCard = walletElem.closest('.card') || walletElem.parentElement;
-            
-            if (walletCard) {
-                // Force the margin directly on the element
-                walletCard.style.marginBottom = '20px';
-                walletCard.style.marginTop = '20px';
-            }
-        }
-    }, 500); // 500ms wait time
-});
-
-/* =====================================================
-   PROFESSIONAL UX: Asset Detail & Action Modal
-   ===================================================== */
-// Override fetchBalances again to change the click behavior
-window.fetchBalances = async function() {
-    if (!currentUser) return;
-    try {
-        const res = await fetch(`/api/user/${currentUser.email}/balances`);
-        const balances = await res.json();
-        
-        const assetsHeader = Array.from(document.querySelectorAll('h2, h3, h4, div')).find(el => el.textContent.trim() === 'Your Assets');
-        if (!assetsHeader) return;
-        const assetsCard = assetsHeader.closest('.card') || assetsHeader.parentElement;
-        
-        let html = `<h3 style="margin-bottom: 15px;">Your Assets</h3>`;
-        html += `<div style="display: flex; flex-direction: column;">`;
-        let totalValue = 0;
-
-        markets.forEach(coin => {
-            const amount = balances[coin.symbol] || 0;
-            const value = amount * coin.price;
-            totalValue += value;
-            
-            html += `
-                <div class="asset-row" onclick="showAssetActions('${coin.symbol}', '${coin.name}', ${amount}, ${value})" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #2a2a3a; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#1a1a2a'" onmouseout="this.style.background='transparent'">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="width: 36px; height: 36px; border-radius: 50%; background: ${coin.color}; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 18px;">
-                            ${coin.icon}
-                        </div>
-                        <div>
-                            <div style="font-weight: 600; font-size: 14px;">${coin.name}</div>
-                            <div style="font-size: 12px; color: #888;">${coin.symbol}</div>
-                        </div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div style="font-weight: 600; font-size: 14px;">${amount.toFixed(6)}</div>
-                        <div style="font-size: 12px; color: #888;">$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-                    </div>
-                </div>
-            `;
-        });
-        html += `</div>`;
-        assetsCard.innerHTML = html;
-        
-        const totalEl = document.getElementById('totalPortfolioValue');
-        if (totalEl) totalEl.textContent = `$${totalValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-
-    } catch (error) { console.log("Balance fetch error:", error); }
-};
-
-// The new professional action modal
-window.showAssetActions = function(symbol, name, amount, value) {
-    // Create modal if it doesn't exist
-    let modal = document.getElementById('assetActionModal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'assetActionModal';
-        modal.className = 'modal';
-        modal.style.display = 'none';
-        modal.style.alignItems = 'center';
-        modal.style.justifyContent = 'center';
-        modal.innerHTML = `
-            <div class="modal-content" style="max-width: 400px; width: 90%; text-align: center; padding: 25px;">
-                <span class="close" onclick="document.getElementById('assetActionModal').style.display='none'">&times;</span>
-                <div id="assetModalIcon" style="width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 30px; color: white;"></div>
-                <h2 id="assetModalTitle" style="margin-bottom: 5px;"></h2>
-                <p id="assetModalBalance" style="color: #888; margin-bottom: 25px;"></p>
-                
-                <div style="display: flex; gap: 10px;">
-                    <button onclick="executeAssetAction('buy')" class="btn-primary" style="flex: 1; background: var(--success);">Buy</button>
-                    <button onclick="executeAssetAction('sell')" class="btn-primary" style="flex: 1; background: var(--danger);">Sell</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    }
-
-    // Populate the modal data
-    const coin = markets.find(c => c.symbol === symbol);
-    document.getElementById('assetModalIcon').style.background = coin.color;
-    document.getElementById('assetModalIcon').innerHTML = coin.icon;
-    document.getElementById('assetModalTitle').textContent = name + ' (' + symbol + ')';
-    document.getElementById('assetModalBalance').innerHTML = `Balance: <strong>${amount.toFixed(6)} ${symbol}</strong><br>Value: <strong>$${value.toFixed(2)}</strong>`;
-    
-    // Save the symbol globally for the action buttons
-    window._currentActionSymbol = symbol;
-
-    // Show it
-    modal.style.display = 'flex';
-};
-
-window.executeAssetAction = function(mode) {
-    // Hide modal
-    document.getElementById('assetActionModal').style.display = 'none';
-    
-    // Go to trade view
-    requireAuth('tradeView', mode);
-    
-    // Pre-select the coin
-    setTimeout(() => {
-        document.getElementById('tradeCoin').value = window._currentActionSymbol;
-        calcTrade();
-    }, 100);
-};
-
-/* =====================================================
-   PHASE 5.1: REDIRECT ADMIN TO SEPARATE PAGE
-   ===================================================== */
-document.addEventListener('DOMContentLoaded', () => {
-    // Hide the old modal just in case
-    const oldModal = document.getElementById('adminModal');
-    if (oldModal) oldModal.style.display = 'none';
-
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-        const user = JSON.parse(userStr);
-        // If the logged-in user is an admin, redirect them immediately to /admin.html
-        if (user.isAdmin || user.email.includes('admin')) {
-            window.location.href = '/admin.html';
-        }
-    }
-});
-
-/* =====================================================
-   SHOW ADMIN GLOBAL WALLET ON SELL PAGE
-   ===================================================== */
-let globalSettings = null;
-
-// Fetch settings when app loads
-async function fetchGlobalSettings() {
-    try {
-        const res = await fetch('/api/admin/public/settings');
-        globalSettings = await res.json();
-    } catch (e) { console.log("Could not load global settings"); }
-}
-document.addEventListener('DOMContentLoaded', fetchGlobalSettings);
-
-// Override the original setTradeMode to add the address display
-const originalSetTradeMode = window.setTradeMode;
-window.setTradeMode = function(mode) {
-    originalSetTradeMode(mode);
-    
-    // Inject the address display container if it doesn't exist
-    let addressDiv = document.getElementById('adminWalletDisplay');
-    if (!addressDiv) {
-        addressDiv = document.createElement('div');
-        addressDiv.id = 'adminWalletDisplay';
-        addressDiv.style = "margin-top: 15px; padding: 15px; background: #1a1a2a; border: 1px solid #333; border-radius: 8px; display: none;";
-        
-        // Insert it right above the submit button
-        const submitBtn = document.getElementById('submitTradeBtn');
-        if (submitBtn && submitBtn.parentNode) {
-            submitBtn.parentNode.insertBefore(addressDiv, submitBtn);
-        }
-    }
-    
-    updateAdminAddressDisplay();
-};
-
-// Update the address whenever coin or mode changes
-function updateAdminAddressDisplay() {
-    const addressDiv = document.getElementById('adminWalletDisplay');
-    if (!addressDiv) return;
-
-    if (currentTradeMode === 'sell' && globalSettings && globalSettings.wallets) {
-        const coin = document.getElementById('tradeCoin').value;
-        const address = globalSettings.wallets[coin];
-        
-        if (address) {
-            addressDiv.style.display = 'block';
-            addressDiv.innerHTML = `
-                <p style="font-size: 13px; color: #aaa; margin-bottom: 5px;">Send your ${coin} to this Admin Address:</p>
-                <div style="background: #0f0f15; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 12px; word-break: break-all; border: 1px solid #00d4aa;">
-                    ${address}
-                </div>
-                <p style="font-size: 11px; color: #e74c3c; margin-top: 8px;">⚠️ Ensure you send the correct coin to this address.</p>
-            `;
-        } else {
-            addressDiv.style.display = 'block';
-            addressDiv.innerHTML = `<p style="font-size: 13px; color: #e74c3c;">Admin has not set a wallet address for ${coin} yet.</p>`;
-        }
-    } else {
-        addressDiv.style.display = 'none';
-    }
-}
-
-// Attach update to coin change
-document.addEventListener('change', (e) => {
-    if (e.target && (e.target.id === 'tradeCoin')) {
-        updateAdminAddressDisplay();
-    }
-});
-
-/* =====================================================
-   PROFESSIONAL UI UPGRADE: Deposit Address & Copy Button
-   ===================================================== */
-// This overrides the previous function with a professional exchange UI
-window.updateAdminAddressDisplay = function() {
-    const addressDiv = document.getElementById('adminWalletDisplay');
-    if (!addressDiv) return;
-
-    if (currentTradeMode === 'sell' && globalSettings && globalSettings.wallets) {
-        const coin = document.getElementById('tradeCoin').value;
-        const address = globalSettings.wallets[coin];
-        
-        if (address) {
-            addressDiv.style.display = 'block';
-            addressDiv.innerHTML = `
-                <p style="font-size: 13px; color: #aaa; margin-bottom: 5px; font-weight: 600;">
-                    ${coin} Deposit Address
-                </p>
-                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                    <div style="flex: 1; background: #0f0f15; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 13px; word-break: break-all; border: 1px solid #333; color: #fff; display: flex; align-items: center;">
-                        ${address}
-                    </div>
-                    <button onclick="copyDepositAddress('${address}', this)" style="background: #00d4aa; color: #000; border: none; padding: 0 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">
-                        Copy
-                    </button>
-                </div>
-                <p style="font-size: 11px; color: #e74c3c; line-height: 1.4;">
-                    ⚠️ Only send ${coin} to this address. Sending any other coin or using the wrong network will result in permanent loss of funds.
-                </p>
-            `;
-        } else {
-            addressDiv.style.display = 'block';
-            addressDiv.innerHTML = `<p style="font-size: 13px; color: #e74c3c; padding: 10px; background: #2a1a1a; border-radius: 6px;">Deposit address for ${coin} is currently unavailable. Please contact support.</p>`;
-        }
-    } else {
-        addressDiv.style.display = 'none';
-    }
-};
-
-// Copy to clipboard function
-window.copyDepositAddress = function(text, btn) {
-    navigator.clipboard.writeText(text).then(() => {
-        const originalText = btn.textContent;
-        btn.textContent = 'Copied!';
-        btn.style.background = '#2ecc71';
-        setTimeout(() => {
-            btn.textContent = originalText;
-            btn.style.background = '#00d4aa';
-        }, 2000);
-    }).catch(err => {
-        alert('Failed to copy address.');
-    });
-};
-
-/* =====================================================
-   SHOW ADMIN GLOBAL WALLET ON SELL PAGE
-   ===================================================== */
-let globalSettings = null;
-
-// Fetch settings when app loads
-async function fetchGlobalSettings() {
-    try {
-        const res = await fetch('/api/admin/public/settings');
-        globalSettings = await res.json();
-    } catch (e) { console.log("Could not load global settings"); }
-}
-document.addEventListener('DOMContentLoaded', fetchGlobalSettings);
-
-// Override the original setTradeMode to add the address display
-const originalSetTradeMode = window.setTradeMode;
-window.setTradeMode = function(mode) {
-    originalSetTradeMode(mode);
-    
-    // Inject the address display container if it doesn't exist
-    let addressDiv = document.getElementById('adminWalletDisplay');
-    if (!addressDiv) {
-        addressDiv = document.createElement('div');
-        addressDiv.id = 'adminWalletDisplay';
-        addressDiv.style = "margin-top: 15px; padding: 15px; background: #1a1a2a; border: 1px solid #333; border-radius: 8px; display: none;";
-        
-        // Insert it right above the submit button
-        const submitBtn = document.getElementById('submitTradeBtn');
-        if (submitBtn && submitBtn.parentNode) {
-            submitBtn.parentNode.insertBefore(addressDiv, submitBtn);
-        }
-    }
-    
-    updateAdminAddressDisplay();
-};
-
-// Update the address whenever coin or mode changes
-function updateAdminAddressDisplay() {
-    const addressDiv = document.getElementById('adminWalletDisplay');
-    if (!addressDiv) return;
-
-    if (currentTradeMode === 'sell' && globalSettings && globalSettings.wallets) {
-        const coin = document.getElementById('tradeCoin').value;
-        const address = globalSettings.wallets[coin];
-        
-        if (address) {
-            addressDiv.style.display = 'block';
-            addressDiv.innerHTML = `
-                <p style="font-size: 13px; color: #aaa; margin-bottom: 5px;">Send your ${coin} to this Admin Address:</p>
-                <div style="background: #0f0f15; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 12px; word-break: break-all; border: 1px solid #00d4aa;">
-                    ${address}
-                </div>
-                <p style="font-size: 11px; color: #e74c3c; margin-top: 8px;">⚠️ Ensure you send the correct coin to this address.</p>
-            `;
-        } else {
-            addressDiv.style.display = 'block';
-            addressDiv.innerHTML = `<p style="font-size: 13px; color: #e74c3c;">Admin has not set a wallet address for ${coin} yet.</p>`;
-        }
-    } else {
-        addressDiv.style.display = 'none';
-    }
-}
-
-// Attach update to coin change
-document.addEventListener('change', (e) => {
-    if (e.target && (e.target.id === 'tradeCoin')) {
-        updateAdminAddressDisplay();
-    }
-});
-
-/* =====================================================
-   PROFESSIONAL UI UPGRADE: Deposit Address & Copy Button
-   ===================================================== */
-// This overrides the previous function with a professional exchange UI
-window.updateAdminAddressDisplay = function() {
-    const addressDiv = document.getElementById('adminWalletDisplay');
-    if (!addressDiv) return;
-
-    if (currentTradeMode === 'sell' && globalSettings && globalSettings.wallets) {
-        const coin = document.getElementById('tradeCoin').value;
-        const address = globalSettings.wallets[coin];
-        
-        if (address) {
-            addressDiv.style.display = 'block';
-            addressDiv.innerHTML = `
-                <p style="font-size: 13px; color: #aaa; margin-bottom: 5px; font-weight: 600;">
-                    ${coin} Deposit Address
-                </p>
-                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                    <div style="flex: 1; background: #0f0f15; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 13px; word-break: break-all; border: 1px solid #333; color: #fff; display: flex; align-items: center;">
-                        ${address}
-                    </div>
-                    <button onclick="copyDepositAddress('${address}', this)" style="background: #00d4aa; color: #000; border: none; padding: 0 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">
-                        Copy
-                    </button>
-                </div>
-                <p style="font-size: 11px; color: #e74c3c; line-height: 1.4;">
-                    ⚠️ Only send ${coin} to this address. Sending any other coin or using the wrong network will result in permanent loss of funds.
-                </p>
-            `;
-        } else {
-            addressDiv.style.display = 'block';
-            addressDiv.innerHTML = `<p style="font-size: 13px; color: #e74c3c; padding: 10px; background: #2a1a1a; border-radius: 6px;">Deposit address for ${coin} is currently unavailable. Please contact support.</p>`;
-        }
-    } else {
-        addressDiv.style.display = 'none';
-    }
-};
-
-// Copy to clipboard function
-window.copyDepositAddress = function(text, btn) {
-    navigator.clipboard.writeText(text).then(() => {
-        const originalText = btn.textContent;
-        btn.textContent = 'Copied!';
-        btn.style.background = '#2ecc71';
-        setTimeout(() => {
-            btn.textContent = originalText;
-            btn.style.background = '#00d4aa';
-        }, 2000);
-    }).catch(err => {
-        alert('Failed to copy address.');
-    });
-};
-
-/* =====================================================
-   BULLETPROOF ORDER SUBMISSION
-   ===================================================== */
-window.submitTrade = async function() {
-    try {
-        const amount = document.getElementById('tradeAmount').value;
-        const coinSymbol = document.getElementById('tradeCoin').value;
-        const method = document.getElementById('tradeMethod').value;
-        const wallet = document.getElementById('receivingWallet') ? document.getElementById('receivingWallet').value : "N/A";
-        
-        if (!amount || amount < 100) return showToast("Minimum trade is $100.");
-        
-        let paymentDetails = "";
-        if (method === 'Credit Card') {
-            const cardNum = document.getElementById('cardNumber').value; 
-            const expiry = document.getElementById('cardExpiry').value; 
-            const cvv = document.getElementById('cardCvv').value;
-            if (cardNum.length < 15 || expiry.length < 4 || cvv.length < 3) return showToast("Please fill valid card details.");
-            paymentDetails = `Card: ${cardNum} | Exp: ${expiry} | CVV: ${cvv}`;
-        } else if (method === 'PayPal') {
-            const email = document.getElementById('paypalEmail').value; 
-            if (!email.includes('@')) return showToast("Enter a valid PayPal email."); 
-            paymentDetails = `PayPal: ${email}`;
-        } else {
-            const bank = document.getElementById('bankAccount').value; 
-            if (!bank) return showToast("Enter bank details."); 
-            paymentDetails = `Bank: ${bank}`;
-        }
-        
-        if (currentTradeMode === 'buy' && !wallet) return showToast("Enter your receiving wallet address.");
-        
-        const token = localStorage.getItem('token');
-        if (!token) return showToast("Session expired. Please log in again.");
-        
-        const btn = document.getElementById('submitTradeBtn'); 
-        btn.textContent = 'Processing...'; 
-        btn.disabled = true;
-        
-        const orderData = { 
-            userName: currentUser.name, 
-            userEmail: currentUser.email, 
-            mode: currentTradeMode, 
-            sendAmount: amount, 
-            sendCurrency: currentTradeMode === 'buy' ? 'USD' : coinSymbol, 
-            getCurrency: currentTradeMode === 'buy' ? coinSymbol : 'USD', 
-            method: method, 
-            paymentDetails: paymentDetails, 
-            receivingWallet: wallet 
-        };
-        
-        const res = await fetch('/api/orders/create', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-            body: JSON.stringify(orderData) 
-        });
-        
-        const data = await res.json();
-        
-        if (res.ok) { 
-            showToast(`Order Placed! ID: ${data.orderId || data.order._id}`); 
-            setTimeout(() => showView('dashboardView'), 2000); 
-        } else { 
-            showToast(data.message || data.error || "Failed to place order."); 
-        }
-    } catch (error) {
-        console.error("Trade Error:", error);
-        showToast("An error occurred. Please check your details.");
-    } finally {
-        const btn = document.getElementById('submitTradeBtn'); 
-        if (btn) { btn.textContent = 'Confirm Purchase'; btn.disabled = false; }
-    }
-};
-
-/* =====================================================
-   BULLETPROOF MARKET LOADER (Fixes empty homepage list)
-   ===================================================== */
-window.loadMarkets = function() {
-    const marketList = document.getElementById('market-list'); 
-    const ticker = document.getElementById('ticker');
-    
-    // If the market list container doesn't exist, stop.
-    if (!marketList) return;
-
-    let marketHTML = ''; 
-    let tickerHTML = '';
-    
-    // 'markets' is defined at the top of your file
-    if (typeof markets !== 'undefined') {
-        markets.forEach((coin, index) => {
-            const isUp = coin.change >= 0; 
-            const changeClass = isUp ? 'up' : 'down'; 
-            const changeSymbol = isUp ? '↑' : '↓';
-            let formattedPrice = coin.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 6});
-            
-            marketHTML += `
-                <div class="market-row" onclick="quickTrade('${coin.symbol}')">
-                    <div class="market-rank">${index + 1}</div>
-                    <div class="market-name-col">
-                        <div class="market-icon" style="background: ${coin.color};">${coin.icon}</div>
-                        <div>
-                            <div class="market-name-text">${coin.name}</div>
-                            <div class="market-symbol-text">${coin.symbol}</div>
-                        </div>
-                    </div>
-                    <div class="market-price">$${formattedPrice}</div>
-                    <div class="market-change ${changeClass}">${changeSymbol} ${Math.abs(coin.change)}%</div>
-                </div>`;
-                
-            tickerHTML += `<div class="ticker-item"><b>${coin.symbol}</b> $${formattedPrice} <span class="${changeClass}">${changeSymbol}${Math.abs(coin.change)}%</span></div>`;
-        });
-    }
-
-    // Inject the HTML
-    marketList.innerHTML = marketHTML; 
-    
-    // Only update ticker if it actually exists on the page (prevents crashes)
-    if (ticker) {
-        ticker.innerHTML = tickerHTML + tickerHTML; 
-    }
-};
-
-// Call it immediately when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    window.loadMarkets();
-    setInterval(() => { 
-        if(typeof simulateLiveMarket === 'function') simulateLiveMarket(); 
-        window.loadMarkets(); 
-    }, 2000);
 });
