@@ -3,36 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CoinWave Exchange - Buy & Sell Crypto</title>
+    <title>CoinWave Exchange</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <!-- Ticker -->
-    <div class="ticker-wrap">
-        <div class="ticker-move" id="ticker"></div>
-    </div>
+    <div class="ticker-wrap"><div class="ticker-move" id="ticker"></div></div>
 
     <!-- Navigation -->
     <nav>
-        <div class="logo">🌊 CoinWave</div>
+        <div class="logo" onclick="showView('guestView')">🌊 CoinWave</div>
         <div class="nav-links" id="navLinks">
-            <!-- Dynamic Nav injected by JS based on Auth state -->
-            <a href="#">Markets</a>
-            <a href="#">Trade</a>
-            <a href="#" onclick="openModal('login')">Login</a>
-            <a href="#" onclick="openModal('register')" class="btn-primary">Get Started</a>
+            <!-- Dynamic content based on login state -->
         </div>
     </nav>
 
-    <!-- Main Hero & Market Table -->
-    <main id="app">
+    <!-- ============================== -->
+    <!-- VIEW 1: GUEST HOMEPAGE         -->
+    <!-- ============================== -->
+    <main id="guestView" class="app-view">
         <div class="hero">
             <h1>Buy & Sell Crypto in Minutes</h1>
             <p>Join the world's largest digital asset exchange.</p>
             <div class="hero-buttons">
-                <button class="btn-buy" onclick="handleTradeClick('buy')">Buy Crypto</button>
-                <button class="btn-sell" onclick="handleTradeClick('sell')">Sell Crypto</button>
+                <button class="btn-buy" onclick="showView('authView', 'register')">Buy Crypto</button>
+                <button class="btn-sell" onclick="showView('authView', 'register')">Sell Crypto</button>
             </div>
         </div>
 
@@ -41,44 +37,95 @@
                 <h2>Live Markets</h2>
                 <span class="live-indicator">● Live</span>
             </div>
-            
             <div class="market-table-header">
-                <span>#</span>
-                <span>Name</span>
-                <span style="text-align: right;">Price</span>
-                <span style="text-align: right;">24h Change</span>
+                <span>#</span><span>Name</span><span style="text-align: right;">Price</span><span style="text-align: right;">24h Change</span>
             </div>
-            
             <div id="market-list" class="market-list"></div>
         </div>
     </main>
 
-    <!-- AUTH MODAL (Login/Register) -->
-    <div id="authModal" class="modal-overlay">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal()">&times;</span>
-            
+    <!-- ============================== -->
+    <!-- VIEW 2: AUTHENTICATION PAGE    -->
+    <!-- ============================== -->
+    <main id="authView" class="app-view" style="display: none;">
+        <div class="auth-container">
             <!-- Login Form -->
-            <div id="loginForm" style="display: none;">
-                <h2>Welcome Back</h2>
-                <input type="email" id="loginEmail" placeholder="Email Address" class="auth-input">
-                <input type="password" id="loginPassword" placeholder="Password" class="auth-input">
-                <button class="btn-primary auth-btn" onclick="handleLogin()">Log In</button>
-                <p class="switch-auth">No account? <a href="#" onclick="switchModal('register')">Sign Up</a></p>
+            <div id="loginForm" class="auth-box" style="display: none;">
+                <h2>Log In to CoinWave</h2>
+                <div class="input-group">
+                    <label>Email Address</label>
+                    <input type="email" id="loginEmail" placeholder="name@example.com">
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" placeholder="Enter your password">
+                </div>
+                <button class="btn-primary full-width" onclick="handleLogin()">Log In</button>
+                <p class="switch-auth">Don't have an account? <a href="#" onclick="switchAuth('register')">Create one</a></p>
             </div>
 
             <!-- Register Form -->
-            <div id="registerForm" style="display: none;">
-                <h2>Create Account</h2>
-                <input type="text" id="regName" placeholder="Full Name" class="auth-input">
-                <input type="text" id="regCountry" placeholder="Country" class="auth-input">
-                <input type="email" id="regEmail" placeholder="Email Address" class="auth-input">
-                <input type="password" id="regPassword" placeholder="Password" class="auth-input">
-                <button class="btn-primary auth-btn" onclick="handleRegister()">Register</button>
-                <p class="switch-auth">Have an account? <a href="#" onclick="switchModal('login')">Log In</a></p>
+            <div id="registerForm" class="auth-box" style="display: none;">
+                <h2>Create an Account</h2>
+                
+                <div class="input-group">
+                    <label>Full Name</label>
+                    <input type="text" id="regName" placeholder="John Doe">
+                </div>
+                
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Country</label>
+                        <select id="regCountry">
+                            <option value="" disabled selected>Select Country</option>
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Phone Number</label>
+                        <input type="tel" id="regPhone" placeholder="+1 234 567 8900">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Email Address</label>
+                    <input type="email" id="regEmail" placeholder="name@example.com">
+                </div>
+                
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="regPassword" placeholder="Create a strong password">
+                </div>
+                
+                <button class="btn-primary full-width" onclick="handleRegister()">Create Account</button>
+                <p class="switch-auth">Already have an account? <a href="#" onclick="switchAuth('login')">Log In</a></p>
             </div>
         </div>
-    </div>
+    </main>
+
+    <!-- ============================== -->
+    <!-- VIEW 3: USER DASHBOARD         -->
+    <!-- ============================== -->
+    <main id="dashboardView" class="app-view" style="display: none;">
+        <div class="dashboard-header">
+            <h1>Welcome back, <span id="dashName"></span></h1>
+            <p>Your portfolio is looking good today.</p>
+        </div>
+        <div class="dashboard-grid">
+            <div class="dash-card">
+                <p>Total Balance</p>
+                <h2>$0.00</h2>
+            </div>
+            <div class="dash-card">
+                <p>Available to Trade</p>
+                <h2>$0.00</h2>
+            </div>
+        </div>
+        <div class="dashboard-actions">
+            <button class="btn-buy full-width" onclick="alert('Trading coming soon!')">Buy Crypto</button>
+            <button class="btn-sell full-width" onclick="alert('Trading coming soon!')">Sell Crypto</button>
+        </div>
+    </main>
 
     <script src="app.js"></script>
 </body>
