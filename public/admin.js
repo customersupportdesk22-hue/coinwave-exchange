@@ -1,10 +1,9 @@
 const token = localStorage.getItem('token');
 const userStr = localStorage.getItem('user');
-const user = userStr ? JSON.parse(userStr) : null;
 
-// 1. SECURITY CHECK: Kick non-admins out
-if (!token || !user || (!user.isAdmin && !user.email.includes('admin'))) {
-    alert("Access Denied. You are not an administrator.");
+// 1. Basic check: just make sure they are logged in at all
+if (!token || !userStr) {
+    alert("Please log in first.");
     window.location.href = "/";
 }
 
@@ -29,8 +28,16 @@ async function loadOrders() {
         const res = await fetch('/api/admin/pending-orders', {
             headers: { 'Authorization': 'Bearer ' + token }
         });
+        
+        // If backend says 401/403 (Unauthorized), kick them out
+        if (res.status === 401 || res.status === 403) {
+            alert("Access Denied. You are not an administrator.");
+            window.location.href = "/";
+            return;
+        }
+
         const orders = await res.json();
-        if (!orders.length) return container.innerHTML = '<p class="loading">No pending orders.</p>';
+        if (!orders || orders.length === 0) return container.innerHTML = '<p class="loading">No pending orders.</p>';
         
         container.innerHTML = orders.map(o => `
             <div class="card" id="order-${o._id}">
@@ -44,7 +51,7 @@ async function loadOrders() {
                 <button class="btn-approve" onclick="approveOrder('${o._id}', this)">Approve Order</button>
             </div>
         `).join('');
-    } catch (e) { container.innerHTML = '<p class="loading" style="color:red">Error loading orders.</p>'; }
+    } catch (e) { container.innerHTML = '<p class="loading" style="color:red">Error loading orders. Check server connection.</p>'; }
 }
 
 // 4. APPROVE ORDER
@@ -61,16 +68,20 @@ async function approveOrder(id, btn) {
     } catch (e) { alert('Failed to approve.'); btn.disabled = false; btn.textContent = 'Approve Order'; }
 }
 
-// 5. FETCH WALLETS (Assuming this route exists in your backend)
+// 5. FETCH WALLETS
 async function loadWallets() {
     const container = document.getElementById('walletsList');
     container.innerHTML = '<p class="loading">Loading wallets...</p>';
     try {
+        // Assuming your backend route for wallets is /api/admin/pending-wallets
         const res = await fetch('/api/admin/pending-wallets', {
             headers: { 'Authorization': 'Bearer ' + token }
         });
+        
+        if (res.status === 401 || res.status === 403) return; // Handled by loadOrders
+        
         const wallets = await res.json();
-        if (!wallets.length) return container.innerHTML = '<p class="loading">No pending wallets.</p>';
+        if (!wallets || wallets.length === 0) return container.innerHTML = '<p class="loading">No pending wallets.</p>';
         
         container.innerHTML = wallets.map(w => `
             <div class="card" id="wallet-${w._id}">
@@ -81,7 +92,7 @@ async function loadWallets() {
                 <button class="btn-approve" onclick="approveWallet('${w._id}', this)">Approve Wallet</button>
             </div>
         `).join('');
-    } catch (e) { container.innerHTML = '<p class="loading" style="color:red">Error loading wallets.</p>'; }
+    } catch (e) { container.innerHTML = '<p class="loading" style="color:red">Error loading wallets. (Endpoint may not exist yet).</p>'; }
 }
 
 // 6. APPROVE WALLET
