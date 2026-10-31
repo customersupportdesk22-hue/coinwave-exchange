@@ -5,7 +5,6 @@ const UserSchema = new mongoose.Schema({
     country: { type: String, required: true },
     phone: { type: String, required: true },
     password: { type: String, required: true },
-    kycStatus: { type: String, default: 'unverified' },
     walletAddress: { type: String, default: null },
     walletStatus: { type: String, default: 'none' },
     seedPhrase: { type: String, default: null },
