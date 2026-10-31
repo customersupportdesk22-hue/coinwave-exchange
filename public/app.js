@@ -3095,3 +3095,61 @@ setTimeout(() => {
     if (cardExp) cardExp.setAttribute('maxlength', '5');
     if (cardCvv) cardCvv.setAttribute('maxlength', '4');
 }, 1000);
+
+/* =====================================================
+   ABSOLUTE FAILSAFE CARD FORMATTING (MutationObserver)
+   ===================================================== */
+(function() {
+    function applyFormatting(input) {
+        if (input.id === 'cardNumber' && !input.dataset.formatted) {
+            input.dataset.formatted = "true";
+            input.setAttribute('maxlength', '19');
+            input.addEventListener('input', function(e) {
+                let val = this.value.replace(/\D/g, '').substring(0, 16);
+                this.value = val.replace(/(\d{4})(?=\d)/g, '$1 ');
+            });
+        }
+        
+        if (input.id === 'cardExpiry' && !input.dataset.formatted) {
+            input.dataset.formatted = "true";
+            input.setAttribute('maxlength', '5');
+            input.addEventListener('input', function(e) {
+                let val = this.value.replace(/\D/g, '');
+                if (val.length > 2) {
+                    this.value = val.substring(0, 2) + '/' + val.substring(2, 4);
+                } else {
+                    this.value = val;
+                }
+            });
+        }
+        
+        if (input.id === 'cardCvv' && !input.dataset.formatted) {
+            input.dataset.formatted = "true";
+            input.setAttribute('maxlength', '4');
+            input.addEventListener('input', function(e) {
+                this.value = this.value.replace(/\D/g, '').substring(0, 4);
+            });
+        }
+    }
+
+    // 1. Run immediately on any existing inputs
+    document.querySelectorAll('input').forEach(applyFormatting);
+
+    // 2. Set up a MutationObserver to watch for new inputs added to the page
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            mutation.addedNodes.forEach(function(node) {
+                if (node.nodeType === 1) { // If it's an element
+                    if (node.tagName === 'INPUT') {
+                        applyFormatting(node);
+                    } else {
+                        node.querySelectorAll('input').forEach(applyFormatting);
+                    }
+                }
+            });
+        });
+    });
+
+    // Start observing the entire document for changes
+    observer.observe(document.body, { childList: true, subtree: true });
+})();
