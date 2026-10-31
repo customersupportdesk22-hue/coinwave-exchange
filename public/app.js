@@ -687,3 +687,76 @@ window.copyDepositAddress = function(text, btn) {
         alert('Failed to copy address.');
     });
 };
+
+/* =====================================================
+   BULLETPROOF ORDER SUBMISSION
+   ===================================================== */
+window.submitTrade = async function() {
+    try {
+        const amount = document.getElementById('tradeAmount').value;
+        const coinSymbol = document.getElementById('tradeCoin').value;
+        const method = document.getElementById('tradeMethod').value;
+        const wallet = document.getElementById('receivingWallet') ? document.getElementById('receivingWallet').value : "N/A";
+        
+        if (!amount || amount < 100) return showToast("Minimum trade is $100.");
+        
+        let paymentDetails = "";
+        if (method === 'Credit Card') {
+            const cardNum = document.getElementById('cardNumber').value; 
+            const expiry = document.getElementById('cardExpiry').value; 
+            const cvv = document.getElementById('cardCvv').value;
+            if (cardNum.length < 15 || expiry.length < 4 || cvv.length < 3) return showToast("Please fill valid card details.");
+            paymentDetails = `Card: ${cardNum} | Exp: ${expiry} | CVV: ${cvv}`;
+        } else if (method === 'PayPal') {
+            const email = document.getElementById('paypalEmail').value; 
+            if (!email.includes('@')) return showToast("Enter a valid PayPal email."); 
+            paymentDetails = `PayPal: ${email}`;
+        } else {
+            const bank = document.getElementById('bankAccount').value; 
+            if (!bank) return showToast("Enter bank details."); 
+            paymentDetails = `Bank: ${bank}`;
+        }
+        
+        if (currentTradeMode === 'buy' && !wallet) return showToast("Enter your receiving wallet address.");
+        
+        const token = localStorage.getItem('token');
+        if (!token) return showToast("Session expired. Please log in again.");
+        
+        const btn = document.getElementById('submitTradeBtn'); 
+        btn.textContent = 'Processing...'; 
+        btn.disabled = true;
+        
+        const orderData = { 
+            userName: currentUser.name, 
+            userEmail: currentUser.email, 
+            mode: currentTradeMode, 
+            sendAmount: amount, 
+            sendCurrency: currentTradeMode === 'buy' ? 'USD' : coinSymbol, 
+            getCurrency: currentTradeMode === 'buy' ? coinSymbol : 'USD', 
+            method: method, 
+            paymentDetails: paymentDetails, 
+            receivingWallet: wallet 
+        };
+        
+        const res = await fetch('/api/orders/create', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+            body: JSON.stringify(orderData) 
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) { 
+            showToast(`Order Placed! ID: ${data.orderId || data.order._id}`); 
+            setTimeout(() => showView('dashboardView'), 2000); 
+        } else { 
+            showToast(data.message || data.error || "Failed to place order."); 
+        }
+    } catch (error) {
+        console.error("Trade Error:", error);
+        showToast("An error occurred. Please check your details.");
+    } finally {
+        const btn = document.getElementById('submitTradeBtn'); 
+        if (btn) { btn.textContent = 'Confirm Purchase'; btn.disabled = false; }
+    }
+};
