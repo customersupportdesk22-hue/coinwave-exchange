@@ -19,8 +19,8 @@ app.use('/api/auth', require('./routes/auth'));
 // Serve Frontend from 'public' folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Fallback to index.html for any other route
-app.get('*', (req, res) => {
+// Fallback to index.html for any other route (Express 5 compatible)
+app.use((req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
