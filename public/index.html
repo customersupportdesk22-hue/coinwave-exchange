@@ -73,8 +73,8 @@
         <div class="dash-container">
             <div class="portfolio-header"><p>Estimated Total Value</p><h1 id="totalPortfolioValue">$0.00</h1></div>
             <div class="quick-actions">
-                <div class="action-btn" onclick="showCustomAlert('Select Asset', 'Please tap on a specific asset in the list below to Deposit.')"><svg class="action-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg><span>Deposit</span></div>
-                <div class="action-btn" onclick="showCustomAlert('Select Asset', 'Please tap on a specific asset in the list below to Withdraw.')"><svg class="action-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg><span>Withdraw</span></div>
+                <div class="action-btn" onclick="openAssetSelector('deposit')"><svg class="action-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg><span>Deposit</span></div>
+                <div class="action-btn" onclick="openAssetSelector('withdraw')"><svg class="action-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg><span>Withdraw</span></div>
             </div>
             <div class="trade-buttons-grid">
                 <button class="btn-buy-large" onclick="requireAuth('tradeView', 'buy')">Buy</button>
