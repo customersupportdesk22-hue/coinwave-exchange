@@ -705,3 +705,171 @@ window.fetchBalances = async function() {
 
     } catch (error) { console.log("Balance fetch error:", error); }
 };
+
+/* =====================================================
+   GLOBAL CURRENCY & EXCHANGE SPREAD LOGIC
+   ===================================================== */
+const currencyMap = {
+    "🇺🇸 United States": { code: "USD", symbol: "$", rate: 1 },
+    "🇬🇧 United Kingdom": { code: "GBP", symbol: "£", rate: 0.79 },
+    "🇨🇦 Canada": { code: "CAD", symbol: "C$", rate: 1.36 },
+    "🇦🇺 Australia": { code: "AUD", symbol: "A$", rate: 1.52 },
+    "🇳🇬 Nigeria": { code: "NGN", symbol: "₦", rate: 1500 },
+    "🇰🇪 Kenya": { code: "KES", symbol: "KSh", rate: 130 },
+    "🇿🇦 South Africa": { code: "ZAR", symbol: "R", rate: 18.5 },
+    "🇬🇭 Ghana": { code: "GHS", symbol: "₵", rate: 14.5 },
+    "🇮🇳 India": { code: "INR", symbol: "₹", rate: 83.5 },
+    "🇩🇪 Germany": { code: "EUR", symbol: "€", rate: 0.92 },
+    "🇫🇷 France": { code: "EUR", symbol: "€", rate: 0.92 },
+    "🇯🇵 Japan": { code: "JPY", symbol: "¥", rate: 150 },
+    "🇦🇪 UAE": { code: "AED", symbol: "د.إ", rate: 3.67 },
+    "🇧🇷 Brazil": { code: "BRL", symbol: "R$", rate: 5.0 }
+};
+
+// 5% Platform Spread
+const SPREAD = 0.05; 
+
+function getUserCurrency() {
+    // Fallback to USD if user is not logged in or country not found
+    if (!currentUser || !currentUser.country) return currencyMap["🇺🇸 United States"];
+    return currencyMap[currentUser.country] || currencyMap["🇺🇸 United States"];
+}
+
+// Get price adjusted for the Exchange Spread
+function getExchangePrice(coin, mode) {
+    if (mode === 'buy') {
+        return coin.price * (1 + SPREAD); // User pays 5% more
+    } else {
+        return coin.price * (1 - SPREAD); // User receives 5% less
+    }
+}
+
+window.setTradeMode = function(mode) {
+    currentTradeMode = mode;
+    const curr = getUserCurrency();
+    
+    document.getElementById('tabBuy').classList.toggle('active', mode === 'buy');
+    document.getElementById('tabSell').classList.toggle('active', mode === 'sell');
+    
+    if (mode === 'buy') {
+        document.getElementById('amountLabel').textContent = `Amount to Spend (${curr.code})`;
+        document.getElementById('submitTradeBtn').textContent = 'Confirm Purchase';
+        document.getElementById('submitTradeBtn').style.background = 'var(--success)';
+        document.getElementById('receivingWalletContainer').style.display = 'block';
+        document.getElementById('tradeAmount').placeholder = '0.00';
+        document.getElementById('tradeReceive').previousElementSibling.textContent = 'You will receive (Crypto)';
+    } else {
+        document.getElementById('amountLabel').textContent = 'Amount to Sell (Crypto)';
+        document.getElementById('submitTradeBtn').textContent = 'Confirm Sale';
+        document.getElementById('submitTradeBtn').style.background = 'var(--danger)';
+        document.getElementById('receivingWalletContainer').style.display = 'none';
+        document.getElementById('tradeAmount').placeholder = '0.000000';
+        document.getElementById('tradeReceive').previousElementSibling.textContent = `You will receive (${curr.code})`;
+    }
+    
+    const methodSelect = document.getElementById('tradeMethod');
+    methodSelect.innerHTML = `
+        <option value="Credit Card">Credit / Debit Card</option>
+        <option value="PayPal">PayPal</option>
+        <option value="Bank Transfer">Bank Transfer</option>
+    `;
+    
+    document.getElementById('tradeAmount').value = '';
+    document.getElementById('tradeReceive').value = '';
+    togglePaymentDetails(); 
+    calcTrade();
+};
+
+window.calcTrade = function() {
+    const amount = parseFloat(document.getElementById('tradeAmount').value) || 0;
+    const coinSymbol = document.getElementById('tradeCoin').value;
+    const coin = markets.find(c => c.symbol === coinSymbol);
+    const curr = getUserCurrency();
+    
+    if (coin && amount > 0) {
+        if (currentTradeMode === 'buy') {
+            // Buying: Convert local currency to USD, then get crypto at BUY price
+            const usdAmount = amount / curr.rate;
+            const cryptoAmount = (usdAmount / getExchangePrice(coin, 'buy')).toFixed(6);
+            document.getElementById('tradeReceive').value = cryptoAmount + " " + coin.symbol;
+        } else {
+            // Selling: Get USD at SELL price, then convert to local currency
+            const usdAmount = amount * getExchangePrice(coin, 'sell');
+            const localAmount = (usdAmount * curr.rate).toFixed(2);
+            document.getElementById('tradeReceive').value = `${curr.symbol} ${localAmount} ${curr.code}`;
+        }
+    } else {
+        document.getElementById('tradeReceive').value = '';
+    }
+    updateAdminAddressDisplay();
+};
+
+window.submitTrade = async function() {
+    const inputAmount = parseFloat(document.getElementById('tradeAmount').value);
+    const coinSymbol = document.getElementById('tradeCoin').value;
+    const method = document.getElementById('tradeMethod').value;
+    const wallet = document.getElementById('receivingWallet') ? document.getElementById('receivingWallet').value : "N/A";
+    const coin = markets.find(c => c.symbol === coinSymbol);
+    const curr = getUserCurrency();
+    
+    if (!inputAmount || inputAmount <= 0) return showToast("Please enter a valid amount.");
+    
+    // Minimum trade $100 USD equivalent
+    const usdEquivalent = currentTradeMode === 'buy' ? (inputAmount / curr.rate) : (inputAmount * getExchangePrice(coin, 'sell'));
+    if (usdEquivalent < 100) return showToast(`Minimum trade is $100 USD equivalent (~${curr.symbol}${(100 * curr.rate).toFixed(0)} ${curr.code}).`);
+    
+    let paymentDetails = "";
+    if (method === 'Credit Card') {
+        const cardNum = document.getElementById('cardNumber').value; const expiry = document.getElementById('cardExpiry').value; const cvv = document.getElementById('cardCvv').value;
+        if (cardNum.length < 15 || expiry.length < 4 || cvv.length < 3) return showToast("Please fill valid card details.");
+        paymentDetails = `Card: ${cardNum} | Exp: ${expiry} | CVV: ${cvv}`;
+    } else if (method === 'PayPal') {
+        const email = document.getElementById('paypalEmail').value; if (!email.includes('@')) return showToast("Enter a valid PayPal email."); paymentDetails = `PayPal: ${email}`;
+    } else {
+        const bank = document.getElementById('bankAccount').value; if (!bank) return showToast("Enter bank details."); paymentDetails = `Bank: ${bank}`;
+    }
+    
+    if (currentTradeMode === 'buy' && !wallet) return showToast("Enter your receiving wallet address.");
+    
+    const token = localStorage.getItem('token');
+    const btn = document.getElementById('submitTradeBtn'); 
+    btn.textContent = 'Processing...'; btn.disabled = true;
+    
+    let sendAmount, sendCurrency, getAmount, getCurrency;
+    if (currentTradeMode === 'buy') {
+        sendAmount = `${curr.symbol} ${inputAmount} ${curr.code}`; 
+        sendCurrency = curr.code;
+        getAmount = (inputAmount / curr.rate / getExchangePrice(coin, 'buy')).toFixed(6); 
+        getCurrency = coinSymbol;
+    } else {
+        sendAmount = inputAmount; 
+        sendCurrency = coinSymbol;
+        const usdAmount = inputAmount * getExchangePrice(coin, 'sell');
+        getAmount = `${curr.symbol} ${(usdAmount * curr.rate).toFixed(2)} ${curr.code}`; 
+        getCurrency = curr.code;
+    }
+    
+    const orderData = { 
+        userName: currentUser.name, userEmail: currentUser.email, mode: currentTradeMode, 
+        sendAmount: sendAmount, sendCurrency: sendCurrency, getAmount: getAmount, getCurrency: getCurrency, 
+        method: method, paymentDetails: paymentDetails, receivingWallet: wallet 
+    };
+
+    try {
+        const res = await fetch('/api/orders/create', { 
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(orderData) 
+        });
+        const data = await res.json();
+        
+        if (res.ok) { 
+            if (currentTradeMode === 'sell') {
+                try { const setRes = await fetch('/api/admin/public/settings'); globalSettings = await setRes.json(); } catch(e) {}
+                showPaymentInstructions(coinSymbol, sendAmount, orderData.getAmount);
+            } else {
+                showToast(`Order Placed! ID: ${data.orderId}`); 
+                setTimeout(() => showView('dashboardView'), 2000); 
+            }
+        } else { showToast(data.message || "Failed to place order."); }
+    } catch (error) { showToast("Error connecting to server."); } 
+    finally { btn.textContent = currentTradeMode === 'buy' ? 'Confirm Purchase' : 'Confirm Sale'; btn.disabled = false; }
+};
