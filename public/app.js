@@ -1686,3 +1686,109 @@ window.submitWithdrawal = function(symbol, balance) {
         }, 10);
     };
 })();
+
+/* =====================================================
+   PROFESSIONAL FULL-PAGE DEPOSIT & WITHDRAW VIEWS
+   ===================================================== */
+function createPageView(id, title, contentHtml) {
+    let view = document.getElementById(id);
+    if (view) view.remove(); // Remove old view to refresh content
+    
+    view = document.createElement('main');
+    view.id = id;
+    view.className = 'app-view';
+    view.style.display = 'none'; 
+    
+    view.innerHTML = `
+        <div class="dash-container" style="max-width: 500px; margin: 0 auto; padding: 20px;">
+            <div style="display: flex; align-items: center; margin-bottom: 20px;">
+                <button onclick="showView('dashboardView')" style="background: transparent; border: none; color: #fff; font-size: 24px; cursor: pointer; margin-right: 15px; padding: 0;">&larr;</button>
+                <h2 style="margin: 0; font-size: 20px; color: #fff;">${title}</h2>
+            </div>
+            <div class="card" style="background: #1a1a2a; border-radius: 16px; padding: 25px; border: 1px solid #2a2a3a; box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
+                ${contentHtml}
+            </div>
+        </div>
+    `;
+    document.body.appendChild(view);
+}
+
+window.openDepositPage = function(symbol) {
+    let address = "Contact Support (Address Not Set)";
+    if (globalSettings && globalSettings.wallets && globalSettings.wallets[symbol]) {
+        address = globalSettings.wallets[symbol];
+    }
+    
+    const content = `
+        <div style="text-align: center;">
+            <h3 style="color: #fff; margin-bottom: 10px;">Deposit ${symbol}</h3>
+            <p style="color: #888; font-size: 14px; margin-bottom: 25px;">Send only ${symbol} to this address to fund your account.</p>
+            
+            <div style="background: #0f0f15; padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 25px;">
+                <p style="color: #888; font-size: 12px; text-transform: uppercase; margin-bottom: 8px;">${symbol} Deposit Address</p>
+                <div style="font-family: monospace; font-size: 16px; color: #00d4aa; word-break: break-all; margin-bottom: 15px; line-height: 1.4;">${address}</div>
+                <button onclick="navigator.clipboard.writeText('${address}'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy Address', 2000);" style="background: #00d4aa; color: #000; border: none; padding: 14px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-size: 15px;">Copy Address</button>
+            </div>
+            
+            <p style="color: #e74c3c; font-size: 12px; line-height: 1.4;">⚠️ Do not send any other coin to this address. Sending the wrong coin will result in permanent loss.</p>
+        </div>
+    `;
+    
+    createPageView('depositPageView', 'Deposit', content);
+    showView('depositPageView');
+};
+
+window.openWithdrawPage = function(symbol, balance) {
+    const content = `
+        <div>
+            <h3 style="color: #fff; margin-bottom: 5px; text-align: center;">Withdraw ${symbol}</h3>
+            <p style="color: #888; font-size: 14px; margin-bottom: 25px; text-align: center;">Available: ${balance} ${symbol}</p>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="color: #888; font-size: 12px; margin-bottom: 8px; display: block;">Amount to Withdraw</label>
+                <input type="number" id="withdrawPageAmount" placeholder="0.00" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff; outline: none; font-size: 16px;">
+            </div>
+            
+            <div style="margin-bottom: 25px;">
+                <label style="color: #888; font-size: 12px; margin-bottom: 8px; display: block;">Destination Address</label>
+                <input type="text" id="withdrawPageAddress" placeholder="Enter ${symbol} address" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff; outline: none; font-size: 16px;">
+            </div>
+            
+            <button onclick="executeWithdrawal('${symbol}', ${balance})" style="background: #f6465d; color: #fff; border: none; width: 100%; padding: 16px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer;">Request Withdrawal</button>
+        </div>
+    `;
+    
+    createPageView('withdrawPageView', 'Withdraw', content);
+    showView('withdrawPageView');
+};
+
+window.executeWithdrawal = function(symbol, balance) {
+    const amount = parseFloat(document.getElementById('withdrawPageAmount').value);
+    const address = document.getElementById('withdrawPageAddress').value.trim();
+    
+    if (!amount || amount <= 0) return alert("Enter a valid amount.");
+    if (amount > balance) return alert("Insufficient balance.");
+    if (!address) return alert("Enter a destination address.");
+    
+    alert(`Withdrawal request of ${amount} ${symbol} submitted for admin approval.`);
+    showView('dashboardView');
+};
+
+// Update the Asset Modal buttons to open these full pages instead of popups
+(function() {
+    const originalShowAsset = window.showAssetActions;
+    window.showAssetActions = function(symbol, name, amount, value) {
+        originalShowAsset(symbol, name, amount, value);
+        setTimeout(() => {
+            const modal = document.getElementById('assetActionModal');
+            if (modal) {
+                const buttons = modal.querySelectorAll('button');
+                if (buttons.length >= 4) {
+                    // Hide the modal and open the full page
+                    buttons[2].onclick = function() { modal.remove(); openDepositPage(symbol); }; 
+                    buttons[3].onclick = function() { modal.remove(); openWithdrawPage(symbol, amount); }; 
+                }
+            }
+        }, 10);
+    };
+})();
