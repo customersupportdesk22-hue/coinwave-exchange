@@ -1,14 +1,49 @@
+// Base Market Data (Top 25 Coins)
 const markets = [
     { name: 'Bitcoin', symbol: 'BTC', price: 68245.32, change: 2.48, icon: '₿', color: '#f7931a' },
     { name: 'Ethereum', symbol: 'ETH', price: 3845.10, change: 1.12, icon: 'Ξ', color: '#627eea' },
     { name: 'Solana', symbol: 'SOL', price: 187.32, change: 5.20, icon: 'S', color: '#00d2ff' },
     { name: 'BNB', symbol: 'BNB', price: 590.40, change: -0.45, icon: 'B', color: '#f3ba2f' },
-    { name: 'XRP', symbol: 'XRP', price: 2.91, change: -1.20, icon: 'X', color: '#23292f' }
+    { name: 'XRP', symbol: 'XRP', price: 2.91, change: -1.20, icon: 'X', color: '#23292f' },
+    { name: 'Cardano', symbol: 'ADA', price: 0.88, change: 3.10, icon: 'A', color: '#0033ad' },
+    { name: 'Dogecoin', symbol: 'DOGE', price: 0.18, change: 1.45, icon: 'Ð', color: '#c2a633' },
+    { name: 'Avalanche', symbol: 'AVAX', price: 35.20, change: -2.10, icon: 'A', color: '#e84142' },
+    { name: 'Polkadot', symbol: 'DOT', price: 7.15, change: 0.50, icon: '●', color: '#e6007a' },
+    { name: 'Chainlink', symbol: 'LINK', price: 18.40, change: 4.20, icon: '⬡', color: '#2a5ada' },
+    { name: 'Polygon', symbol: 'MATIC', price: 0.72, change: -1.15, icon: 'M', color: '#8247e5' },
+    { name: 'Shiba Inu', symbol: 'SHIB', price: 0.000025, change: 6.80, icon: 'S', color: '#f00500' },
+    { name: 'Litecoin', symbol: 'LTC', price: 82.10, change: 1.05, icon: 'Ł', color: '#345d9d' },
+    { name: 'TRON', symbol: 'TRX', price: 0.13, change: 0.80, icon: 'T', color: '#eb0029' },
+    { name: 'Uniswap', symbol: 'UNI', price: 10.20, change: -0.90, icon: 'U', color: '#ff007a' },
+    { name: 'Cosmos', symbol: 'ATOM', price: 9.80, change: 2.10, icon: '⚛', color: '#2e3148' },
+    { name: 'Stellar', symbol: 'XLM', price: 0.12, change: -1.50, icon: 'X', color: '#000000' },
+    { name: 'NEAR Protocol', symbol: 'NEAR', price: 6.50, change: 3.40, icon: 'N', color: '#00ec97' },
+    { name: 'Aptos', symbol: 'APT', price: 9.20, change: -2.30, icon: 'A', color: '#000000' },
+    { name: 'Arbitrum', symbol: 'ARB', price: 1.15, change: 1.80, icon: 'A', color: '#12aaff' },
+    { name: 'Optimism', symbol: 'OP', price: 2.40, change: 0.40, icon: 'O', color: '#ff0420' },
+    { name: 'Filecoin', symbol: 'FIL', price: 5.80, change: -1.10, icon: 'F', color: '#0090ff' },
+    { name: 'Injective', symbol: 'INJ', price: 25.10, change: 7.20, icon: 'I', color: '#00d2ff' },
+    { name: 'Sui', symbol: 'SUI', price: 1.65, change: 4.50, icon: 'S', color: '#6fbcf0' },
+    { name: 'Pepe', symbol: 'PEPE', price: 0.000008, change: 12.40, icon: '🐸', color: '#3d8130' }
 ];
+
+// Function to simulate live price changes
+function simulateLiveMarket() {
+    markets.forEach(coin => {
+        // Random fluctuation between -0.1% and +0.1%
+        const fluctuation = (Math.random() - 0.5) * (coin.price * 0.002);
+        coin.price += fluctuation;
+        
+        // Randomly update the percentage change slightly
+        const changeFluctuation = (Math.random() - 0.5) * 0.2;
+        coin.change = parseFloat((coin.change + changeFluctuation).toFixed(2));
+    });
+}
 
 function loadMarkets() {
     const marketList = document.getElementById('market-list');
     const ticker = document.getElementById('ticker');
+    
     let marketHTML = '';
     let tickerHTML = '';
 
@@ -17,6 +52,11 @@ function loadMarkets() {
         const changeClass = isUp ? 'up' : 'down';
         const changeSymbol = isUp ? '↑' : '↓';
 
+        // Format price to handle tiny numbers like SHIB
+        let formattedPrice = coin.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 6});
+        if (coin.price < 0.01) formattedPrice = coin.price.toFixed(7);
+
+        // Build Market List
         marketHTML += `
             <div class="market-item">
                 <div class="market-left">
@@ -27,22 +67,33 @@ function loadMarkets() {
                     </div>
                 </div>
                 <div class="market-right">
-                    <div class="market-price">$${coin.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                    <div class="market-price">$${formattedPrice}</div>
                     <div class="market-change ${changeClass}">${changeSymbol} ${Math.abs(coin.change)}%</div>
                 </div>
             </div>
         `;
 
+        // Build Ticker
         tickerHTML += `
             <div class="ticker-item">
-                <b>${coin.symbol}</b> $${coin.price.toLocaleString()} 
+                <b>${coin.symbol}</b> $${formattedPrice} 
                 <span class="${changeClass}">${changeSymbol}${Math.abs(coin.change)}%</span>
             </div>
         `;
     });
 
     marketList.innerHTML = marketHTML;
+    // Duplicate ticker for smooth looping effect
     ticker.innerHTML = tickerHTML + tickerHTML; 
 }
 
-document.addEventListener('DOMContentLoaded', loadMarkets);
+// Initialize on load
+document.addEventListener('DOMContentLoaded', () => {
+    loadMarkets();
+    
+    // Update prices every 2 seconds
+    setInterval(() => {
+        simulateLiveMarket();
+        loadMarkets();
+    }, 2000);
+});
