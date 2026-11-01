@@ -254,3 +254,58 @@ input[type="number"] { -moz-appearance: textfield; }
     margin: auto !important; /* Centers it vertically */
     max-height: 90vh !important;
 }
+
+/* =====================================================
+   COMPACT HOMEPAGE SIZING (Smaller, Professional Fonts)
+   ===================================================== */
+
+/* 1. Section Headers */
+.market-header h2 {
+    font-size: 18px !important;
+    font-weight: 600 !important;
+}
+.market-header {
+    margin-bottom: 12px !important;
+}
+
+/* 2. Top Gainers / Losers Cards */
+.gl-card {
+    padding: 12px !important;
+    min-width: 120px !important;
+}
+.gl-card div:nth-child(1) { font-size: 11px !important; } /* Symbol */
+.gl-card div:nth-child(2) { font-size: 13px !important; margin: 3px 0 !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; } /* Price */
+.gl-card div:nth-child(3) { font-size: 11px !important; } /* Change */
+
+/* 3. Live Markets Table Header */
+.market-table-header {
+    font-size: 11px !important;
+    padding: 8px 10px !important;
+}
+
+/* 4. Live Markets Rows */
+.market-row {
+    padding: 12px 10px !important;
+}
+.market-name-text {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+}
+.market-symbol-text {
+    font-size: 10px !important;
+}
+.market-price {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+}
+.market-change {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+}
+
+/* 5. Fix the coin icons to be slightly smaller too */
+.market-icon {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 14px !important;
+}
