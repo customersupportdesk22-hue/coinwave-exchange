@@ -53,10 +53,10 @@ router.get("/settings", async (req, res) => {
 
 router.post("/settings", async (req, res) => {
     try {
-        const { supportEmail, wallets, adminBankDetails, adminPaypalEmail, cardPaymentLink, socialTwitter, socialTelegram, socialDiscord, legalDisclaimer } = req.body;
+        const { supportEmail, wallets, adminBankDetails, adminPaypalEmail, cardPaymentLink, socialTwitter, socialTelegram, socialDiscord, legalDisclaimer, customAssets } = req.body;
         const updatedSettings = await Settings.findOneAndUpdate(
             {},
-            { supportEmail, wallets, adminBankDetails, adminPaypalEmail, cardPaymentLink, socialTwitter, socialTelegram, socialDiscord, legalDisclaimer },
+            { supportEmail, wallets, adminBankDetails, adminPaypalEmail, cardPaymentLink, socialTwitter, socialTelegram, socialDiscord, legalDisclaimer, customAssets },
             { new: true, upsert: true, runValidators: false }
         );
         res.json({ message: "Settings updated successfully", settings: updatedSettings });

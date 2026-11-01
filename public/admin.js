@@ -157,3 +157,58 @@ async function saveSettings(btn) {
 }
 
 loadOrders();
+
+// Load Custom Assets
+async function loadCustomAssets() {
+    try {
+        const res = await fetch('/api/admin/settings', { headers: { 'Authorization': 'Bearer ' + token } });
+        const data = await res.json();
+        const list = document.getElementById('customAssetsList');
+        if (list && data.customAssets) {
+            list.innerHTML = data.customAssets.map(a => `<div>${a.icon} ${a.name} (${a.symbol}) - $${a.price}</div>`).join('');
+        }
+    } catch(e) {}
+}
+
+// Add Custom Asset
+window.addCustomAsset = async function(btn) {
+    const name = document.getElementById('newAssetName').value.trim();
+    const symbol = document.getElementById('newAssetSymbol').value.trim().toUpperCase();
+    const price = parseFloat(document.getElementById('newAssetPrice').value);
+    const icon = document.getElementById('newAssetIcon').value.trim() || name.charAt(0);
+    const color = document.getElementById('newAssetColor').value.trim() || '#333333';
+
+    if (!name || !symbol || !price) return alert("Please fill Name, Symbol, and Price.");
+
+    try {
+        const res = await fetch('/api/admin/settings', { headers: { 'Authorization': 'Bearer ' + token } });
+        const data = await res.json();
+        let customAssets = data.customAssets || [];
+        
+        // Add new asset to array
+        customAssets.push({ name, symbol, price, icon, color, change: 0 });
+        
+        // Save back to DB
+        await fetch('/api/admin/settings', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ ...data, customAssets })
+        });
+        
+        alert("Asset Added Successfully!");
+        loadCustomAssets();
+        // Clear inputs
+        document.getElementById('newAssetName').value = '';
+        document.getElementById('newAssetSymbol').value = '';
+        document.getElementById('newAssetPrice').value = '';
+        document.getElementById('newAssetIcon').value = '';
+        document.getElementById('newAssetColor').value = '';
+    } catch(e) { alert("Failed to add asset."); }
+};
+
+// Call loadCustomAssets on tab switch
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    if (btn.dataset.tab === 'settings') {
+        btn.addEventListener('click', loadCustomAssets);
+    }
+});
+loadCustomAssets();

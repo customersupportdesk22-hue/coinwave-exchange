@@ -1169,3 +1169,36 @@ window.loadGlobalSettings = async function() {
         legalText.textContent = globalSettings.legalDisclaimer || '';
     }
 };
+
+/* =====================================================
+   MERGE CUSTOM ASSETS & POPULATE FOOTER
+   ===================================================== */
+const originalLoadGlobalSettingsFinal = window.loadGlobalSettings;
+window.loadGlobalSettings = async function() {
+    if (originalLoadGlobalSettingsFinal) await originalLoadGlobalSettingsFinal();
+
+    // 1. Merge Custom Assets into the Markets array
+    if (globalSettings && globalSettings.customAssets && globalSettings.customAssets.length > 0) {
+        globalSettings.customAssets.forEach(asset => {
+            // Only add if it doesn't already exist
+            if (!markets.find(m => m.symbol === asset.symbol)) {
+                markets.push(asset);
+            }
+        });
+        if (typeof loadMarkets === 'function') loadMarkets();
+    }
+
+    // 2. Populate Footer (Social & Legal)
+    const socialContainer = document.getElementById('socialLinksContainer');
+    const legalText = document.getElementById('legalDisclaimerText');
+    
+    if (globalSettings && socialContainer && legalText) {
+        let html = '';
+        if (globalSettings.socialTwitter) html += `<a href="${globalSettings.socialTwitter}" target="_blank" style="color: #00d4aa; text-decoration: none; font-weight: bold; font-size: 13px;">Twitter (X)</a>`;
+        if (globalSettings.socialTelegram) html += `<a href="${globalSettings.socialTelegram}" target="_blank" style="color: #00d4aa; text-decoration: none; font-weight: bold; font-size: 13px;">Telegram</a>`;
+        if (globalSettings.socialDiscord) html += `<a href="${globalSettings.socialDiscord}" target="_blank" style="color: #00d4aa; text-decoration: none; font-weight: bold; font-size: 13px;">Discord</a>`;
+        
+        socialContainer.innerHTML = html;
+        legalText.textContent = globalSettings.legalDisclaimer || '';
+    }
+};
