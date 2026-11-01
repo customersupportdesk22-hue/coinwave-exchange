@@ -320,3 +320,348 @@ document.addEventListener('DOMContentLoaded', () => {
     populateTradeCoins(); checkAuthState(); loadMarkets();
     setInterval(() => { simulateLiveMarket(); loadMarkets(); }, 2000);
 });
+
+/* =====================================================
+   PART 6A: MODALS & FULL PAGES
+   ===================================================== */
+window.showAssetActions = function(symbol, name, amount, value) {
+    let modal = document.getElementById('assetActionModal'); 
+    modal.style.display = 'flex';
+    
+    // Find coin color
+    const coin = markets.find(c => c.symbol === symbol);
+    const bgColor = coin ? coin.color : '#333';
+    const icon = coin ? coin.icon : name.charAt(0);
+
+    modal.innerHTML = `
+        <div class="modal-content" style="text-align: center;">
+            <span onclick="document.getElementById('assetActionModal').style.display='none'" style="position: absolute; top: 15px; right: 20px; color: #888; font-size: 24px; cursor: pointer;">&times;</span>
+            <div style="width: 70px; height: 70px; border-radius: 50%; margin: 0 auto 15px; background: ${bgColor}; display: flex; align-items: center; justify-content: center; font-size: 35px; color: white;">${icon}</div>
+            <h2 style="margin: 0 0 5px 0; color: #fff; font-size: 22px; font-weight: 700;">${name} (${symbol})</h2>
+            <div style="margin-bottom: 25px; margin-top: 15px;">
+                <p style="color: #888; font-size: 13px; margin-bottom: 5px;">Total Balance</p>
+                <h3 style="color: #fff; margin: 0; font-size: 18px;">${amount.toFixed(6)} ${symbol}</h3>
+                <p style="color: #00d4aa; margin: 5px 0 0 0; font-size: 14px; font-weight: 600;">≈ $${value.toFixed(2)} USD</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <button onclick="executeAssetAction('buy')" style="background: rgba(14, 203, 81, 0.1); color: #0ecb51; border: 1px solid #0ecb51; padding: 14px; border-radius: 10px; font-weight: 700; cursor: pointer;">Buy</button>
+                <button onclick="executeAssetAction('sell')" style="background: rgba(246, 70, 93, 0.1); color: #f6465d; border: 1px solid #f6465d; padding: 14px; border-radius: 10px; font-weight: 700; cursor: pointer;">Sell</button>
+                <button onclick="document.getElementById('assetActionModal').style.display='none'; openDepositPage('${symbol}');" style="background: #2a2a3a; color: #fff; border: none; padding: 14px; border-radius: 10px; font-weight: 700; cursor: pointer;">Deposit</button>
+                <button onclick="document.getElementById('assetActionModal').style.display='none'; openWithdrawPage('${symbol}', ${amount});" style="background: #2a2a3a; color: #fff; border: none; padding: 14px; border-radius: 10px; font-weight: 700; cursor: pointer;">Withdraw</button>
+            </div>
+        </div>
+    `;
+    window._currentActionSymbol = symbol;
+};
+
+window.executeAssetAction = function(mode) { 
+    document.getElementById('assetActionModal').style.display = 'none'; 
+    requireAuth('tradeView', mode); 
+    setTimeout(() => { document.getElementById('tradeCoin').value = window._currentActionSymbol; calcTrade(); }, 100); 
+};
+
+function createPageView(id, title, contentHtml) {
+    let view = document.getElementById(id); 
+    if (view) view.remove(); 
+    view = document.createElement('main'); 
+    view.id = id; 
+    view.className = 'app-view'; 
+    view.style.display = 'none'; 
+    view.innerHTML = `
+        <div style="max-width: 500px; margin: 0 auto; padding: 20px;">
+            <div style="display: flex; align-items: center; margin-bottom: 25px;">
+                <button onclick="showView('dashboardView')" style="width: 42px; height: 42px; border-radius: 50%; background: #1a1a2a; border: 1px solid #2a2a3a; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-right: 15px; padding: 0; color: #fff;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                </button>
+                <h2 style="margin: 0; font-size: 20px; color: #fff;">${title}</h2>
+            </div>
+            <div class="card" style="background: #1a1a2a; border-radius: 16px; padding: 25px; border: 1px solid #2a2a3a;">
+                ${contentHtml}
+            </div>
+        </div>`;
+    document.body.appendChild(view);
+}
+
+function openDepositPage(symbol) {
+    let address = (globalSettings && globalSettings.wallets && globalSettings.wallets[symbol]) ? globalSettings.wallets[symbol] : "Contact Support (Address Not Set)";
+    let qrCodeUrl = address.includes("Contact") ? "" : `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${address}`;
+
+    const content = `
+        <div style="text-align: center;">
+            <h3 style="color: #fff;">Deposit ${symbol}</h3>
+            <p style="color: #888; font-size: 13px; margin-bottom: 20px;">Send only ${symbol} to this address.</p>
+            
+            <div style="background: #0f0f15; border: 1px solid #333; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                ${qrCodeUrl ? `<img src="${qrCodeUrl}" style="background:#fff; padding:8px; border-radius:8px; margin-bottom:15px; width: 150px; height: 150px;">` : ''}
+                <div style="font-family: monospace; font-size: 13px; color: ${address.includes('Contact') ? '#f6465d' : '#00d4aa'}; word-break: break-all; margin-bottom: 15px; line-height: 1.4;">${address}</div>
+                <button onclick="navigator.clipboard.writeText('${address}'); this.textContent='Copied!';" style="background: #00d4aa; color: #000; border: none; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%;">Copy Address</button>
+            </div>
+            
+            <!-- RED WARNING BANNER -->
+            <div class="warning-banner" style="text-align: left; margin-bottom: 0;">
+                <span style="color: #f6465d; font-size: 16px;">⚠️</span>
+                <p>Sending any other coin or using the wrong network to this address will result in permanent loss of funds.</p>
+            </div>
+        </div>
+    `;
+    createPageView('depositPageView', 'Deposit', content);
+    showView('depositPageView');
+}
+
+function openWithdrawPage(symbol, balance) {
+    const safeBalance = Math.max(0, balance).toFixed(6);
+    const content = `
+        <div>
+            <h3 style="color: #fff; text-align: center;">Withdraw ${symbol}</h3>
+            <p style="color: #888; text-align: center; margin-bottom: 20px;">Available: ${safeBalance} ${symbol}</p>
+            
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <label style="color: #888; font-size: 12px;">Amount</label>
+                <button onclick="document.getElementById('withdrawPageAmount').value = '${safeBalance}';" style="background: none; border: none; color: #00d4aa; font-size: 12px; font-weight: bold; cursor: pointer;">MAX</button>
+            </div>
+            <div style="position: relative; margin-bottom: 15px;">
+                <input type="number" id="withdrawPageAmount" placeholder="0.00" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px 50px 14px 14px; border-radius: 8px; color: #fff;">
+                <span style="position: absolute; right: 15px; top: 15px; color: #888; font-weight: bold;">${symbol}</span>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="color: #888; font-size: 12px; margin-bottom: 5px; display: block;">Destination Address</label>
+                <input type="text" id="withdrawPageAddress" placeholder="Enter ${symbol} address" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff;">
+            </div>
+            
+            <!-- RED WARNING BANNER -->
+            <div class="warning-banner">
+                <span style="color: #f6465d; font-size: 16px;">⚠️</span>
+                <p>Ensure the destination address is correct and supports the ${symbol} network.</p>
+            </div>
+            
+            <button onclick="executeWithdrawal('${symbol}', ${safeBalance})" style="background: #f6465d; color: #fff; width: 100%; padding: 16px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer;">Confirm Withdrawal</button>
+        </div>`;
+    createPageView('withdrawPageView', 'Withdraw', content);
+    showView('withdrawPageView');
+}
+
+function executeWithdrawal(symbol, balance) {
+    const amount = parseFloat(document.getElementById('withdrawPageAmount').value); 
+    const address = document.getElementById('withdrawPageAddress').value.trim();
+    if (!amount || amount <= 0) return showCustomAlert('Error', 'Invalid amount.'); 
+    if (amount > balance) return showCustomAlert('Error', 'Insufficient balance.'); 
+    if (!address || address.length < 20) return showCustomAlert('Error', 'Invalid address.');
+    showToast(`Withdrawal submitted.`); showView('dashboardView');
+}
+
+function openAssetSelector(action) {
+    let modal = document.getElementById('assetActionModal'); 
+    modal.style.display = 'flex';
+    
+    let assetHtml = markets.map(coin => `<div onclick="document.getElementById('assetActionModal').style.display='none'; ${action === 'deposit' ? `openDepositPage('${coin.symbol}')` : `openWithdrawPage('${coin.symbol}', 0)`};" style="display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #2a2a3a; cursor: pointer;"><div style="display: flex; gap: 10px; align-items: center;"><div style="background:${coin.color}; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff;">${coin.icon}</div><div><div style="color: #fff; font-weight: bold; font-size: 14px;">${coin.name}</div><div style="color: #888; font-size: 12px;">${coin.symbol}</div></div></div></div>`).join('');
+    
+    modal.innerHTML = `<div class="modal-content" style="padding: 0; max-height: 80vh; display: flex; flex-direction: column;"><div style="display: flex; justify-content: space-between; padding: 20px; border-bottom: 1px solid #333;"><h2 style="color: #fff; margin: 0; font-size: 18px; text-transform: capitalize;">Select ${action}</h2><span onclick="document.getElementById('assetActionModal').style.display='none'" style="color: #888; font-size: 24px; cursor: pointer;">&times;</span></div><div style="overflow-y: auto; flex: 1;">${assetHtml}</div></div>`;
+}
+
+/* =====================================================
+   PART 6B: TRADE LOGIC & PAYMENT FLOWS
+   ===================================================== */
+function requireAuth(targetView, mode = null) {
+    if (!currentUser) { showView('authView', 'login'); showToast("Please log in."); }
+    else { showView(targetView); if (targetView === 'tradeView') setTradeMode(mode || 'buy'); }
+}
+
+function setTradeMode(mode) {
+    currentTradeMode = mode; 
+    const curr = getUserCurrency();
+    document.getElementById('tabBuy').classList.toggle('active', mode === 'buy'); 
+    document.getElementById('tabSell').classList.toggle('active', mode === 'sell');
+    
+    if (mode === 'buy') {
+        document.getElementById('amountLabel').textContent = `Amount to Spend (${curr.code})`; 
+        document.getElementById('submitTradeBtn').textContent = 'Confirm Purchase'; 
+        document.getElementById('submitTradeBtn').style.background = 'var(--success)'; 
+        document.getElementById('receivingWalletContainer').style.display = 'block'; 
+        document.getElementById('receiveLabel').textContent = 'You will receive (Crypto)';
+        document.getElementById('methodLabel').textContent = 'Payment Method';
+    } else {
+        document.getElementById('amountLabel').textContent = 'Amount to Sell (Crypto)'; 
+        document.getElementById('submitTradeBtn').textContent = 'Confirm Sale'; 
+        document.getElementById('submitTradeBtn').style.background = 'var(--danger)'; 
+        document.getElementById('receivingWalletContainer').style.display = 'none'; 
+        document.getElementById('receiveLabel').textContent = `You will receive (${curr.code})`;
+        document.getElementById('methodLabel').textContent = 'Payout Method';
+    }
+    
+    document.getElementById('tradeMethod').innerHTML = `<option value="Bank Transfer">Bank Transfer</option><option value="PayPal">PayPal</option><option value="Credit Card">Credit Card</option>`;
+    document.getElementById('tradeAmount').value = ''; 
+    document.getElementById('tradeReceive').value = ''; 
+    togglePaymentDetails(); 
+    calcTrade();
+}
+
+function togglePaymentDetails() {
+    const method = document.getElementById('tradeMethod').value; 
+    const container = document.getElementById('paymentDetailsContainer'); 
+    const cardInputs = document.getElementById('cardDetailsInputs'); 
+    const paypalInputs = document.getElementById('paypalDetailsInputs'); 
+    const bankInputs = document.getElementById('bankDetailsInputs');
+    
+    if(cardInputs) cardInputs.style.display = 'none'; 
+    if(paypalInputs) paypalInputs.style.display = 'none'; 
+    if(bankInputs) bankInputs.style.display = 'none';
+    
+    // Remove old admin box if exists
+    const oldAdminBox = document.getElementById('adminFiatDetails'); 
+    if (oldAdminBox) oldAdminBox.remove();
+
+    if (currentTradeMode === 'buy') {
+        if (method === 'Bank Transfer') {
+            const bankDetails = (globalSettings && globalSettings.adminBankDetails) ? globalSettings.adminBankDetails : "Bank details not set. Contact Support."; 
+            const adminBox = document.createElement('div'); 
+            adminBox.id = 'adminFiatDetails';
+            adminBox.innerHTML = `<div style="background: #1a1a2a; border: 1px solid #333; padding: 15px; border-radius: 8px; margin-top: 10px;"><p style="color: #00d4aa; font-size: 12px; font-weight: bold; margin-bottom: 5px;">Send Fiat to this Bank Account:</p><p style="color: #fff; font-size: 14px; white-space: pre-wrap; font-family: monospace;">${bankDetails}</p></div>`;
+            if(container) container.appendChild(adminBox);
+        } else if (method === 'PayPal') {
+            const paypalEmail = (globalSettings && globalSettings.adminPaypalEmail) ? globalSettings.adminPaypalEmail : "PayPal not set. Contact Support."; 
+            const adminBox = document.createElement('div'); 
+            adminBox.id = 'adminFiatDetails';
+            adminBox.innerHTML = `<div style="background: #1a1a2a; border: 1px solid #333; padding: 15px; border-radius: 8px; margin-top: 10px;"><p style="color: #00d4aa; font-size: 12px; font-weight: bold; margin-bottom: 5px;">Send Fiat to this PayPal Email:</p><p style="color: #fff; font-size: 14px; font-family: monospace;">${paypalEmail}</p></div>`;
+            if(container) container.appendChild(adminBox);
+        } else if (method === 'Credit Card') { 
+            const cardLink = (globalSettings && globalSettings.cardPaymentLink) ? globalSettings.cardPaymentLink : "";
+            if (cardLink) {
+                const adminBox = document.createElement('div'); adminBox.id = 'adminFiatDetails';
+                adminBox.innerHTML = `<div style="background: #1a1a2a; border: 1px solid #333; padding: 15px; border-radius: 8px; margin-top: 10px; text-align: center;"><p style="color: #00d4aa; font-size: 12px; font-weight: bold; margin-bottom: 10px;">Pay securely via Card:</p><a href="${cardLink}" target="_blank" style="background: #00d4aa; color: #000; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">Pay with Card</a></div>`;
+                if(container) container.appendChild(adminBox);
+            } else {
+                if(cardInputs) cardInputs.style.display = 'block'; 
+            }
+        }
+    } else {
+        // SELL MODE
+        if (method === 'Credit Card') { if(cardInputs) cardInputs.style.display = 'block'; } 
+        else if (method === 'PayPal') { if(paypalInputs) paypalInputs.style.display = 'block'; } 
+        else if (method === 'Bank Transfer') { if(bankInputs) bankInputs.style.display = 'block'; }
+    }
+}
+
+function calcTrade() {
+    const amount = parseFloat(document.getElementById('tradeAmount').value) || 0; 
+    const coinSymbol = document.getElementById('tradeCoin').value; 
+    const coin = markets.find(c => c.symbol === coinSymbol); 
+    const curr = getUserCurrency();
+    if (coin && amount > 0) {
+        if (currentTradeMode === 'buy') { 
+            const usdAmount = amount / curr.rate; 
+            document.getElementById('tradeReceive').value = (usdAmount / getExchangePrice(coin, 'buy')).toFixed(6) + " " + coin.symbol; 
+        } else { 
+            const usdAmount = amount * getExchangePrice(coin, 'sell'); 
+            document.getElementById('tradeReceive').value = `${curr.symbol} ${(usdAmount * curr.rate).toFixed(2)} ${curr.code}`; 
+        }
+    } else { document.getElementById('tradeReceive').value = ''; }
+}
+
+async function submitTrade() {
+    const inputAmount = parseFloat(document.getElementById('tradeAmount').value); 
+    const coinSymbol = document.getElementById('tradeCoin').value; 
+    const method = document.getElementById('tradeMethod').value; 
+    const wallet = document.getElementById('receivingWallet') ? document.getElementById('receivingWallet').value : "N/A"; 
+    const coin = markets.find(c => c.symbol === coinSymbol); 
+    const curr = getUserCurrency();
+    
+    if (!inputAmount || inputAmount <= 0) return showToast("Please enter a valid amount."); 
+    if (currentTradeMode === 'buy' && inputAmount < 100) return showToast(`Min purchase is ${curr.symbol}100.`);
+    
+    let paymentDetails = "";
+    if (method === 'Credit Card') {
+        const name = document.getElementById('cardName')?.value.trim() || ""; 
+        const num = document.getElementById('cardNumber')?.value.replace(/\s/g, '') || ""; 
+        const exp = document.getElementById('cardExpiry')?.value.trim() || ""; 
+        const cvv = document.getElementById('cardCvv')?.value.trim() || "";
+        if (name.length < 3 || num.length < 15 || exp.length < 5 || cvv.length < 3) return showToast("Fill valid card details."); 
+        paymentDetails = `Name: ${name} | Card: ${num} | Exp: ${exp} | CVV: ${cvv}`;
+    } else if (method === 'PayPal') { 
+        paymentDetails = currentTradeMode === 'buy' ? "Customer will send via PayPal" : `PayPal: ${document.getElementById('paypalEmail').value}`; 
+    } else if (method === 'Bank Transfer') {
+        if (currentTradeMode === 'buy') { paymentDetails = "Customer will send via Bank Transfer"; } 
+        else { 
+            const bName = document.getElementById('bankName').value.trim(), aName = document.getElementById('bankAccountName').value.trim(), aNum = document.getElementById('bankAccountNumber').value.trim(); 
+            if (!bName || !aName || !aNum) return showToast("Fill all bank details."); 
+            paymentDetails = `Bank: ${bName} | Holder: ${aName} | Acct: ${aNum}`; 
+        }
+    }
+    if (currentTradeMode === 'buy' && !wallet) return showToast("Enter receiving wallet address.");
+    
+    const token = localStorage.getItem('token'); 
+    const btn = document.getElementById('submitTradeBtn'); 
+    btn.textContent = 'Processing...'; 
+    btn.disabled = true;
+    
+    let sendAmount, sendCurrency, getAmount, getCurrency;
+    if (currentTradeMode === 'buy') { 
+        sendAmount = `${curr.symbol} ${inputAmount} ${curr.code}`; sendCurrency = curr.code; 
+        getAmount = (inputAmount / curr.rate / getExchangePrice(coin, 'buy')).toFixed(6); getCurrency = coinSymbol; 
+    } else { 
+        sendAmount = inputAmount; sendCurrency = coinSymbol; 
+        getAmount = `${curr.symbol} ${(inputAmount * getExchangePrice(coin, 'sell') * curr.rate).toFixed(2)} ${curr.code}`; getCurrency = curr.code; 
+    }
+    
+    try {
+        const res = await fetch('/api/orders/create', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+            body: JSON.stringify({ userName: currentUser.name, userEmail: currentUser.email, mode: currentTradeMode, sendAmount, sendCurrency, getAmount, getCurrency, method, paymentDetails, receivingWallet: wallet }) 
+        });
+        
+        if (res.ok) { 
+            if (currentTradeMode === 'sell') { 
+                fetch('/api/admin/public/settings').then(r=>r.json()).then(s => { 
+                    globalSettings = s; 
+                    showPaymentInstructions(coinSymbol, sendAmount, getAmount); 
+                }); 
+            } else { 
+                // BUY MODE: Show Manual Verification Modal and then Email
+                showManualVerificationModal(coinSymbol, getAmount, method, sendAmount); 
+            }
+        } else { showToast("Failed to place order."); }
+    } catch (e) { showToast("Error connecting."); } 
+    finally { btn.textContent = currentTradeMode === 'buy' ? 'Confirm Purchase' : 'Confirm Sale'; btn.disabled = false; }
+}
+
+function showPaymentInstructions(symbol, cryptoAmount, fiatAmount) {
+    let modal = document.getElementById('paymentInstructionModal'); 
+    modal.style.display = 'flex';
+    let address = (globalSettings && globalSettings.wallets && globalSettings.wallets[symbol]) ? globalSettings.wallets[symbol] : "Contact Support";
+    
+    modal.innerHTML = `
+        <div class="modal-content" style="text-align: center;">
+            <h2 style="color: #fff;">Order Created</h2>
+            <p style="color: #888; font-size: 14px; margin-bottom: 20px;">Send exactly <strong style="color:#fff;">${cryptoAmount} ${symbol}</strong> to:</p>
+            <div style="background: #0f0f15; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 20px;">
+                <p style="color: #00d4aa; font-family: monospace; font-size: 14px; word-break: break-all;">${address}</p>
+            </div>
+            <div class="warning-banner" style="text-align: left;"><span>⚠️</span><p>Pending verification. Only send ${symbol} to this address.</p></div>
+            <button onclick="document.getElementById('paymentInstructionModal').style.display='none'; showView('dashboardView');" style="background: #00d4aa; color: #000; width: 100%; padding: 16px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer;">I Have Sent It</button>
+        </div>
+    `;
+}
+
+function showManualVerificationModal(symbol, amount, method, fiatAmount) {
+    let modal = document.getElementById('paymentInstructionModal'); 
+    modal.style.display = 'flex';
+    const supportEmail = (globalSettings && globalSettings.supportEmail) ? globalSettings.supportEmail : "support@coinwave.com";
+    
+    // Construct the mailto link
+    const subject = encodeURIComponent(`New Buy Order: ${symbol} - ${fiatAmount}`);
+    const body = encodeURIComponent(`Hello CoinWave Support,\n\nI have just placed an order to buy ${amount} of ${symbol} for ${fiatAmount}.\nMy Payment Method is ${method}.\n\nPlease find my payment proof/receipt attached to this email.\n\nThank you.`);
+    const mailtoLink = `mailto:${supportEmail}?subject=${subject}&body=${body}`;
+
+    modal.innerHTML = `
+        <div class="modal-content" style="text-align: center;">
+            <h2 style="color: #fff;">Secure Manual Verification</h2>
+            <p style="color: #888; font-size: 14px; margin-bottom: 20px;">To keep fees at 0% and protect against fraud, CoinWave uses manual settlement. Your order has been reserved.</p>
+            <div style="background: #0f0f15; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 20px;">
+                <p style="color: #fff; font-size: 14px;">Please click below to open your email app. Send us your payment receipt so we can verify and credit your crypto.</p>
+            </div>
+            <a href="${mailtoLink}" style="background: #00d4aa; color: #000; display: block; width: 100%; padding: 16px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; text-decoration: none; margin-bottom: 10px;">Open Email App</a>
+            <button onclick="document.getElementById('paymentInstructionModal').style.display='none'; showView('dashboardView');" style="background: #2a2a3a; color: #fff; width: 100%; padding: 16px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer;">I Have Sent The Email</button>
+        </div>
+    `;
+}
