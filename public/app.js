@@ -1232,3 +1232,57 @@ setInterval(() => {
         }
     }
 }, 1000);
+
+/* =====================================================
+   ULTIMATE FOOTER INJECTION (Forces it to render)
+   ===================================================== */
+function renderHomepageFooter() {
+    // 1. Check if we are on the homepage
+    const guestView = document.getElementById('guestView');
+    if (!guestView) return;
+
+    // 2. Remove old footer if it exists to prevent duplicates
+    const oldFooter = document.getElementById('dynamicHomepageFooter');
+    if (oldFooter) oldFooter.remove();
+
+    // 3. Create the new professional footer
+    const footer = document.createElement('footer');
+    footer.id = 'dynamicHomepageFooter';
+    footer.style.cssText = "margin-top: 50px; border-top: 1px solid #2a2a3a; padding: 40px 20px; text-align: center; background: #09090d;";
+
+    let socialHtml = '<div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 20px;">';
+    if (globalSettings && globalSettings.socialTwitter) socialHtml += `<a href="${globalSettings.socialTwitter}" target="_blank" style="color: #00d4aa; text-decoration: none; font-weight: bold; font-size: 13px;">Twitter (X)</a>`;
+    if (globalSettings && globalSettings.socialTelegram) socialHtml += `<a href="${globalSettings.socialTelegram}" target="_blank" style="color: #00d4aa; text-decoration: none; font-weight: bold; font-size: 13px;">Telegram</a>`;
+    if (globalSettings && globalSettings.socialDiscord) socialHtml += `<a href="${globalSettings.socialDiscord}" target="_blank" style="color: #00d4aa; text-decoration: none; font-weight: bold; font-size: 13px;">Discord</a>`;
+    socialHtml += '</div>';
+
+    const legalText = (globalSettings && globalSettings.legalDisclaimer) ? globalSettings.legalDisclaimer : '';
+
+    footer.innerHTML = `
+        ${socialHtml}
+        <p style="color: #666; font-size: 11px; max-width: 600px; margin: 0 auto 20px; line-height: 1.5;">${legalText}</p>
+        <p style="color: #444; font-size: 11px;">© 2024 CoinWave Exchange. All rights reserved.</p>
+    `;
+
+    // 4. Append it to the homepage
+    guestView.appendChild(footer);
+}
+
+// 1. Try to render when settings load
+const originalLoadGlobal = window.loadGlobalSettings;
+window.loadGlobalSettings = async function() {
+    if(originalLoadGlobal) await originalLoadGlobal();
+    renderHomepageFooter();
+};
+
+// 2. Try to render when user clicks "Markets" to go back to homepage
+const originalShowView = window.showView;
+window.showView = function(viewId, authType = 'login') {
+    originalShowView(viewId, authType);
+    if (viewId === 'guestView') {
+        setTimeout(renderHomepageFooter, 100);
+    }
+};
+
+// 3. Fallback interval just in case
+setInterval(renderHomepageFooter, 2000);
