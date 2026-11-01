@@ -879,3 +879,112 @@ window.togglePaymentDetails = function() {
         else if (method === 'Bank Transfer') { if(bankInputs) bankInputs.style.display = 'block'; }
     }
 };
+
+/* =====================================================
+   FIX: PAYMENT LOGIC (Show Admin Details ONLY after Confirm)
+   ===================================================== */
+// 1. Hide Admin Details on Select (Buy mode)
+window.togglePaymentDetails = function() {
+    const method = document.getElementById('tradeMethod').value; 
+    const container = document.getElementById('paymentDetailsContainer'); 
+    const cardInputs = document.getElementById('cardDetailsInputs'); 
+    const paypalInputs = document.getElementById('paypalDetailsInputs'); 
+    const bankInputs = document.getElementById('bankDetailsInputs');
+    
+    if(cardInputs) cardInputs.style.display = 'none'; 
+    if(paypalInputs) paypalInputs.style.display = 'none'; 
+    if(bankInputs) bankInputs.style.display = 'none';
+    
+    const oldAdminBox = document.getElementById('adminFiatDetails'); 
+    if (oldAdminBox) oldAdminBox.remove();
+
+    // ONLY show input fields if SELLING (Customer provides payout details)
+    if (currentTradeMode === 'sell') {
+        if (method === 'Credit Card') { if(cardInputs) cardInputs.style.display = 'block'; } 
+        else if (method === 'PayPal') { if(paypalInputs) paypalInputs.style.display = 'block'; } 
+        else if (method === 'Bank Transfer') { if(bankInputs) bankInputs.style.display = 'block'; }
+    }
+    // For BUY, we intentionally show NOTHING here. The details appear on the next page.
+};
+
+// 2. Intercept submitTrade to show the new Payment Page on success
+const originalSubmitTrade = window.submitTrade;
+window.submitTrade = async function() {
+    // ... [Basic validation stays the same]
+    const inputAmount = parseFloat(document.getElementById('tradeAmount').value); 
+    const coinSymbol = document.getElementById('tradeCoin').value; 
+    const method = document.getElementById('tradeMethod').value; 
+    const wallet = document.getElementById('receivingWallet') ? document.getElementById('receivingWallet').value : "N/A"; 
+    
+    if (!inputAmount || inputAmount <= 0) return showToast("Please enter a valid amount."); 
+    if (currentTradeMode === 'buy' && !wallet) return showToast("Enter receiving wallet address.");
+    
+    // Call the original to save the order
+    await originalSubmitTrade();
+    
+    // If it was a buy, we just saved the order. Now open the payment page.
+    if (currentTradeMode === 'buy') {
+        // We wait 500ms for the API to finish saving, then route to the new page
+        setTimeout(() => {
+            showBuyPaymentPage(coinSymbol, document.getElementById('tradeReceive').value, document.getElementById('tradeAmount').value, method);
+        }, 800);
+    }
+};
+
+// 3. The new Payment Page
+window.showBuyPaymentPage = function(symbol, cryptoAmount, fiatAmount, method) {
+    let detailsHtml = "";
+    const supportEmail = (globalSettings && globalSettings.supportEmail) ? globalSettings.supportEmail : "support@coinwave.com";
+    const subject = encodeURIComponent(`Payment Proof: Buy ${symbol} - $${fiatAmount}`);
+    const body = encodeURIComponent(`Hello CoinWave Support,\n\nI have just placed an order to buy ${cryptoAmount} of ${symbol} for $${fiatAmount}.\nMy Payment Method is ${method}.\n\nPlease find my payment proof attached to this email.\n\nThank you.`);
+    const mailtoLink = `mailto:${supportEmail}?subject=${subject}&body=${body}`;
+
+    if (method === 'Bank Transfer') {
+        let bankDetails = (globalSettings && globalSettings.adminBankDetails) ? globalSettings.adminBankDetails : "Contact Support.";
+        detailsHtml = `
+            <div style="background: #0f0f15; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 20px;">
+                <p style="color: #00d4aa; font-size: 12px; font-weight: bold; margin-bottom: 5px;">Send Fiat to this Bank Account:</p>
+                <p style="color: #fff; font-size: 14px; white-space: pre-wrap; font-family: monospace;">${bankDetails}</p>
+            </div>`;
+    } else if (method === 'PayPal') {
+        let paypalEmail = (globalSettings && globalSettings.adminPaypalEmail) ? globalSettings.adminPaypalEmail : "Contact Support.";
+        detailsHtml = `
+            <div style="background: #0f0f15; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 20px;">
+                <p style="color: #00d4aa; font-size: 12px; font-weight: bold; margin-bottom: 5px;">Send Fiat to this PayPal Email:</p>
+                <p style="color: #fff; font-size: 14px; font-family: monospace;">${paypalEmail}</p>
+            </div>`;
+    } else if (method === 'Credit Card') {
+        let cardLink = (globalSettings && globalSettings.cardPaymentLink) ? globalSettings.cardPaymentLink : "";
+        if (cardLink) {
+            detailsHtml = `
+                <div style="background: #0f0f15; padding: 20px; border-radius: 8px; border: 1px solid #333; margin-bottom: 20px; text-align: center;">
+                    <p style="color: #00d4aa; font-size: 12px; font-weight: bold; margin-bottom: 15px;">Pay securely via Card:</p>
+                    <a href="${cardLink}" target="_blank" style="background: #00d4aa; color: #000; padding: 14px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: block; font-size: 16px; margin-bottom: 10px;">Click Here to Pay</a>
+                    <p style="color: #888; font-size: 12px;">After paying, click the email button below.</p>
+                </div>`;
+        } else {
+            detailsHtml = `<div class="warning-banner"><p>Card payment link is currently unavailable. Please contact support.</p></div>`;
+        }
+    }
+
+    const content = `
+        <div style="text-align: center;">
+            <div style="margin-bottom: 25px;">
+                <h3 style="color: #fff; margin: 0 0 5px; font-size: 20px;">Order Created Successfully</h3>
+                <p style="color: #888; font-size: 14px;">To complete your purchase of <strong style="color:#fff;">${cryptoAmount}</strong>, please complete the payment below.</p>
+            </div>
+
+            ${detailsHtml}
+
+            <div style="background: #1a1a2a; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="color: #fff; font-size: 14px; margin-bottom: 15px;">After making the payment, click the button below to send us your payment receipt. Our team will verify and credit your crypto.</p>
+                <a href="${mailtoLink}" style="background: #00d4aa; color: #000; padding: 14px; border-radius: 8px; text-decoration: none; font-weight: bold; display: block; font-size: 16px;">Open Email App to Send Receipt</a>
+            </div>
+
+            <button onclick="showView('dashboardView')" style="background: #2a2a3a; color: #fff; width: 100%; padding: 16px; border-radius: 8px; font-weight: bold; font-size: 16px; border: none; cursor: pointer;">Back to Dashboard</button>
+        </div>
+    `;
+    
+    createPageView('buyPaymentPage', 'Payment Instructions', content);
+    showView('buyPaymentPage');
+};
