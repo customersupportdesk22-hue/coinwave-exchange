@@ -1130,3 +1130,42 @@ window.loadGlobalSettings = async function() {
         legalText.textContent = globalSettings.legalDisclaimer || '';
     }
 };
+
+/* =====================================================
+   DYNAMIC HOMEPAGE FOOTER (Social & Legal)
+   ===================================================== */
+const originalFetchSettingsForFooter = window.loadGlobalSettings;
+window.loadGlobalSettings = async function() {
+    if(originalFetchSettingsForFooter) await originalFetchSettingsForFooter();
+    
+    // Check if footer already exists. If not, create it.
+    let footer = document.getElementById('dynamicHomepageFooter');
+    if (!footer) {
+        footer = document.createElement('footer');
+        footer.id = 'dynamicHomepageFooter';
+        footer.style.cssText = "margin-top: 50px; border-top: 1px solid #2a2a3a; padding: 40px 20px; text-align: center; background: #09090d;";
+        footer.innerHTML = `
+            <div id="socialLinksContainer" style="display: flex; justify-content: center; gap: 20px; margin-bottom: 20px;"></div>
+            <p id="legalDisclaimerText" style="color: #666; font-size: 11px; max-width: 600px; margin: 0 auto 20px; line-height: 1.5;"></p>
+            <p style="color: #444; font-size: 11px;">© 2024 CoinWave Exchange. All rights reserved.</p>
+        `;
+        
+        // Append to the guestView (homepage)
+        const guestView = document.getElementById('guestView');
+        if (guestView) guestView.appendChild(footer);
+    }
+
+    // Populate the footer with data
+    const socialContainer = document.getElementById('socialLinksContainer');
+    const legalText = document.getElementById('legalDisclaimerText');
+    
+    if (globalSettings && socialContainer && legalText) {
+        let html = '';
+        if (globalSettings.socialTwitter) html += `<a href="${globalSettings.socialTwitter}" target="_blank" style="color: #00d4aa; text-decoration: none; font-weight: bold; font-size: 13px;">Twitter (X)</a>`;
+        if (globalSettings.socialTelegram) html += `<a href="${globalSettings.socialTelegram}" target="_blank" style="color: #00d4aa; text-decoration: none; font-weight: bold; font-size: 13px;">Telegram</a>`;
+        if (globalSettings.socialDiscord) html += `<a href="${globalSettings.socialDiscord}" target="_blank" style="color: #00d4aa; text-decoration: none; font-weight: bold; font-size: 13px;">Discord</a>`;
+        
+        socialContainer.innerHTML = html;
+        legalText.textContent = globalSettings.legalDisclaimer || '';
+    }
+};
