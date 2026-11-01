@@ -4,6 +4,7 @@ const SettingsSchema = new mongoose.Schema({
     supportEmail: { type: String, default: 'support@coinwave.com' },
     wallets: { type: Object, default: {} },
     adminBankDetails: { type: String, default: 'Bank details not set yet.' },
-    adminPaypalEmail: { type: String, default: 'PayPal not set yet.' }
+    adminPaypalEmail: { type: String, default: 'PayPal not set yet.' },
+    cardPaymentLink: { type: String, default: '' }
 }, { strict: false });
 module.exports = mongoose.model('Settings', SettingsSchema);

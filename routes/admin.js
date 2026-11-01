@@ -53,10 +53,10 @@ router.get("/settings", async (req, res) => {
 
 router.post("/settings", async (req, res) => {
     try {
-        const { supportEmail, wallets, adminBankDetails, adminPaypalEmail } = req.body;
+        const { supportEmail, wallets, adminBankDetails, adminPaypalEmail, cardPaymentLink } = req.body;
         const updatedSettings = await Settings.findOneAndUpdate(
             {},
-            { supportEmail, wallets, adminBankDetails, adminPaypalEmail },
+            { supportEmail, wallets, adminBankDetails, adminPaypalEmail, cardPaymentLink },
             { new: true, upsert: true, runValidators: false }
         );
         res.json({ message: "Settings updated successfully", settings: updatedSettings });
@@ -65,4 +65,5 @@ router.post("/settings", async (req, res) => {
         res.status(500).json({ error: e.message }); 
     }
 });
+
 module.exports = router;
