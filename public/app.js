@@ -1286,3 +1286,32 @@ window.showView = function(viewId, authType = 'login') {
 
 // 3. Fallback interval just in case
 setInterval(renderHomepageFooter, 2000);
+
+/* =====================================================
+   MERGE ADMIN CUSTOM ASSETS INTO HOMEPAGE
+   ===================================================== */
+const originalLoadForAssets = window.loadGlobalSettings;
+window.loadGlobalSettings = async function() {
+    if(originalLoadForAssets) await originalLoadForAssets();
+
+    // If the Admin added custom assets, push them into the markets array
+    if (globalSettings && globalSettings.customAssets && Array.isArray(globalSettings.customAssets)) {
+        globalSettings.customAssets.forEach(asset => {
+            // Check if it already exists to prevent duplicates
+            if (!markets.find(m => m.symbol === asset.symbol)) {
+                markets.push({
+                    name: asset.name,
+                    symbol: asset.symbol,
+                    price: parseFloat(asset.price) || 0,
+                    change: 0,
+                    icon: asset.icon || asset.symbol.charAt(0),
+                    color: asset.color || '#333333'
+                });
+            }
+        });
+        
+        // Re-render the markets list and dropdowns
+        if (typeof loadMarkets === 'function') loadMarkets();
+        if (typeof populateTradeCoins === 'function') populateTradeCoins();
+    }
+};
