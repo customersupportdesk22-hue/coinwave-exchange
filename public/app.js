@@ -769,3 +769,46 @@ window.openDepositPage = function(symbol) {
     createPageView('depositPageView', 'Deposit', content);
     showView('depositPageView');
 };
+
+/* =====================================================
+   FIX: FULL-PAGE PAYMENT INSTRUCTIONS (No Popup)
+   ===================================================== */
+window.showPaymentInstructions = function(symbol, cryptoAmount, fiatAmount) {
+    let address = (globalSettings && globalSettings.wallets && globalSettings.wallets[symbol]) ? globalSettings.wallets[symbol] : "Contact Support (Address Not Set)";
+    let isMissing = address.includes("Contact");
+
+    const content = `
+        <div style="text-align: center;">
+            <div style="margin-bottom: 25px;">
+                <div style="width: 60px; height: 60px; background: rgba(0,212,170,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#00d4aa" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                </div>
+                <h3 style="color: #fff; margin: 0 0 5px; font-size: 20px;">Order Created Successfully</h3>
+                <p style="color: #888; font-size: 14px;">To complete your sale and receive <strong style="color:#fff;">${fiatAmount}</strong>, please send the exact amount below.</p>
+            </div>
+
+            <div style="background: #0f0f15; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 15px; text-align: left;">
+                <p style="color: #888; font-size: 12px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;">Amount to Send</p>
+                <p style="color: #00d4aa; font-size: 24px; font-weight: 800; margin: 0;">${cryptoAmount} ${symbol}</p>
+            </div>
+
+            <div style="background: #0f0f15; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 20px; text-align: left;">
+                <p style="color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">${symbol} Deposit Address</p>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div style="flex: 1; font-family: monospace; font-size: 13px; color: ${isMissing ? '#f6465d' : '#fff'}; word-break: break-all; background: #1a1a2a; padding: 12px; border-radius: 6px;">${address}</div>
+                    ${!isMissing ? `<button onclick="navigator.clipboard.writeText('${address}'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy', 2000);" style="background: #2a2a3a; color: #fff; border: 1px solid #333; padding: 12px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">Copy</button>` : ''}
+                </div>
+            </div>
+
+            <div class="warning-banner" style="text-align: left; margin-bottom: 30px;">
+                <span style="color: #f6465d; font-size: 16px;">⚠️</span>
+                <p>Pending verification. Only send ${symbol} to this address. Sending any other coin or using the wrong network will result in permanent loss of funds.</p>
+            </div>
+
+            <button onclick="showView('dashboardView')" style="background: #00d4aa; color: #000; width: 100%; padding: 16px; border-radius: 8px; font-weight: bold; font-size: 16px; border: none; cursor: pointer;">I Have Sent The Crypto</button>
+        </div>
+    `;
+    
+    createPageView('paymentPageView', 'Payment Instructions', content);
+    showView('paymentPageView');
+};
