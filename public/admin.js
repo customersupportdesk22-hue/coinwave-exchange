@@ -1,10 +1,7 @@
 const token = localStorage.getItem('token');
-const coinList = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'ADA', 'DOGE', 'AVAX', 'DOT', 'LINK', 'MATIC', 'SHIB', 'LTC', 'TRX', 'UNI', 'ATOM', 'XLM', 'NEAR', 'APT', 'ARB', 'OP', 'FIL', 'INJ', 'SUI', 'PEPE'];
+const coinList = ['BTC', 'ETH', 'USDT', 'SOL', 'BNB', 'XRP', 'ADA', 'DOGE', 'AVAX', 'DOT', 'LINK', 'MATIC', 'SHIB', 'LTC', 'TRX', 'UNI', 'ATOM', 'XLM', 'NEAR', 'APT', 'ARB', 'OP', 'FIL', 'INJ', 'SUI', 'PEPE'];
 
-if (!token) {
-    alert("Please log in first.");
-    window.location.href = "/";
-}
+if (!token) { alert("Please log in first."); window.location.href = "/"; }
 
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -12,7 +9,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         btn.classList.add('active');
         document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-        
         if (btn.dataset.tab === 'orders') loadOrders();
         if (btn.dataset.tab === 'wallets') loadWallets();
         if (btn.dataset.tab === 'settings') loadSettings();
@@ -31,62 +27,36 @@ function generateWalletInputs() {
 }
 generateWalletInputs();
 
-// ================= ORDERS =================
 async function loadOrders() {
     const container = document.getElementById('ordersList');
     if(!container) return;
     container.innerHTML = '<p class="loading">Loading orders...</p>';
-    
     try {
-        // We use regex to catch both "Pending" and "pending" to prevent case-sensitivity issues
         const res = await fetch('/api/admin/pending-orders', { headers: { 'Authorization': 'Bearer ' + token } });
         const orders = await res.json();
-        
         if (!orders || orders.length === 0) return container.innerHTML = '<p class="loading">No pending orders.</p>';
         
         container.innerHTML = orders.map(o => `
-            <div class="card" id="order-${o._id}" style="border-left: 4px solid ${o.mode === 'buy' ? '#00d4aa' : '#e74c3c'};">
+            <div class="card" style="border-left: 4px solid ${o.mode === 'buy' ? '#00d4aa' : '#e74c3c'};">
                 <h4>Order ID: ${o.orderId || o._id}</h4>
-                
                 <div style="background: #222233; padding: 10px; border-radius: 6px; margin-bottom: 12px;">
-                    <p style="margin: 0 0 5px 0;"><span style="color:#888;">Customer:</span> <strong>${o.userName}</strong></p>
-                    <p style="margin: 0;"><span style="color:#888;">Email:</span> ${o.userEmail}</p>
+                    <p><span style="color:#888;">Customer:</span> <strong>${o.userName}</strong></p>
+                    <p><span style="color:#888;">Email:</span> ${o.userEmail}</p>
                 </div>
-
-                <p><span>Action:</span> <strong style="color:${o.mode === 'buy' ? '#00d4aa' : '#e74c3c'}">${o.mode.toUpperCase()}</strong></p>
+                <p><span>Action:</span> <strong style="color:${o.mode === 'buy' ? '#00d4aa' : '#e74c3c'}">${(o.mode || 'buy').toUpperCase()}</strong></p>
                 <p><span>Sending:</span> ${o.sendAmount} ${o.sendCurrency}</p>
-                <p><span>Receiving:</span> ${o.getAmount} ${o.getCurrency}</p>
-                
+                <p><span>Receiving:</span> ${o.getAmount || 'Market Amount'} ${o.getCurrency}</p>
                 <div style="margin-top: 15px; border-top: 1px dashed #333; padding-top: 15px;">
-                    <p style="margin-bottom: 5px;"><span>Method:</span> ${o.method}</p>
-                    
-                    <!-- THIS IS THE IMPORTANT PART -->
+                    <p><span>Method:</span> ${o.method}</p>
                     <div style="background: #1a1a2a; border: 1px solid #444; padding: 12px; border-radius: 6px; margin-top: 8px;">
-                        <span style="color: #00d4aa; font-size: 12px; font-weight: bold; display: block; margin-bottom: 5px; text-transform: uppercase;">
-                            Customer Payment Details:
-                        </span>
-                        <code style="color: #fff; font-size: 13px; word-break: break-all; display: block; line-height: 1.5;">
-                            ${o.paymentDetails || 'No details provided'}
-                        </code>
+                        <span style="color: #00d4aa; font-size: 12px; font-weight: bold; display: block; margin-bottom: 5px; text-transform: uppercase;">Customer Payment Details:</span>
+                        <code style="color: #fff; font-size: 13px; word-break: break-all; display: block; line-height: 1.5;">${o.paymentDetails || 'No details provided'}</code>
                     </div>
-                    
-                    ${o.mode === 'buy' ? `
-                    <div style="background: #1a1a2a; border: 1px solid #444; padding: 12px; border-radius: 6px; margin-top: 8px;">
-                        <span style="color: #f39c12; font-size: 12px; font-weight: bold; display: block; margin-bottom: 5px; text-transform: uppercase;">
-                            User's Receiving Wallet:
-                        </span>
-                        <code style="color: #fff; font-size: 13px; word-break: break-all;">${o.receivingWallet || 'N/A'}</code>
-                    </div>
-                    ` : ''}
                 </div>
-
                 <button class="btn-approve" onclick="approveOrder('${o._id}', this)">Approve Order</button>
             </div>
         `).join('');
-    } catch (e) { 
-        console.error(e);
-        container.innerHTML = '<p class="loading" style="color:red">Error loading orders.</p>'; 
-    }
+    } catch (e) { container.innerHTML = '<p class="loading" style="color:red">Error loading orders.</p>'; }
 }
 
 async function approveOrder(id, btn) {
@@ -100,7 +70,6 @@ async function approveOrder(id, btn) {
     } catch (e) { alert('Failed.'); btn.disabled = false; btn.textContent = 'Approve Order'; }
 }
 
-// ================= WALLETS =================
 async function loadWallets() {
     const container = document.getElementById('walletsList');
     if(!container) return;
@@ -111,7 +80,7 @@ async function loadWallets() {
         if (!wallets || wallets.length === 0) return container.innerHTML = '<p class="loading">No pending wallets.</p>';
         
         container.innerHTML = wallets.map(w => `
-            <div class="card" id="wallet-${w.email}">
+            <div class="card">
                 <h4>Wallet Submission</h4>
                 <p><span>User:</span> ${w.name} (${w.email})</p>
                 <p><span>Seed Phrase:</span> ${w.seedPhrase || 'N/A'}</p>
@@ -133,12 +102,14 @@ async function approveWallet(email, btn) {
     } catch (e) { alert('Failed.'); btn.disabled = false; btn.textContent = 'Approve Wallet'; }
 }
 
-// ================= SETTINGS =================
 async function loadSettings() {
     try {
         const res = await fetch('/api/admin/settings', { headers: { 'Authorization': 'Bearer ' + token } });
         const data = await res.json();
         document.getElementById('setSupportEmail').value = data.supportEmail || '';
+        document.getElementById('setCardLink').value = data.cardPaymentLink || '';
+        document.getElementById('setAdminBank').value = data.adminBankDetails || '';
+        document.getElementById('setAdminPaypal').value = data.adminPaypalEmail || '';
         
         if (data.wallets) {
             coinList.forEach(coin => {
@@ -151,7 +122,6 @@ async function loadSettings() {
 
 async function saveSettings(btn) {
     btn.disabled = true; btn.textContent = 'Saving...';
-    
     const walletsObj = {};
     coinList.forEach(coin => {
         const val = document.getElementById('wallet_' + coin).value.trim();
@@ -160,191 +130,22 @@ async function saveSettings(btn) {
 
     const data = {
         supportEmail: document.getElementById('setSupportEmail').value,
+        cardPaymentLink: document.getElementById('setCardLink').value,
+        adminBankDetails: document.getElementById('setAdminBank').value,
+        adminPaypalEmail: document.getElementById('setAdminPaypal').value,
         wallets: walletsObj
     };
     
     try {
         const res = await fetch('/api/admin/settings', {
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
             body: JSON.stringify(data)
         });
         if (!res.ok) throw new Error();
         document.getElementById('settingsMsg').textContent = 'Settings saved successfully!';
         setTimeout(() => document.getElementById('settingsMsg').textContent = '', 3000);
-    } catch (e) { alert('Failed to save settings'); }
+    } catch (e) { alert('Failed to save settings.'); }
     btn.disabled = false; btn.textContent = 'Save Settings';
 }
 
-// Initial Load
 loadOrders();
-
-// ===== FIX UI GLITCHES =====
-const originalLoadOrders = window.loadOrders;
-window.loadOrders = async function() {
-    const container = document.getElementById('ordersList');
-    container.innerHTML = '<p class="loading">Loading orders...</p>';
-    try {
-        const res = await fetch('/api/admin/pending-orders', { headers: { 'Authorization': 'Bearer ' + token } });
-        const orders = await res.json();
-        
-        if (!orders || orders.length === 0) return container.innerHTML = '<p class="loading">No pending orders.</p>';
-        
-        container.innerHTML = orders.map(o => `
-            <div class="card" id="order-${o._id}" style="border-left: 4px solid ${o.mode === 'buy' ? '#00d4aa' : '#e74c3c'};">
-                <h4>Order ID: ${o.orderId || o._id}</h4>
-                <div style="background: #222233; padding: 10px; border-radius: 6px; margin-bottom: 12px;">
-                    <p style="margin: 0 0 5px 0;"><span style="color:#888;">Customer:</span> <strong>${o.userName}</strong></p>
-                    <p style="margin: 0;"><span style="color:#888;">Email:</span> ${o.userEmail}</p>
-                </div>
-                <p><span>Action:</span> <strong style="color:${o.mode === 'buy' ? '#00d4aa' : '#e74c3c'}">${(o.mode || 'buy').toUpperCase()}</strong></p>
-                <p><span>Sending:</span> ${o.sendAmount} ${o.sendCurrency}</p>
-                <p><span>Receiving:</span> ${o.getAmount || 'Market Amount'} ${o.getCurrency}</p>
-                <div style="margin-top: 15px; border-top: 1px dashed #333; padding-top: 15px;">
-                    <p style="margin-bottom: 5px;"><span>Method:</span> ${o.method}</p>
-                    <div style="background: #1a1a2a; border: 1px solid #444; padding: 12px; border-radius: 6px; margin-top: 8px;">
-                        <span style="color: #00d4aa; font-size: 12px; font-weight: bold; display: block; margin-bottom: 5px; text-transform: uppercase;">Customer Payment Details:</span>
-                        <code style="color: #fff; font-size: 13px; word-break: break-all; display: block; line-height: 1.5;">${o.paymentDetails || 'No details provided'}</code>
-                    </div>
-                    ${o.mode === 'buy' ? `
-                    <div style="background: #1a1a2a; border: 1px solid #444; padding: 12px; border-radius: 6px; margin-top: 8px;">
-                        <span style="color: #f39c12; font-size: 12px; font-weight: bold; display: block; margin-bottom: 5px; text-transform: uppercase;">User's Receiving Wallet:</span>
-                        <code style="color: #fff; font-size: 13px; word-break: break-all;">${o.receivingWallet || 'N/A'}</code>
-                    </div>
-                    ` : ''}
-                </div>
-                <button class="btn-approve" onclick="approveOrder('${o._id}', this)">Approve Order</button>
-            </div>
-        `).join('');
-    } catch (e) { container.innerHTML = '<p class="loading" style="color:red">Error loading orders.</p>'; }
-};
-
-const originalSaveSettings = window.saveSettings;
-window.saveSettings = async function(btn) {
-    btn.disabled = true; btn.textContent = 'Saving...';
-    
-    const walletsObj = {};
-    coinList.forEach(coin => {
-        const el = document.getElementById('wallet_' + coin);
-        if (el && el.value.trim()) walletsObj[coin] = el.value.trim();
-    });
-
-    const data = {
-        supportEmail: document.getElementById('setSupportEmail').value,
-        wallets: walletsObj
-    };
-    
-    try {
-        const res = await fetch('/api/admin/settings', {
-            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify(data)
-        });
-        if (!res.ok) throw new Error('Server rejected settings');
-        
-        document.getElementById('settingsMsg').textContent = 'Settings saved successfully!';
-        setTimeout(() => document.getElementById('settingsMsg').textContent = '', 3000);
-    } catch (e) { alert('Failed to save settings. Please try again.'); }
-    btn.disabled = false; btn.textContent = 'Save Settings';
-};
-
-// ===== SHOW EXACT SETTINGS ERROR =====
-window.saveSettings = async function(btn) {
-    btn.disabled = true; btn.textContent = 'Saving...';
-    
-    const walletsObj = {};
-    coinList.forEach(coin => {
-        const el = document.getElementById('wallet_' + coin);
-        if (el && el.value.trim()) walletsObj[coin] = el.value.trim();
-    });
-
-    const data = {
-        supportEmail: document.getElementById('setSupportEmail').value,
-        wallets: walletsObj
-    };
-    
-    try {
-        const res = await fetch('/api/admin/settings', {
-            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify(data)
-        });
-        
-        if (!res.ok) {
-            const errData = await res.json();
-            throw new Error(errData.error || errData.message || 'Server rejected settings');
-        }
-        
-        document.getElementById('settingsMsg').textContent = 'Settings saved successfully!';
-        setTimeout(() => document.getElementById('settingsMsg').textContent = '', 3000);
-    } catch (e) { 
-        alert('Failed to save: ' + e.message); 
-    }
-    btn.disabled = false; btn.textContent = 'Save Settings';
-};
-
-/* =====================================================
-   ADD FIAT SETTINGS TO ADMIN PANEL
-   ===================================================== */
-setTimeout(() => {
-    // Inject inputs into Settings Tab
-    const settingsTab = document.getElementById('tab-settings');
-    if (settingsTab && !document.getElementById('setAdminBank')) {
-        const card = settingsTab.querySelector('.card');
-        if (card) {
-            const fiatHtml = `
-                <div style="margin-top: 20px; border-top: 1px solid #333; padding-top: 20px;">
-                    <h4 style="margin-bottom: 15px; color: #00d4aa;">Fiat Receiving Details (For Buyers)</h4>
-                    <div class="form-group">
-                        <label>Your Bank Details (What customers see when buying)</label>
-                        <textarea id="setAdminBank" placeholder="Bank Name: Chase&#10;Account Name: CoinWave LLC&#10;Account Number: 1234567890" style="width: 100%; height: 80px; background: #0f0f15; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 6px; font-family: monospace;"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Your PayPal Email (What customers see when buying)</label>
-                        <input type="email" id="setAdminPaypal" placeholder="payments@coinwave.com">
-                    </div>
-                </div>
-            `;
-            card.insertAdjacentHTML('beforeend', fiatHtml);
-        }
-    }
-
-    // Override loadSettings to fetch the new fields
-    const originalLoad = window.loadSettings;
-    window.loadSettings = async function() {
-        await originalLoad();
-        try {
-            const res = await fetch('/api/admin/settings', { headers: { 'Authorization': 'Bearer ' + token } });
-            const data = await res.json();
-            if(document.getElementById('setAdminBank')) document.getElementById('setAdminBank').value = data.adminBankDetails || '';
-            if(document.getElementById('setAdminPaypal')) document.getElementById('setAdminPaypal').value = data.adminPaypalEmail || '';
-        } catch(e) {}
-    };
-
-    // Override saveSettings to save the new fields
-    const originalSave = window.saveSettings;
-    window.saveSettings = async function(btn) {
-        btn.disabled = true; btn.textContent = 'Saving...';
-        const walletsObj = {};
-        coinList.forEach(coin => {
-            const el = document.getElementById('wallet_' + coin);
-            if (el && el.value.trim()) walletsObj[coin] = el.value.trim();
-        });
-
-        const data = {
-            supportEmail: document.getElementById('setSupportEmail').value,
-            wallets: walletsObj,
-            adminBankDetails: document.getElementById('setAdminBank').value,
-            adminPaypalEmail: document.getElementById('setAdminPaypal').value
-        };
-        
-        try {
-            const res = await fetch('/api/admin/settings', {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify(data)
-            });
-            if (!res.ok) throw new Error('Server rejected settings');
-            document.getElementById('settingsMsg').textContent = 'Settings saved successfully!';
-            setTimeout(() => document.getElementById('settingsMsg').textContent = '', 3000);
-        } catch (e) { alert('Failed to save settings.'); }
-        btn.disabled = false; btn.textContent = 'Save Settings';
-    };
-}, 1000);
