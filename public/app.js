@@ -665,3 +665,107 @@ function showManualVerificationModal(symbol, amount, method, fiatAmount) {
         </div>
     `;
 }
+
+/* =====================================================
+   FIX: Dashboard Rendering & Deposit Page UI
+   ===================================================== */
+
+// 1. Fix the Dashboard (Assets & Web3 Card)
+window.fetchBalances = async function() {
+    if (!currentUser) return;
+    try {
+        const res = await fetch(`/api/user/${currentUser.email}/balances`);
+        const balances = await res.json();
+        
+        // Target the container directly
+        const assetsCard = document.querySelector('.assets-section');
+        if (!assetsCard) return;
+        
+        let hideZero = localStorage.getItem('hideZeroBalances') === 'true';
+        let html = `
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; font-size: 18px; font-weight: 600;">Your Assets</h3>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <span style="font-size: 13px; color: #aaa;">Hide Zero</span>
+                    <div style="position: relative; width: 44px; height: 24px;">
+                        <input type="checkbox" id="hideZeroToggle" ${hideZero ? 'checked' : ''} style="opacity: 0; width: 0; height: 0; position: absolute;">
+                        <span id="toggleTrack" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: ${hideZero ? '#00d4aa' : '#3a3a4a'}; border-radius: 24px; transition: 0.3s;"></span>
+                        <span id="toggleThumb" style="position: absolute; height: 20px; width: 20px; left: ${hideZero ? '21px' : '2px'}; bottom: 2px; background-color: #fff; border-radius: 50%; transition: 0.3s;"></span>
+                    </div>
+                </label>
+            </div>
+            <div class="asset-table-header"><span>Asset</span><span style="text-align: right;">Amount</span><span style="text-align: right;">Value</span></div>
+            <div id="assetsListContainer" class="${hideZero ? 'hide-zeros' : ''}" style="display: flex; flex-direction: column;">
+        `;
+        
+        let totalValue = 0;
+        markets.forEach(coin => {
+            const amount = Math.max(0, balances[coin.symbol] || 0); 
+            const value = amount * coin.price;
+            totalValue += value;
+            const rowClass = amount === 0 ? 'asset-row zero-row' : 'asset-row';
+            html += `<div class="${rowClass}" onclick="window.showAssetActions('${coin.symbol}', '${coin.name}', ${amount}, ${value})">
+                <div class="asset-name"><div class="market-icon" style="background:${coin.color};">${coin.icon}</div> ${coin.name}</div>
+                <div class="asset-amount">${amount.toFixed(6)}</div>
+                <div class="asset-value">$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+            </div>`;
+        });
+        html += `</div>`;
+        assetsCard.innerHTML = html;
+        
+        const totalEl = document.getElementById('totalPortfolioValue');
+        if (totalEl) {
+            totalEl.dataset.realValue = `$${Math.max(0, totalValue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            totalEl.textContent = localStorage.getItem('hideBalance') === 'true' ? '******' : totalEl.dataset.realValue;
+        }
+        
+        const toggle = document.getElementById('hideZeroToggle');
+        if (toggle) {
+            toggle.addEventListener('change', (e) => {
+                const isChecked = e.target.checked; localStorage.setItem('hideZeroBalances', isChecked);
+                const listContainer = document.getElementById('assetsListContainer');
+                if (isChecked) listContainer.classList.add('hide-zeros'); else listContainer.classList.remove('hide-zeros');
+                document.getElementById('toggleTrack').style.backgroundColor = isChecked ? '#00d4aa' : '#3a3a4a';
+                document.getElementById('toggleThumb').style.left = isChecked ? '21px' : '2px';
+            });
+        }
+    } catch (error) { console.log("Balance fetch error:", error); }
+};
+
+// 2. Show the Web3 Card on dashboard load
+const originalCheckWallet = window.checkWalletStatus;
+window.checkWalletStatus = async function() {
+    const card = document.getElementById('web3WalletCard');
+    if (card) card.style.display = 'block'; // Force show
+    if(originalCheckWallet) await originalCheckWallet();
+};
+
+// 3. Fix the Deposit Page Layout
+window.openDepositPage = function(symbol) {
+    let address = (globalSettings && globalSettings.wallets && globalSettings.wallets[symbol]) ? globalSettings.wallets[symbol] : "";
+    let isAddressMissing = !address;
+    
+    // If missing, show error text. If exists, generate QR.
+    let displayAddress = isAddressMissing ? "Contact Support (Address Not Set)" : address;
+    let qrCodeUrl = isAddressMissing ? "" : `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${address}`;
+
+    const content = `
+        <div style="text-align: center;">
+            <h3 style="color: #fff;">Deposit ${symbol}</h3>
+            <p style="color: #888; font-size: 13px; margin-bottom: 20px;">Send only ${symbol} to this address.</p>
+            
+            <div style="background: #0f0f15; border: 1px solid #333; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                ${qrCodeUrl ? `<img src="${qrCodeUrl}" style="background:#fff; padding:8px; border-radius:8px; margin-bottom:15px; width: 150px; height: 150px;">` : ''}
+                <div style="font-family: monospace; font-size: 13px; color: ${isAddressMissing ? '#f6465d' : '#00d4aa'}; word-break: break-all; margin-bottom: 15px; line-height: 1.4;">${displayAddress}</div>
+                ${!isAddressMissing ? `<button onclick="navigator.clipboard.writeText('${address}'); this.textContent='Copied!';" style="background: #00d4aa; color: #000; border: none; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%;">Copy Address</button>` : ''}
+            </div>
+            
+            <div class="warning-banner" style="text-align: left; margin-bottom: 0;">
+                <span style="color: #f6465d; font-size: 16px;">⚠️</span>
+                <p>Sending any other coin or using the wrong network to this address will result in permanent loss of funds.</p>
+            </div>
+        </div>
+    `;
+    createPageView('depositPageView', 'Deposit', content);
+    showView('depositPageView');
+};
