@@ -2,9 +2,7 @@ const markets = [ { name: 'Bitcoin', symbol: 'BTC', price: 85245.32, change: 2.4
 const countries = [ { name: "United States", flag: "🇺🇸" }, { name: "United Kingdom", flag: "🇬🇧" }, { name: "Canada", flag: "🇨🇦" }, { name: "Australia", flag: "🇦🇺" }, { name: "Nigeria", flag: "🇳🇬" }, { name: "Kenya", flag: "🇰🇪" }, { name: "South Africa", flag: "🇿🇦" }, { name: "Ghana", flag: "🇬🇭" }, { name: "India", flag: "🇮🇳" }, { name: "Germany", flag: "🇩🇪" }, { name: "France", flag: "🇫🇷" }, { name: "Japan", flag: "🇯🇵" }, { name: "UAE", flag: "🇦🇪" }, { name: "Brazil", flag: "🇧🇷" } ];
 const currencyMap = { "🇺🇸 United States": { code: "USD", symbol: "$", rate: 1 }, "🇬🇧 United Kingdom": { code: "GBP", symbol: "£", rate: 0.79 }, "🇨🇦 Canada": { code: "CAD", symbol: "C$", rate: 1.36 }, "🇦🇺 Australia": { code: "AUD", symbol: "A$", rate: 1.52 }, "🇳🇬 Nigeria": { code: "NGN", symbol: "₦", rate: 1500 }, "🇰🇪 Kenya": { code: "KES", symbol: "KSh", rate: 130 }, "🇿🇦 South Africa": { code: "ZAR", symbol: "R", rate: 18.5 }, "🇬🇭 Ghana": { code: "GHS", symbol: "₵", rate: 14.5 }, "🇮🇳 India": { code: "INR", symbol: "₹", rate: 83.5 }, "🇩🇪 Germany": { code: "EUR", symbol: "€", rate: 0.92 }, "🇫🇷 France": { code: "EUR", symbol: "€", rate: 0.92 }, "🇯🇵 Japan": { code: "JPY", symbol: "¥", rate: 150 }, "🇦🇪 UAE": { code: "AED", symbol: "د.إ", rate: 3.67 }, "🇧🇷 Brazil": { code: "BRL", symbol: "R$", rate: 5.0 } };
 const BONUS_RATE = 0.05;
-let currentTradeMode = 'buy';
-let currentUser = null;
-let globalSettings = null;
+let currentTradeMode = 'buy'; let currentUser = null; let globalSettings = null;
 
 function getUserCurrency() { if (!currentUser || !currentUser.country) return currencyMap["🇺🇸 United States"]; return currencyMap[currentUser.country] || currencyMap["🇺🇸 United States"]; }
 function getExchangePrice(coin, mode) { return mode === 'buy' ? coin.price * (1 - BONUS_RATE) : coin.price * (1 + BONUS_RATE); }
@@ -15,6 +13,7 @@ function showView(viewId, authType = 'login') {
     if (target) target.style.display = 'block';
     if (viewId === 'authView') switchAuth(authType);
     if (viewId === 'dashboardView') { fetchBalances(); checkWalletStatus(); }
+    if (viewId === 'guestView') { loadMarkets(); }
     window.scrollTo(0, 0);
 }
 
@@ -30,6 +29,7 @@ function showCustomAlert(title, message) {
     modal.innerHTML = `<div style="background: #1a1a2a; border: 1px solid #2a2a3a; border-radius: 16px; padding: 25px; width: 100%; max-width: 340px; text-align: center;"><div style="width: 55px; height: 55px; border-radius: 50%; background: rgba(246, 70, 93, 0.1); display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f6465d" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div><h3 style="color: #fff; margin-bottom: 10px; font-size: 18px;">${title}</h3><p style="color: #888; font-size: 14px; margin-bottom: 25px;">${message}</p><button onclick="document.getElementById('customAlertModal').remove()" style="background: #2a2a3a; color: #fff; border: none; width: 100%; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer;">Got it</button></div>`;
     document.body.appendChild(modal);
 }
+
 function switchAuth(type) { document.getElementById('loginForm').style.display = type === 'login' ? 'block' : 'none'; document.getElementById('registerForm').style.display = type === 'register' ? 'block' : 'none'; }
 function populateCountries() { const select = document.getElementById('regCountry'); if(!select) return; select.innerHTML = '<option value="" disabled selected>Select Country</option>'; countries.forEach(c => { const o = document.createElement('option'); o.value = `${c.flag} ${c.name}`; o.textContent = `${c.flag} ${c.name}`; select.appendChild(o); }); }
 function populateTradeCoins() { const select = document.getElementById('tradeCoin'); if(!select) return; select.innerHTML = ''; markets.forEach(c => { const o = document.createElement('option'); o.value = c.symbol; o.textContent = `${c.name} (${c.symbol})`; select.appendChild(o); }); }
@@ -55,7 +55,6 @@ async function handleLogin() {
 }
 
 function handleLogout() { localStorage.removeItem('token'); localStorage.removeItem('user'); checkAuthState(); }
-
 function checkAuthState() {
     currentUser = JSON.parse(localStorage.getItem('user'));
     if (currentUser && (currentUser.isAdmin || currentUser.email.includes('admin'))) { window.location.href = '/admin.html'; return; }
@@ -73,6 +72,33 @@ function checkAuthState() {
         logo.innerHTML = `<div style="display: flex; align-items: center; gap: 8px;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M2 12C2 12 5 6 12 6C19 6 22 12 22 12C22 12 19 18 12 18C5 18 2 12 2 12Z" stroke="#00d4aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 14C13.1046 14 14 13.1046 14 12C14 10.8954 13.1046 10 12 10C10.8954 10 10 10.8954 10 12C10 13.1046 10.8954 14 12 14Z" fill="#00d4aa"/></svg><span style="font-size: 20px; font-weight: 800; color: #fff;">Coin<span style="color: #00d4aa;">Wave</span></span></div>`;
         logo.onclick = () => showView('guestView');
     }
+}
+
+function simulateLiveMarket() {
+    markets.forEach(coin => {
+        const fluctuation = (Math.random() - 0.5) * (coin.price * 0.002);
+        coin.price += fluctuation;
+        const changeFluctuation = (Math.random() - 0.5) * 0.2;
+        coin.change = parseFloat((coin.change + changeFluctuation).toFixed(2));
+    });
+}
+
+function loadMarkets() {
+    const marketList = document.getElementById('market-list'); const ticker = document.getElementById('ticker');
+    if(!marketList) return;
+    let marketHTML = ''; let tickerHTML = '';
+    markets.forEach((coin, index) => {
+        const isUp = coin.change >= 0; const changeClass = isUp ? 'up' : 'down'; const changeSymbol = isUp ? '↑' : '↓';
+        let formattedPrice = coin.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 6});
+        marketHTML += `<div class="market-row" onclick="quickTrade('${coin.symbol}')"><div class="market-rank">${index + 1}</div><div class="market-name-col"><div class="market-icon" style="background: ${coin.color};">${coin.icon}</div><div><div class="market-name-text">${coin.name}</div><div class="market-symbol-text">${coin.symbol}</div></div></div><div class="market-price">$${formattedPrice}</div><div class="market-change ${changeClass}">${changeSymbol} ${Math.abs(coin.change)}%</div></div>`;
+        tickerHTML += `<div class="ticker-item"><b>${coin.symbol}</b> $${formattedPrice} <span class="${changeClass}">${changeSymbol}${Math.abs(coin.change)}%</span></div>`;
+    });
+    marketList.innerHTML = marketHTML; if(ticker) ticker.innerHTML = tickerHTML + tickerHTML; 
+}
+
+function quickTrade(symbol) { 
+    requireAuth('tradeView', 'buy'); 
+    setTimeout(() => { document.getElementById('tradeCoin').value = symbol; calcTrade(); }, 100); 
 }
 
 async function checkWalletStatus() {
@@ -201,6 +227,8 @@ window.showAssetActions = function(symbol, name, amount, value) {
     const coin = markets.find(c => c.symbol === symbol); if(coin) { document.getElementById('assetModalIcon').style.background = coin.color; document.getElementById('assetModalIcon').innerHTML = coin.icon; }
     document.getElementById('assetModalTitle').textContent = name; document.getElementById('assetModalBalance').textContent = `${amount.toFixed(6)} ${symbol}`; document.getElementById('assetModalValue').textContent = `≈ $${value.toFixed(2)} USD`; window._currentActionSymbol = symbol; document.body.appendChild(modal);
 };
+
+function executeAssetAction(mode) { document.getElementById('assetActionModal').remove(); requireAuth('tradeView', mode); setTimeout(() => { document.getElementById('tradeCoin').value = window._currentActionSymbol; calcTrade(); }, 100); }
 function requireAuth(targetView, mode = null) {
     if (!currentUser) { showView('authView', 'login'); showToast("Please log in."); }
     else { showView(targetView); if (targetView === 'tradeView') setTradeMode(mode || 'buy'); }
@@ -274,7 +302,6 @@ function showPaymentInstructions(symbol, cryptoAmount, fiatAmount) {
     modal.innerHTML = `<div style="background: #1a1a2a; border-radius: 12px; padding: 25px; width: 100%; max-width: 400px; text-align: center;"><h2 style="color: #fff;">Order Created</h2><p style="color: #888; font-size: 14px; margin-bottom: 20px;">Send exactly <strong>${cryptoAmount} ${symbol}</strong> to:</p><div style="background: #0f0f15; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 20px;"><p style="color: #00d4aa; font-family: monospace; font-size: 14px; word-break: break-all;">${address}</p></div><p style="color: #e74c3c; font-size: 12px; margin-bottom: 20px;">Pending verification.</p><button onclick="this.parentElement.parentElement.remove(); showView('dashboardView');" style="background: #00d4aa; color: #000; width: 100%; padding: 16px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer;">I Have Sent It</button></div>`;
     document.body.appendChild(modal);
 }
-
 function createPageView(id, title, contentHtml) {
     let view = document.getElementById(id); if (view) view.remove(); view = document.createElement('main'); view.id = id; view.className = 'app-view'; view.style.display = 'none'; 
     view.innerHTML = `<div class="dash-container" style="max-width: 500px; margin: 0 auto; padding: 20px;"><div style="display: flex; align-items: center; margin-bottom: 25px;"><button onclick="showView('dashboardView')" style="width: 42px; height: 42px; border-radius: 50%; background: #1a1a2a; border: 1px solid #2a2a3a; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-right: 15px; padding: 0; color: #fff;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button><h2 style="margin: 0; font-size: 20px; color: #fff;">${title}</h2></div><div class="card" style="background: #1a1a2a; border-radius: 16px; padding: 25px; border: 1px solid #2a2a3a;">${contentHtml}</div></div>`;
