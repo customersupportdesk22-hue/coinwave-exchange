@@ -212,3 +212,35 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     }
 });
 loadCustomAssets();
+
+/* =====================================================
+   BULLETPROOF ADMIN FORM INJECTION
+   ===================================================== */
+setInterval(() => {
+    const settingsTab = document.getElementById('tab-settings');
+    // Check if tab exists and if the form hasn't been added yet
+    if (settingsTab && !document.getElementById('newAssetName')) {
+        const card = settingsTab.querySelector('.card');
+        if (card) {
+            const formHtml = `
+                <h4 style="margin-top: 30px;">Add Custom Asset</h4>
+                <div style="background: #0f0f15; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 20px;">
+                    <div class="form-group"><label>Coin Name</label><input type="text" id="newAssetName" placeholder="e.g. Cardano"></div>
+                    <div class="form-group"><label>Symbol</label><input type="text" id="newAssetSymbol" placeholder="e.g. ADA"></div>
+                    <div class="form-group"><label>Price (USD)</label><input type="number" id="newAssetPrice" placeholder="e.g. 1.25"></div>
+                    <div class="form-group"><label>Icon (Emoji or Letter)</label><input type="text" id="newAssetIcon" placeholder="e.g. A"></div>
+                    <div class="form-group"><label>Color (Hex Code)</label><input type="text" id="newAssetColor" placeholder="e.g. #0033ad"></div>
+                    <button class="btn-approve" onclick="addCustomAsset(this)" style="margin-top: 10px; background: #2a2a3a; color: #fff;">Add Asset</button>
+                    <div id="customAssetsList" style="margin-top: 15px; font-size: 12px; color: #888;"></div>
+                </div>
+            `;
+            // Insert before the Save button
+            const saveBtn = card.querySelector('.btn-approve');
+            if (saveBtn) {
+                saveBtn.insertAdjacentHTML('beforebegin', formHtml);
+            } else {
+                card.insertAdjacentHTML('beforeend', formHtml);
+            }
+        }
+    }
+}, 1000);
