@@ -11,7 +11,7 @@
     <div class="ticker-wrap"><div class="ticker-move" id="ticker"></div></div>
 
     <nav>
-        <div class="logo" onclick="showView('guestView')">🌊 CoinWave</div>
+        <div class="logo" onclick="document.getElementById('market-list').scrollIntoView({behavior: 'smooth'})">🌊 CoinWave</div>
         <div class="nav-links" id="navLinks"></div>
     </nav>
 
@@ -23,7 +23,7 @@
                 <p class="hero-subtitle">Trade over 500+ cryptocurrencies with the lowest fees and lightning-fast execution.</p>
                 <div class="hero-cta">
                     <button class="btn-primary-large" onclick="requireAuth('tradeView', 'buy')">Get Started</button>
-                    <button class="btn-outline-large" onclick="showView('guestView')">View Markets</button>
+                    <button class="btn-outline-large" onclick="document.getElementById('market-list').scrollIntoView({behavior: 'smooth'})">View Markets</button>
                 </div>
             </div>
             <div class="hero-visual">
@@ -170,5 +170,5 @@
     </main>
 
     <div id="toast" class="toast">Message</div>
-    <script src="app.js?v=100001"></script>
+    <script src="app.js?v=99999"></script>
 </html>
