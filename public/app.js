@@ -334,7 +334,7 @@ function openAssetSelector(action) {
     document.body.appendChild(modal);
 }
 
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function(e) { if(true) return;
     const btn = e.target.closest('.action-btn');
     if (btn) {
         if (btn.innerText.includes('Deposit')) { e.preventDefault(); e.stopPropagation(); openAssetSelector('deposit'); }
