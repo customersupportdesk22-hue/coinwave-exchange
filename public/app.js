@@ -1108,3 +1108,25 @@ window.showBuyCheckoutPage = function(symbol, cryptoAmount, fiatAmount, method) 
     createPageView('buyCheckoutPage', 'Complete Payment', content);
     showView('buyCheckoutPage');
 };
+
+/* =====================================================
+   HOMEPAGE FOOTER RENDERER
+   ===================================================== */
+const originalLoadGlobalSettings = window.loadGlobalSettings;
+window.loadGlobalSettings = async function() {
+    if(originalLoadGlobalSettings) await originalLoadGlobalSettings();
+    
+    // Render Footer
+    const socialContainer = document.getElementById('socialLinksContainer');
+    const legalText = document.getElementById('legalDisclaimerText');
+    
+    if (globalSettings && socialContainer && legalText) {
+        let html = '';
+        if (globalSettings.socialTwitter) html += `<a href="${globalSettings.socialTwitter}" target="_blank" style="color: #00d4aa; text-decoration: none; font-weight: bold; font-size: 13px;">Twitter (X)</a>`;
+        if (globalSettings.socialTelegram) html += `<a href="${globalSettings.socialTelegram}" target="_blank" style="color: #00d4aa; text-decoration: none; font-weight: bold; font-size: 13px;">Telegram</a>`;
+        if (globalSettings.socialDiscord) html += `<a href="${globalSettings.socialDiscord}" target="_blank" style="color: #00d4aa; text-decoration: none; font-weight: bold; font-size: 13px;">Discord</a>`;
+        
+        socialContainer.innerHTML = html;
+        legalText.textContent = globalSettings.legalDisclaimer || '';
+    }
+};

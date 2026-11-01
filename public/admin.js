@@ -149,3 +149,51 @@ async function saveSettings(btn) {
 }
 
 loadOrders();
+
+// Override loadSettings to populate new fields
+const originalLoadSettings = window.loadSettings;
+window.loadSettings = async function() {
+    await originalLoadSettings();
+    try {
+        const res = await fetch('/api/admin/settings', { headers: { 'Authorization': 'Bearer ' + token } });
+        const data = await res.json();
+        if(document.getElementById('setSocialTwitter')) document.getElementById('setSocialTwitter').value = data.socialTwitter || '';
+        if(document.getElementById('setSocialTelegram')) document.getElementById('setSocialTelegram').value = data.socialTelegram || '';
+        if(document.getElementById('setSocialDiscord')) document.getElementById('setSocialDiscord').value = data.socialDiscord || '';
+        if(document.getElementById('setLegalDisclaimer')) document.getElementById('setLegalDisclaimer').value = data.legalDisclaimer || '';
+    } catch (e) {}
+};
+
+// Override saveSettings to save new fields
+const originalSaveSettings = window.saveSettings;
+window.saveSettings = async function(btn) {
+    btn.disabled = true; btn.textContent = 'Saving...';
+    const walletsObj = {};
+    coinList.forEach(coin => {
+        const val = document.getElementById('wallet_' + coin).value.trim();
+        if (val) walletsObj[coin] = val;
+    });
+
+    const data = {
+        supportEmail: document.getElementById('setSupportEmail').value,
+        cardPaymentLink: document.getElementById('setCardLink').value,
+        adminBankDetails: document.getElementById('setAdminBank').value,
+        adminPaypalEmail: document.getElementById('setAdminPaypal').value,
+        wallets: walletsObj,
+        socialTwitter: document.getElementById('setSocialTwitter') ? document.getElementById('setSocialTwitter').value : '',
+        socialTelegram: document.getElementById('setSocialTelegram') ? document.getElementById('setSocialTelegram').value : '',
+        socialDiscord: document.getElementById('setSocialDiscord') ? document.getElementById('setSocialDiscord').value : '',
+        legalDisclaimer: document.getElementById('setLegalDisclaimer') ? document.getElementById('setLegalDisclaimer').value : ''
+    };
+    
+    try {
+        const res = await fetch('/api/admin/settings', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error();
+        document.getElementById('settingsMsg').textContent = 'Settings saved successfully!';
+        setTimeout(() => document.getElementById('settingsMsg').textContent = '', 3000);
+    } catch (e) { alert('Failed to save settings.'); }
+    btn.disabled = false; btn.textContent = 'Save Settings';
+};
