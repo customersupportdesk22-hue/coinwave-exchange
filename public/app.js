@@ -2028,3 +2028,76 @@ window.checkAuthState = function() {
         }
     }
 };
+
+/* =====================================================
+   PENDING ORDER REMINDER (Dashboard Notice)
+   ===================================================== */
+window.checkPendingOrders = async function() {
+    if (!currentUser) return;
+    const dashContainer = document.querySelector('.dash-container');
+    if (!dashContainer) return;
+
+    try {
+        const res = await fetch(`/api/orders/user/${currentUser.email}`);
+        const orders = await res.json();
+
+        // Find any order that is Pending and is a BUY order (needs fiat payment)
+        const pendingBuyOrder = orders.find(o => 
+            (o.status === 'Pending' || o.status === 'pending') && o.mode === 'buy'
+        );
+
+        // Remove old banner if it exists
+        const oldBanner = document.getElementById('pendingPaymentBanner');
+        if (oldBanner) oldBanner.remove();
+
+        if (pendingBuyOrder) {
+            // Create the warning banner
+            const banner = document.createElement('div');
+            banner.id = 'pendingPaymentBanner';
+            banner.style.cssText = "background: rgba(252, 213, 53, 0.1); border: 1px solid #fcd535; border-radius: 12px; padding: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;";
+            
+            banner.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 20px;">⏳</span>
+                    <div>
+                        <p style="color: #fcd535; font-weight: bold; font-size: 14px; margin: 0;">Pending Payment</p>
+                        <p style="color: #888; font-size: 12px; margin: 0;">You have an unpaid order for ${pendingBuyOrder.getAmount} ${pendingBuyOrder.getCurrency}</p>
+                    </div>
+                </div>
+                <button onclick="window.resumePayment('${pendingBuyOrder._id}')" style="background: #fcd535; color: #000; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer;">Complete Payment</button>
+            `;
+
+            // Insert banner at the top of the dashboard
+            dashContainer.insertBefore(banner, dashContainer.firstChild);
+        }
+
+    } catch (e) {
+        console.log("Error checking pending orders:", e);
+    }
+};
+
+// Function to resume the payment flow
+window.resumePayment = async function(orderId) {
+    try {
+        // Fetch the specific order details to show the payment page again
+        const res = await fetch(`/api/orders/user/${currentUser.email}`);
+        const orders = await res.json();
+        const order = orders.find(o => o._id === orderId);
+
+        if (order) {
+            // Re-open the Buy Checkout Page
+            showBuyCheckoutPage(order.getCurrency, order.getAmount, order.sendAmount, order.method);
+        }
+    } catch (e) {
+        showToast("Error loading order details.");
+    }
+};
+
+// Ensure it runs every time the dashboard is opened
+var originalShowViewPending = window.showView;
+window.showView = function(viewId, authType = 'login') {
+    originalShowViewPending(viewId, authType);
+    if (viewId === 'dashboardView') {
+        setTimeout(() => window.checkPendingOrders(), 1000);
+    }
+};
