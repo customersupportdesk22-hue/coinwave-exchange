@@ -1656,7 +1656,7 @@ window.loadTransactionHistory = async function() {
     if (!listContainer) return;
 
     try {
-        const res = await fetch(`/api/order/user/${currentUser.email}`);
+        const res = await fetch(`/api/orders/user/${currentUser.email}`);
         const orders = await res.json();
 
         if (!orders || orders.length === 0) {

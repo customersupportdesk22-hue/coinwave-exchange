@@ -59,7 +59,7 @@ router.post('/login', async (req, res) => {
 // 4. Generate 2FA Secret and QR Code
 router.post('/generate-2fa', authMiddleware, async (req, res) => {
     try {
-        const user = await User.findById(req.user.id);
+        const user = await User.findById(req.user.id || req.user._id);
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         const secret = speakeasy.generateSecret({ name: `CoinWave (${user.email})` });
@@ -79,7 +79,7 @@ router.post('/generate-2fa', authMiddleware, async (req, res) => {
 router.post('/enable-2fa', authMiddleware, async (req, res) => {
     try {
         const { token } = req.body;
-        const user = await User.findById(req.user.id);
+        const user = await User.findById(req.user.id || req.user._id);
         
         if (!user || !user.twoFactorSecret) return res.status(400).json({ error: '2FA not initialized' });
 
