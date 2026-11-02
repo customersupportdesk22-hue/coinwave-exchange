@@ -3388,10 +3388,6 @@ window.showView = function(viewId, authType = 'login') {
    ULTIMATE CLEANUP: NO MORE JUMPING OR MULTIPLE BANNERS
    ===================================================== */
 // 1. Kill ALL old background timers that are causing the jumping
-for (let i = 1; i < 99999; i++) {
-    clearInterval(i);
-    clearTimeout(i);
-}
 
 // 2. Master function that builds the entire dashboard at once
 window.loadDashboardData = async function() {
@@ -3813,3 +3809,17 @@ window.showView = function(viewId, authType = 'login') {
         window.loadDashboardData(); 
     }
 };
+
+/* =====================================================
+   EMERGENCY FIX: FORCE HOMEPAGE RENDER
+   ===================================================== */
+window.addEventListener('load', () => {
+    // Force the guest view to show
+    const guestView = document.getElementById('guestView');
+    if (guestView) guestView.style.display = 'block';
+    
+    // Force the markets to load
+    setTimeout(() => {
+        if (typeof loadMarkets === 'function') loadMarkets();
+    }, 500);
+});
