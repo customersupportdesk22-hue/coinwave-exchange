@@ -735,7 +735,7 @@ window.showBuyCheckoutPage = function(symbol, cryptoAmount, fiatAmount, method) 
 /* =====================================================
    FIX: FORMAT PRICE IN TOP GAINERS CARDS
    ===================================================== */
-const originalLoadMarkets = window.loadMarkets;
+var originalLoadMarkets = window.loadMarkets;
 window.loadMarkets = function() {
     if(originalLoadMarkets) originalLoadMarkets();
     
@@ -1519,7 +1519,7 @@ window.selectTradeAsset = function(symbol) {
 };
 
 // 4. Ensure it initializes when the Trade view opens
-const originalShowView = window.showView;
+var originalShowView = window.showView;
 window.showView = function(viewId, authType = 'login') {
     originalShowView(viewId, authType);
     if (viewId === 'tradeView') {
@@ -1551,7 +1551,7 @@ function formatPrice(price) {
 }
 
 // Override loadMarkets to use the new formatter
-const originalLoadMarkets = window.loadMarkets;
+var originalLoadMarkets = window.loadMarkets;
 window.loadMarkets = function() {
     const marketList = document.getElementById('market-list'); const ticker = document.getElementById('ticker');
     if(!marketList) return;
@@ -1697,7 +1697,7 @@ window.loadTransactionHistory = async function() {
 };
 
 // Ensure history reloads when switching back to the dashboard
-const originalShowViewForHistory = window.showView;
+var originalShowViewForHistory = window.showView;
 window.showView = function(viewId, authType = 'login') {
     originalShowViewForHistory(viewId, authType);
     if (viewId === 'dashboardView') {
