@@ -2612,3 +2612,155 @@ window.checkAuthState = function() {
         }
     }, 200);
 };
+
+/* =====================================================
+   FIX: UNDEFINED TEXT & OVERLAPPING PENDING BADGE
+   ===================================================== */
+
+// 1. Fix the "undefined" text in Payment Instructions
+window.showPaymentInstructions = function(symbol, cryptoAmount, fiatAmount) {
+    // If fiatAmount is missing or literally "undefined", use a fallback text
+    if (!fiatAmount || fiatAmount === 'undefined' || fiatAmount.trim() === '') {
+        fiatAmount = "the agreed amount";
+    }
+
+    let address = (globalSettings && globalSettings.wallets && globalSettings.wallets[symbol]) ? globalSettings.wallets[symbol] : "Contact Support (Address Not Set)";
+    let isMissing = address.includes("Contact");
+    let qrCodeUrl = isMissing ? "" : `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${address}`;
+
+    const content = `
+        <div style="text-align: center;">
+            <div style="margin-bottom: 25px;">
+                <div style="width: 60px; height: 60px; background: rgba(0,212,170,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#00d4aa" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                </div>
+                <h3 style="color: #fff; margin: 0 0 5px; font-size: 20px;">Order Created Successfully</h3>
+                <p style="color: #888; font-size: 14px;">To complete your sale and receive <strong style="color:#fff;">${fiatAmount}</strong>, please send the exact amount below.</p>
+            </div>
+
+            <div style="background: #0f0f15; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 15px; text-align: left;">
+                <p style="color: #888; font-size: 12px; margin-bottom: 5px; text-transform: uppercase;">Amount to Send</p>
+                <p style="color: #00d4aa; font-size: 24px; font-weight: 800; margin: 0;">${cryptoAmount} ${symbol}</p>
+            </div>
+
+            <div style="background: #0f0f15; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 20px; text-align: left;">
+                <p style="color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase;">${symbol} Deposit Address</p>
+                ${qrCodeUrl ? `<img src="${qrCodeUrl}" style="background:#fff; padding:8px; border-radius:8px; margin-bottom:15px; width: 150px; height: 150px;">` : ''}
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div style="flex: 1; font-family: monospace; font-size: 13px; color: ${isMissing ? '#f6465d' : '#fff'}; word-break: break-all; background: #1a1a2a; padding: 12px; border-radius: 6px;">${address}</div>
+                    ${!isMissing ? `<button onclick="navigator.clipboard.writeText('${address}'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy', 2000);" style="background: #2a2a3a; color: #fff; border: 1px solid #333; padding: 12px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">Copy</button>` : ''}
+                </div>
+            </div>
+
+            <div class="warning-banner" style="text-align: left; margin-bottom: 30px;">
+                <span style="color: #f6465d; font-size: 16px;">⚠️</span>
+                <p>Pending verification. Only send ${symbol} to this address. Sending any other coin or using the wrong network will result in permanent loss of funds.</p>
+            </div>
+
+            <button onclick="showView('dashboardView')" style="background: #00d4aa; color: #000; width: 100%; padding: 16px; border-radius: 8px; font-weight: bold; font-size: 16px; border: none; cursor: pointer;">I Have Sent The Crypto</button>
+        </div>
+    `;
+    createPageView('paymentPageView', 'Payment Instructions', content);
+    showView('paymentPageView');
+};
+
+// 2. Fix the Overlapping "Pending" Badge in the Assets List
+window.fetchBalances = async function() {
+    if (!currentUser) return;
+    const assetsCard = document.querySelector('.assets-section');
+    if (!assetsCard) return;
+    
+    assetsCard.innerHTML = `<div class="section-header"><h3>Your Assets</h3></div><p style="color:#888; text-align:center; padding:20px;">Loading assets...</p>`;
+
+    try {
+        const resBalances = await fetch(`/api/user/${currentUser.email}/balances`);
+        if (!resBalances.ok) throw new Error("Failed to fetch balances");
+        const balances = await resBalances.json();
+        
+        let orders = [];
+        try {
+            const resOrders = await fetch(`/api/orders/user/${currentUser.email}`);
+            if (resOrders.ok) {
+                const orderData = await resOrders.json();
+                orders = Array.isArray(orderData) ? orderData : [];
+            }
+        } catch (e) { console.log("Order fetch failed"); }
+        
+        let pendingAmounts = {};
+        orders.filter(o => o.status === 'Pending' || o.status === 'pending').forEach(o => {
+            if (o.mode === 'buy') {
+                const symbol = o.getCurrency;
+                const amount = parseFloat(o.getAmount) || 0;
+                pendingAmounts[symbol] = (pendingAmounts[symbol] || 0) + amount;
+            }
+        });
+
+        let hideZero = localStorage.getItem('hideZeroBalances') === 'true';
+        let html = `
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; font-size: 18px; font-weight: 600;">Your Assets</h3>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <span style="font-size: 13px; color: #aaa;">Hide Zero</span>
+                    <div style="position: relative; width: 44px; height: 24px;">
+                        <input type="checkbox" id="hideZeroToggle" ${hideZero ? 'checked' : ''} style="opacity: 0; width: 0; height: 0; position: absolute;">
+                        <span id="toggleTrack" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: ${hideZero ? '#00d4aa' : '#3a3a4a'}; border-radius: 24px; transition: 0.3s;"></span>
+                        <span id="toggleThumb" style="position: absolute; height: 20px; width: 20px; left: ${hideZero ? '21px' : '2px'}; bottom: 2px; background-color: #fff; border-radius: 50%; transition: 0.3s;"></span>
+                    </div>
+                </label>
+            </div>
+            <div class="asset-table-header"><span>Asset</span><span style="text-align: right;">Amount</span><span style="text-align: right;">Value</span></div>
+            <div id="assetsListContainer" class="${hideZero ? 'hide-zeros' : ''}" style="display: flex; flex-direction: column;">
+        `;
+        
+        let totalValue = 0;
+        markets.forEach(coin => {
+            const amount = Math.max(0, balances[coin.symbol] || 0); 
+            const pendingAmt = pendingAmounts[coin.symbol] || 0;
+            const value = amount * coin.price;
+            totalValue += value;
+            
+            const rowClass = amount === 0 ? 'asset-row zero-row' : 'asset-row';
+            
+            // FIX: Put the Pending badge inside a flex column so it doesn't overlap the amount
+            const pendingBadge = pendingAmt > 0 ? `<div style="background: rgba(252, 213, 53, 0.1); color: #fcd535; font-size: 9px; padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block; width: max-content;">${pendingAmt.toFixed(4)} Pending</div>` : '';
+
+            html += `
+                <div class="${rowClass}" onclick="window.showAssetActions('${coin.symbol}', '${coin.name}', ${amount}, ${value})">
+                    <div class="asset-name" style="display: flex; flex-direction: column; align-items: flex-start; gap: 0;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div class="market-icon" style="background:${coin.color};">${coin.icon}</div> 
+                            ${coin.name}
+                        </div>
+                        ${pendingBadge}
+                    </div>
+                    <div class="asset-amount">${amount.toFixed(6)}</div>
+                    <div class="asset-value">$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                </div>`;
+        });
+        html += `</div>`;
+        assetsCard.innerHTML = html;
+        
+        const totalEl = document.getElementById('totalPortfolioValue');
+        if (totalEl) {
+            totalEl.dataset.realValue = `$${Math.max(0, totalValue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            totalEl.textContent = localStorage.getItem('hideBalance') === 'true' ? '******' : totalEl.dataset.realValue;
+        }
+        
+        const toggle = document.getElementById('hideZeroToggle');
+        if (toggle) {
+            toggle.addEventListener('change', (e) => {
+                const isChecked = e.target.checked; 
+                localStorage.setItem('hideZeroBalances', isChecked);
+                const listContainer = document.getElementById('assetsListContainer');
+                if (isChecked) listContainer.classList.add('hide-zeros'); 
+                else listContainer.classList.remove('hide-zeros');
+                document.getElementById('toggleTrack').style.backgroundColor = isChecked ? '#00d4aa' : '#3a3a4a';
+                document.getElementById('toggleThumb').style.left = isChecked ? '21px' : '2px';
+            });
+        }
+
+    } catch (error) { 
+        console.error("Balance error:", error);
+        assetsCard.innerHTML = `<div class="section-header"><h3>Your Assets</h3></div><p style="color:#f6465d; text-align:center; padding:20px;">Error loading assets.</p>`;
+    }
+};
