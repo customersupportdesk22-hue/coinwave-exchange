@@ -2624,3 +2624,56 @@ async function fetchRealMarketPrices() {
 if (window.marketInterval) clearInterval(window.marketInterval);
 setInterval(fetchRealMarketPrices, 60000);
 fetchRealMarketPrices();
+
+/* =====================================================
+   REBUILD MARKET LIST WITH 200 COINS
+   ===================================================== */
+async function fetchRealMarketPrices() {
+    try {
+        const res = await fetch('/api/market/prices');
+        if (!res.ok) throw new Error("Server error");
+        const data = await res.json();
+
+        // If the API returns the fallback (only 2 coins), keep the original 26
+        if (data.length < 10) {
+            console.log("API blocked, keeping original 26 coins.");
+            return;
+        }
+
+        const originalMarkets = [...markets]; 
+        markets.length = 0; // Clear the current list
+
+        data.forEach((apiCoin) => {
+            // Check if the coin was in our original 26 list
+            const existingCoin = originalMarkets.find(m => m.symbol.toUpperCase() === apiCoin.symbol.toUpperCase());
+            
+            if (existingCoin) {
+                // Update price and change, keep the original beautiful icon and color
+                existingCoin.price = apiCoin.current_price;
+                existingCoin.change = apiCoin.price_change_percentage_24h || 0;
+                markets.push(existingCoin);
+            } else {
+                // Add new coin dynamically with a random color and first-letter icon
+                const randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
+                markets.push({
+                    name: apiCoin.name || apiCoin.symbol,
+                    symbol: apiCoin.symbol.toUpperCase(),
+                    price: apiCoin.current_price,
+                    change: apiCoin.price_change_percentage_24h || 0,
+                    icon: apiCoin.symbol.charAt(0).toUpperCase(),
+                    color: randomColor
+                });
+            }
+        });
+
+        loadMarkets();
+        populateTradeCoins();
+    } catch (error) {
+        console.log("Market fetch error:", error);
+    }
+}
+
+// Force clear old timer and run new one
+if (window.marketInterval) clearInterval(window.marketInterval);
+setInterval(fetchRealMarketPrices, 60000);
+fetchRealMarketPrices();
