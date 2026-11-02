@@ -2178,3 +2178,66 @@ window.resumeOrder = async function(orderId, mode) {
         showToast("Error loading order details.");
     }
 };
+
+/* =====================================================
+   UPGRADE: SHOW MULTIPLE PENDING BANNERS (If needed)
+   ===================================================== */
+window.checkPendingOrders = async function() {
+    if (!currentUser) return;
+    const dashContainer = document.querySelector('.dash-container');
+    if (!dashContainer) return;
+
+    try {
+        const res = await fetch(`/api/orders/user/${currentUser.email}`);
+        const orders = await res.json();
+
+        // 1. Remove ALL old banners first
+        document.querySelectorAll('.pending-banner').forEach(el => el.remove());
+
+        // 2. Find ALL pending orders (Buy and Sell)
+        const pendingOrders = orders.filter(o => o.status === 'Pending' || o.status === 'pending');
+
+        if (pendingOrders.length === 0) return;
+
+        // 3. Create a container for the banners
+        const bannerContainer = document.createElement('div');
+        bannerContainer.id = 'pendingBannerContainer';
+        bannerContainer.style.cssText = "display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;";
+
+        // 4. Loop through and create a banner for each pending order
+        pendingOrders.forEach(order => {
+            const isBuy = order.mode === 'buy';
+            
+            const title = isBuy ? "Pending Fiat Payment" : "Pending Crypto Transfer";
+            const message = isBuy 
+                ? `You have an unpaid order for ${order.getAmount} ${order.getCurrency}. Please complete your payment.` 
+                : `You have a pending order to sell ${order.sendAmount} ${order.sendCurrency}. Please send the crypto to complete it.`;
+            
+            const btnText = isBuy ? "Complete Payment" : "View Crypto Address";
+            const icon = isBuy ? "💳" : "🪙";
+
+            const banner = document.createElement('div');
+            banner.className = 'pending-banner';
+            banner.style.cssText = "background: rgba(252, 213, 53, 0.1); border: 1px solid #fcd535; border-radius: 12px; padding: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;";
+            
+            banner.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 20px;">${icon}</span>
+                    <div>
+                        <p style="color: #fcd535; font-weight: bold; font-size: 14px; margin: 0;">${title}</p>
+                        <p style="color: #888; font-size: 12px; margin: 0;">${message}</p>
+                    </div>
+                </div>
+                <button onclick="window.resumeOrder('${order._id}', '${order.mode}')" style="background: #fcd535; color: #000; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer;">${btnText}</button>
+            `;
+            
+            bannerContainer.appendChild(banner);
+        });
+
+        // 5. Insert the stacked banners at the top of the dashboard
+        dashContainer.insertBefore(bannerContainer, dashContainer.firstChild);
+
+    } catch (e) {
+        console.log("Error checking pending orders:", e);
+    }
+};
