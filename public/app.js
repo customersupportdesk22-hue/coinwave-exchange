@@ -1591,3 +1591,28 @@ window.loadMarkets = function() {
         }).join('');
     }
 };
+
+/* =====================================================
+   MARKET THE 5% BONUS TO CUSTOMERS
+   ===================================================== */
+setInterval(() => {
+    // 1. Add a 5% Bonus badge to the Homepage Hero Section
+    const trustBadge = document.getElementById('dynamicTrustBadge');
+    if (trustBadge && !document.getElementById('bonusBadge')) {
+        const bonusBadge = document.createElement('div');
+        bonusBadge.id = 'bonusBadge';
+        bonusBadge.style.cssText = "display: inline-block; background: rgba(14, 203, 81, 0.1); color: #0ecb51; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; margin-bottom: 15px; margin-left: 10px; border: 1px solid rgba(14, 203, 81, 0.3);";
+        bonusBadge.innerHTML = "🎁 5% Bonus on Every Trade!";
+        trustBadge.parentNode.insertBefore(bonusBadge, trustBadge.nextSibling);
+    }
+
+    // 2. Add a note on the Trade View that the 5% is included
+    const receiveLabel = document.getElementById('receiveLabel');
+    if (receiveLabel && !document.getElementById('bonusLabelTrade')) {
+        const bonusLabel = document.createElement('span');
+        bonusLabel.id = 'bonusLabelTrade';
+        bonusLabel.style.cssText = "color: #0ecb51; font-size: 11px; font-weight: bold; margin-left: 5px;";
+        bonusLabel.textContent = "(Includes 5% Bonus)";
+        receiveLabel.appendChild(bonusLabel);
+    }
+}, 1000);
