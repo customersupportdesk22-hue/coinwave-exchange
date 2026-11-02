@@ -1136,3 +1136,68 @@ window.submitTrade = async function() {
     } catch (e) { showToast("Error connecting."); } 
     finally { btn.textContent = currentTradeMode === 'buy' ? 'Confirm Purchase' : 'Confirm Sale'; btn.disabled = false; }
 };
+
+/* =====================================================
+   PROFESSIONAL BUY CHECKOUT PAGE (Matching Sell Flow)
+   ===================================================== */
+window.showBuyCheckoutPage = function(symbol, cryptoAmount, fiatAmount, method) {
+    let detailsHtml = "";
+    const supportEmail = (globalSettings && globalSettings.supportEmail) ? globalSettings.supportEmail : "support@coinwave.com";
+    const subject = encodeURIComponent(`Payment Proof: Buy ${symbol} - ${fiatAmount}`);
+    const body = encodeURIComponent(`Hello CoinWave Support,\n\nI have just placed an order to buy ${cryptoAmount} of ${symbol} for ${fiatAmount}.\nMy Payment Method is ${method}.\n\nPlease find my payment proof attached to this email.\n\nThank you.`);
+    const mailtoLink = `mailto:${supportEmail}?subject=${subject}&body=${body}`;
+
+    // Render the correct Admin payment details based on their choice
+    if (method === 'Bank Transfer') {
+        let bankDetails = (globalSettings && globalSettings.adminBankDetails) ? globalSettings.adminBankDetails : "<span style='color:#f6465d;'>Bank details not set in Admin Panel.</span>";
+        detailsHtml = `<p style="color: #fff; font-size: 14px; white-space: pre-wrap; font-family: monospace; line-height: 1.5; margin: 0;">${bankDetails}</p>`;
+    } else if (method === 'PayPal') {
+        let paypalEmail = (globalSettings && globalSettings.adminPaypalEmail) ? globalSettings.adminPaypalEmail : "<span style='color:#f6465d;'>PayPal not set in Admin Panel.</span>";
+        detailsHtml = `<p style="color: #fff; font-size: 14px; font-family: monospace; margin: 0;">${paypalEmail}</p>`;
+    } else if (method === 'Credit Card') {
+        let cardLink = (globalSettings && globalSettings.cardPaymentLink) ? globalSettings.cardPaymentLink : "";
+        if (cardLink) {
+            detailsHtml = `
+                <p style="color: #fff; font-size: 14px; margin: 0 0 15px 0;">Pay securely using our encrypted payment gateway:</p>
+                <a href="${cardLink}" target="_blank" style="background: #00d4aa; color: #000; padding: 14px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: block; font-size: 16px; text-align: center;">Click Here to Pay</a>
+            `;
+        } else {
+            detailsHtml = `<p style="color: #f6465d; font-size: 14px; margin: 0;">Card payment link is not set. Please contact support.</p>`;
+        }
+    }
+
+    const content = `
+        <div style="text-align: center;">
+            <!-- 1. Success Icon -->
+            <div style="width: 60px; height: 60px; background: rgba(0,212,170,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#00d4aa" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            </div>
+
+            <!-- 2. Titles & Summary -->
+            <h3 style="color: #fff; margin: 0 0 5px; font-size: 20px;">Order Created Successfully</h3>
+            <p style="color: #888; font-size: 14px; margin-bottom: 25px; line-height: 1.5;">
+                You are purchasing <strong style="color:#fff;">${cryptoAmount} ${symbol}</strong><br>
+                Total to pay: <strong style="color:#00d4aa; font-size: 16px;">${fiatAmount}</strong>
+            </p>
+
+            <!-- 3. Step 1: Payment Details Box -->
+            <div style="background: #0f0f15; padding: 20px; border-radius: 8px; border: 1px solid #333; margin-bottom: 20px; text-align: left;">
+                <p style="color: #00d4aa; font-size: 12px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Step 1: Send Payment To</p>
+                ${detailsHtml}
+            </div>
+
+            <!-- 4. Step 2: Email Receipt Box -->
+            <div style="background: #1a1a2a; border: 1px solid #333; padding: 20px; border-radius: 8px; margin-bottom: 30px; text-align: left;">
+                <p style="color: #00d4aa; font-size: 12px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Step 2: Send Payment Proof</p>
+                <p style="color: #fff; font-size: 14px; margin-bottom: 15px; line-height: 1.5;">After making the payment, click below to open your email app and send us your receipt. Our team will verify and credit your crypto.</p>
+                <a href="${mailtoLink}" style="background: #00d4aa; color: #000; padding: 14px; border-radius: 8px; text-decoration: none; font-weight: bold; display: block; font-size: 16px; text-align: center;">Open Email App</a>
+            </div>
+
+            <!-- 5. Back Button -->
+            <button onclick="showView('dashboardView')" style="background: #2a2a3a; color: #fff; width: 100%; padding: 16px; border-radius: 8px; font-weight: bold; font-size: 16px; border: none; cursor: pointer;">Back to Dashboard</button>
+        </div>
+    `;
+    
+    createPageView('buyCheckoutPage', 'Complete Payment', content);
+    showView('buyCheckoutPage');
+};
