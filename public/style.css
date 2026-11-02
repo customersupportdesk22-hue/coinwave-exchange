@@ -460,3 +460,41 @@ html, body {
     flex-shrink: 0 !important; /* Prevents them from squishing */
     margin-bottom: 0 !important;
 }
+
+/* =====================================================
+   FIX: BADGE LAYOUT (No More Cut-offs or Jumping)
+   ===================================================== */
+.badge-container {
+    display: flex !important;
+    flex-wrap: wrap !important; /* Allows them to stack if the text is long */
+    gap: 10px !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    margin-bottom: 15px !important;
+    width: 100% !important;
+    overflow: visible !important; /* Remove scrollbar */
+}
+
+#dynamicTrustBadge, #bonusBadge {
+    margin: 0 !important;
+    padding: 8px 14px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    border-radius: 20px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    white-space: nowrap !important;
+}
+
+/* Keep the specific colors consistent */
+#dynamicTrustBadge {
+    background: rgba(0, 212, 170, 0.1) !important;
+    color: #00d4aa !important;
+    border: 1px solid rgba(0, 212, 170, 0.2) !important;
+}
+
+#bonusBadge {
+    background: rgba(14, 203, 81, 0.1) !important;
+    color: #0ecb51 !important;
+    border: 1px solid rgba(14, 203, 81, 0.3) !important;
+}
