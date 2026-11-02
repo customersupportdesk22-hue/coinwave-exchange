@@ -1315,3 +1315,70 @@ window.loadGlobalSettings = async function() {
         if (typeof populateTradeCoins === 'function') populateTradeCoins();
     }
 };
+
+/* =====================================================
+   BULLETPROOF JS FOOTER INJECTION (No HTML edits needed)
+   ===================================================== */
+setInterval(() => {
+    const guestView = document.getElementById('guestView');
+    
+    // Only run if we are on the homepage (guestView exists and is visible)
+    if (guestView && guestView.style.display !== 'none') {
+        
+        // Check if footer already exists
+        let footer = document.getElementById('dynamicHomepageFooter');
+        
+        if (!footer) {
+            // Create the footer if it's missing
+            footer = document.createElement('footer');
+            footer.id = 'dynamicHomepageFooter';
+            footer.style.cssText = "margin-top: 50px; border-top: 1px solid #2a2a3a; padding: 40px 20px; text-align: center; background: #09090d;";
+            
+            // Default values in case database is still loading
+            let tw = "", tg = "", dc = "", legal = "";
+            
+            if (globalSettings) {
+                tw = globalSettings.socialTwitter || "";
+                tg = globalSettings.socialTelegram || "";
+                dc = globalSettings.socialDiscord || "";
+                legal = globalSettings.legalDisclaimer || "";
+            }
+
+            let socialHtml = '<div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 20px;">';
+            if (tw) socialHtml += `<a href="${tw}" target="_blank" style="color: #00d4aa; text-decoration: none; font-weight: bold; font-size: 13px;">Twitter (X)</a>`;
+            if (tg) socialHtml += `<a href="${tg}" target="_blank" style="color: #00d4aa; text-decoration: none; font-weight: bold; font-size: 13px;">Telegram</a>`;
+            if (dc) socialHtml += `<a href="${dc}" target="_blank" style="color: #00d4aa; text-decoration: none; font-weight: bold; font-size: 13px;">Discord</a>`;
+            socialHtml += '</div>';
+
+            footer.innerHTML = `
+                ${socialHtml}
+                <p style="color: #666; font-size: 11px; max-width: 600px; margin: 0 auto 20px; line-height: 1.5;">${legal}</p>
+                <p style="color: #444; font-size: 11px;">© 2024 CoinWave Exchange. All rights reserved.</p>
+            `;
+            
+            // Append to the homepage
+            guestView.appendChild(footer);
+        } else {
+            // If footer exists, but settings just loaded, update the text
+            if (globalSettings && footer.dataset.updated !== 'true') {
+                footer.dataset.updated = 'true';
+                let tw = globalSettings.socialTwitter || "";
+                let tg = globalSettings.socialTelegram || "";
+                let dc = globalSettings.socialDiscord || "";
+                let legal = globalSettings.legalDisclaimer || "";
+                
+                let socialHtml = '<div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 20px;">';
+                if (tw) socialHtml += `<a href="${tw}" target="_blank" style="color: #00d4aa; text-decoration: none; font-weight: bold; font-size: 13px;">Twitter (X)</a>`;
+                if (tg) socialHtml += `<a href="${tg}" target="_blank" style="color: #00d4aa; text-decoration: none; font-weight: bold; font-size: 13px;">Telegram</a>`;
+                if (dc) socialHtml += `<a href="${dc}" target="_blank" style="color: #00d4aa; text-decoration: none; font-weight: bold; font-size: 13px;">Discord</a>`;
+                socialHtml += '</div>';
+
+                footer.innerHTML = `
+                    ${socialHtml}
+                    <p style="color: #666; font-size: 11px; max-width: 600px; margin: 0 auto 20px; line-height: 1.5;">${legal}</p>
+                    <p style="color: #444; font-size: 11px;">© 2024 CoinWave Exchange. All rights reserved.</p>
+                `;
+            }
+        }
+    }
+}, 1000);
