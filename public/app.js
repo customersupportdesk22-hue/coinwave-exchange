@@ -1239,3 +1239,149 @@ window.setTradeMode = function(mode) {
     originalSetTradeModeExternal(mode);
     setTimeout(() => window.polishTradeView(), 50);
 };
+
+/* =====================================================
+   ULTIMATE UX FIX: CLEAN TEXT & CUSTOM PAYOUT DROPDOWN
+   ===================================================== */
+// 1. Fix the duplicate "Available" text and add the helper note cleanly
+window.polishTradeView = async function() {
+    const amtInput = document.getElementById('tradeAmount');
+    const amountLabel = document.getElementById('amountLabel');
+    if (!amtInput || !amountLabel) return;
+
+    // Remove old injected elements to prevent duplicates
+    const oldBal = document.getElementById('tradeAvailableBalance');
+    if (oldBal) oldBal.remove();
+    const oldHelper = document.getElementById('externalWalletHelper');
+    if (oldHelper) oldHelper.remove();
+
+    // Wrap the input if not already done
+    if (!amtInput.parentElement.classList.contains('amount-wrapper')) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'amount-wrapper';
+        amtInput.parentNode.insertBefore(wrapper, amtInput);
+        wrapper.appendChild(amtInput);
+        
+        const suffix = document.createElement('span');
+        suffix.className = 'amount-suffix';
+        suffix.id = 'tradeAmountSuffix';
+        wrapper.appendChild(suffix);
+    }
+
+    const coinSymbol = document.getElementById('tradeCoin').value;
+    const suffixEl = document.getElementById('tradeAmountSuffix');
+    const curr = getUserCurrency();
+
+    if (currentTradeMode === 'buy') {
+        suffixEl.textContent = curr.code; 
+    } else {
+        suffixEl.textContent = coinSymbol; 
+        try {
+            const res = await fetch(`/api/user/${currentUser.email}/balances`);
+            const balances = await res.json();
+            const bal = balances[coinSymbol] || 0;
+            
+            // Add the balance text ONCE
+            const balSpan = document.createElement('span');
+            balSpan.id = 'tradeAvailableBalance';
+            balSpan.style.cssText = "font-size: 11px; color: #888; float: right; font-weight: normal; text-transform: none;";
+            balSpan.innerHTML = `Available on CoinWave: ${bal.toFixed(6)} ${coinSymbol}`;
+            amountLabel.appendChild(balSpan);
+
+            // Add the helper note ONCE
+            const helper = document.createElement('div');
+            helper.id = 'externalWalletHelper';
+            helper.style.cssText = "font-size: 11px; color: #00d4aa; margin-top: 5px; text-align: left;";
+            amtInput.parentElement.parentElement.appendChild(helper);
+            helper.innerHTML = `💡 Selling from an external wallet? No problem. You will be shown a deposit address on the next page.`;
+            
+        } catch(e) { console.log(e); }
+    }
+};
+
+// 2. Replace the native Payout/Payment Method Dropdown
+window.setupMethodDropdown = function() {
+    const nativeSelect = document.getElementById('tradeMethod');
+    if (!nativeSelect || nativeSelect.dataset.customized) return;
+    nativeSelect.dataset.customized = 'true';
+    
+    nativeSelect.style.display = 'none';
+    
+    const displayDiv = document.createElement('div');
+    displayDiv.id = 'tradeMethodDisplay';
+    displayDiv.style.cssText = "width: 100%; padding: 14px; background: #0f0f15; color: #fff; border: 1px solid #333; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;";
+    
+    const selectedText = document.createElement('span');
+    selectedText.id = 'selectedMethodText';
+    selectedText.textContent = nativeSelect.options[nativeSelect.selectedIndex]?.text || "Select Method";
+    
+    const arrow = document.createElement('span');
+    arrow.textContent = '▼';
+    arrow.style.color = '#888';
+    arrow.style.fontSize = '12px';
+    
+    displayDiv.appendChild(selectedText);
+    displayDiv.appendChild(arrow);
+    nativeSelect.parentNode.insertBefore(displayDiv, nativeSelect.nextSibling);
+    
+    displayDiv.onclick = () => window.openMethodModal();
+};
+
+window.openMethodModal = function() {
+    let modal = document.getElementById('assetActionModal');
+    modal.style.display = 'flex';
+    
+    // Build the list of methods with visual card logos
+    let html = `<div class="modal-content" style="padding: 0; max-height: 80vh; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; padding: 20px; border-bottom: 1px solid #333;">
+            <h2 style="color: #fff; margin: 0; font-size: 18px;">Select ${currentTradeMode === 'buy' ? 'Payment' : 'Payout'} Method</h2>
+            <span onclick="document.getElementById('assetActionModal').style.display='none'" style="color: #888; font-size: 24px; cursor: pointer;">&times;</span>
+        </div>
+        <div style="overflow-y: auto; flex: 1;">`;
+
+    // Bank Transfer Option
+    html += `<div onclick="window.selectMethod('Bank Transfer', 'Bank Transfer')" style="display: flex; justify-content: space-between; padding: 15px 20px; border-bottom: 1px solid #2a2a3a; cursor: pointer; align-items: center;"><span style="color: #fff; font-weight: 600;">Bank Transfer</span></div>`;
+    
+    // PayPal Option
+    html += `<div onclick="window.selectMethod('PayPal', 'PayPal')" style="display: flex; justify-content: space-between; padding: 15px 20px; border-bottom: 1px solid #2a2a3a; cursor: pointer; align-items: center;"><span style="color: #fff; font-weight: 600;">PayPal</span></div>`;
+    
+    // Credit Card Option with Logos
+    html += `
+        <div onclick="window.selectMethod('Credit Card', 'Credit Card')" style="display: flex; justify-content: space-between; padding: 15px 20px; border-bottom: 1px solid #2a2a3a; cursor: pointer; align-items: center;">
+            <span style="color: #fff; font-weight: 600;">Credit / Debit Card</span>
+            <div style="display: flex; gap: 6px; align-items: center;">
+                <span style="color: #1a1f71; background: #fff; padding: 2px 6px; border-radius: 4px; font-weight: 900; font-style: italic; font-size: 12px;">VISA</span>
+                <span style="color: #eb001b; background: #fff; padding: 2px 6px; border-radius: 4px; font-weight: 900; font-size: 12px;">MC</span>
+                <span style="color: #2e77bc; background: #fff; padding: 2px 6px; border-radius: 4px; font-weight: 900; font-size: 10px;">AMEX</span>
+            </div>
+        </div>`;
+    
+    html += `</div></div>`;
+    modal.innerHTML = html;
+};
+
+window.selectMethod = function(value, displayText) {
+    const nativeSelect = document.getElementById('tradeMethod');
+    nativeSelect.value = value;
+    
+    // Update the display text. Add badges if Credit Card is selected
+    const displayEl = document.getElementById('selectedMethodText');
+    if (value === 'Credit Card') {
+        displayEl.innerHTML = `Credit Card <span style="font-size: 10px; margin-left: 8px; color: #fff; background: #333; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-style: italic;">VISA</span><span style="font-size: 10px; margin-left: 2px; color: #fff; background: #333; padding: 2px 6px; border-radius: 4px; font-weight: bold;">MC</span>`;
+    } else {
+        displayEl.textContent = displayText;
+    }
+    
+    document.getElementById('assetActionModal').style.display = 'none';
+    togglePaymentDetails(); // Trigger the form changes
+};
+
+// 3. Hook it all into setTradeMode
+var originalSetTradeModeMethod = window.setTradeMode;
+window.setTradeMode = function(mode) {
+    originalSetTradeModeMethod(mode);
+    setTimeout(() => { 
+        window.setupMethodDropdown(); 
+        window.polishTradeView(); 
+    }, 50);
+};
