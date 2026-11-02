@@ -340,3 +340,65 @@ html, body {
     max-width: 600px !important;
     margin: 0 auto !important;
 }
+
+/* =====================================================
+   MOBILE NAVBAR & DASHBOARD BOTTOM FIX
+   ===================================================== */
+
+/* 1. Fix Navbar overflow on mobile */
+@media (max-width: 768px) {
+    .premium-nav {
+        padding: 10px 12px !important;
+        gap: 5px !important;
+    }
+    .logo span {
+        font-size: 16px !important;
+    }
+    .nav-links {
+        gap: 8px !important;
+    }
+    .nav-links a {
+        font-size: 11px !important;
+    }
+    #securityNavBtn {
+        padding: 6px 8px !important;
+        font-size: 11px !important;
+    }
+    .profile-avatar-nav {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 12px !important;
+    }
+    .btn-logout {
+        font-size: 11px !important;
+        padding: 6px 8px !important;
+    }
+}
+
+/* 2. Make the Dashboard footer (Trust & Assets) seamless */
+.assets-section {
+    margin-bottom: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-bottom: none !important;
+}
+.trust-sections {
+    margin-top: 0 !important;
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+    border-top: 1px solid #2a2a3a !important;
+    background: #1a1a2a !important;
+    padding: 30px 15px !important; /* Adds breathing room at the bottom */
+    margin-bottom: 20px !important;
+}
+
+/* 3. Ensure the "View History" button sits perfectly between them */
+#viewHistoryBtn {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: 1px solid #2a2a3a !important;
+    background: #1a1a2a !important;
+    padding: 18px !important;
+}
