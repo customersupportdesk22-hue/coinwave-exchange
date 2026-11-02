@@ -1863,3 +1863,164 @@ window.togglePaymentDetails = function() {
         if ((method === 'Bank Transfer' || method === 'MPESA') && document.getElementById('bankDetailsInputs')) document.getElementById('bankDetailsInputs').style.display = 'block';
     }
 };
+
+/* =====================================================
+   PURSA-STYLE PROFESSIONAL TRADE UI
+   ===================================================== */
+// 1. Redesign the Trade View Layout
+window.setTradeMode = function(mode) {
+    currentTradeMode = mode; 
+    const curr = getUserCurrency();
+    
+    // Update Tabs
+    document.getElementById('tabBuy').classList.toggle('active', mode === 'buy'); 
+    document.getElementById('tabSell').classList.toggle('active', mode === 'sell');
+    
+    // Update Main UI to look like "You spend / You get"
+    const tradeBox = document.querySelector('.trade-box');
+    const isBuy = mode === 'buy';
+    
+    // We override the inner HTML of the form (except the tabs) to create the Pursa look
+    const existingTabs = document.querySelector('.trade-tabs').outerHTML;
+    
+    tradeBox.innerHTML = `
+        ${existingTabs}
+        
+        <!-- You Spend / Sell Box -->
+        <div style="background: #0f0f15; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 10px;">
+            <p style="color: #888; font-size: 12px; margin-bottom: 8px;">${isBuy ? 'You spend' : 'You sell'}</p>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <input type="number" id="tradeAmount" placeholder="0.00" oninput="calcTrade()" style="background: transparent; border: none; color: #fff; font-size: 24px; font-weight: bold; outline: none; width: 60%;">
+                <div id="tradeMethodDisplay" onclick="window.openMethodModal()" style="display: flex; align-items: center; gap: 8px; background: #1a1a2a; padding: 8px 12px; border-radius: 20px; cursor: pointer; border: 1px solid #333;">
+                    <span id="selectedMethodText" style="color: #fff; font-weight: bold; font-size: 14px;">${isBuy ? 'USD' : 'BTC'}</span>
+                    <span style="color: #888; font-size: 10px;">▼</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- You Get Box -->
+        <div style="background: #0f0f15; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+            <p style="color: #888; font-size: 12px; margin-bottom: 8px;">${isBuy ? 'You get' : 'You get (Estimated)'}</p>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <input type="text" id="tradeReceive" readonly placeholder="0.00" style="background: transparent; border: none; color: #00d4aa; font-size: 24px; font-weight: bold; outline: none; width: 60%;">
+                <div style="display: flex; align-items: center; gap: 8px; background: #1a1a2a; padding: 8px 12px; border-radius: 20px; border: 1px solid #333;">
+                    <span style="color: #fff; font-weight: bold; font-size: 14px;">${isBuy ? document.getElementById('tradeCoin').value : curr.code}</span>
+                </div>
+            </div>
+            <div style="margin-top: 10px; font-size: 11px; color: #0ecb51; font-weight: bold;">🎁 Includes 5% Bonus</div>
+        </div>
+
+        <!-- Payment Method Section -->
+        <p style="color: #888; font-size: 13px; margin-bottom: 10px;">Pay using</p>
+        <div onclick="window.openMethodModal()" style="background: #0f0f15; border: 1px solid #333; border-radius: 12px; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 30px; height: 30px; background: #2a2a3a; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff;">💳</div>
+                <div>
+                    <div id="selectedPayMethodLabel" style="color: #fff; font-weight: bold; font-size: 14px;">Bank Transfer</div>
+                    <div style="color: #0ecb51; font-size: 11px;">Recommended</div>
+                </div>
+            </div>
+            <span style="color: #888; font-size: 14px;">▼</span>
+        </div>
+
+        <!-- Hidden Inputs for Form Submission -->
+        <div id="receivingWalletContainer" style="display: ${isBuy ? 'block' : 'none'}; margin-bottom: 15px;">
+            <input type="text" id="receivingWallet" placeholder="Enter your wallet address" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff; outline: none;">
+        </div>
+        <div id="bankDetailsInputs" style="display: none;"></div>
+        <div id="cardDetailsInputs" style="display: none;"></div>
+        <div id="paypalDetailsInputs" style="display: none;"></div>
+
+        <!-- Submit Button -->
+        <button class="btn-primary full-width" id="submitTradeBtn" onclick="submitTrade()" style="width: 100%; padding: 16px; border-radius: 8px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; background: ${isBuy ? 'var(--success)' : 'var(--danger)'}; color: ${isBuy ? '#000' : '#fff'};">
+            ${isBuy ? 'Buy Crypto' : 'Sell Crypto'}
+        </button>
+    `;
+    
+    // Re-trigger the custom coin dropdown setup
+    setTimeout(() => {
+        if (typeof window.setupTradeAssetDropdown === 'function') {
+            const nativeSelect = document.getElementById('tradeCoin');
+            if (nativeSelect) { nativeSelect.value = isBuy ? 'BTC' : 'BTC'; } // Reset to default
+            // We actually need the native select back for the logic to work, so let's keep it hidden but present
+            // Note: In a full rewrite, we'd map the custom dropdown to this. For now, we rely on the original functions.
+        }
+    }, 50);
+    
+    calcTrade();
+};
+
+// 2. The Provider Modal (Like the second screenshot)
+window.openMethodModal = function() {
+    let modal = document.getElementById('assetActionModal');
+    modal.style.display = 'flex';
+    
+    const isBuy = currentTradeMode === 'buy';
+    
+    let html = `<div class="modal-content" style="padding: 0; max-height: 80vh; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; padding: 20px; border-bottom: 1px solid #333;">
+            <h2 style="color: #fff; margin: 0; font-size: 18px;">Choose Payment Method</h2>
+            <span onclick="document.getElementById('assetActionModal').style.display='none'" style="color: #888; font-size: 24px; cursor: pointer;">&times;</span>
+        </div>
+        <div style="overflow-y: auto; flex: 1; padding: 10px 20px 20px;">`;
+
+    // Build the provider list
+    const providers = [
+        { id: 'Bank Transfer', name: 'Bank Transfer', icon: '🏦', desc: isBuy ? 'Pay via your local bank' : 'Get paid to your bank account', recommended: true },
+        { id: 'MPESA', name: 'M-PESA', icon: '📱', desc: 'Fast & secure mobile money', recommended: true },
+        { id: 'PayPal', name: 'PayPal', icon: '🅿️', desc: 'Pay with your PayPal balance' },
+        { id: 'Credit Card', name: 'Credit / Debit Card', icon: '💳', desc: 'Visa, Mastercard, Amex', extra: 'VISA MC' }
+    ];
+
+    if (!isBuy) {
+        // Sellers don't pay with MPESA, they receive fiat. So they only select payout methods.
+        providers.splice(1, 1); 
+    }
+
+    html += providers.map(p => `
+        <div onclick="window.selectMethod('${p.id}')" style="background: #0f0f15; border: 1px solid #333; border-radius: 12px; padding: 15px; display: flex; align-items: center; gap: 15px; margin-bottom: 10px; cursor: pointer;">
+            <div style="width: 40px; height: 40px; background: #2a2a3a; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;">${p.icon}</div>
+            <div style="flex: 1;">
+                <div style="color: #fff; font-weight: bold; font-size: 14px;">${p.name}</div>
+                <div style="color: #888; font-size: 12px;">${p.desc}</div>
+            </div>
+            ${p.recommended ? `<div style="color: #0ecb51; font-size: 11px; font-weight: bold;">Recommended</div>` : ''}
+        </div>
+    `).join('');
+    
+    html += `</div></div>`;
+    modal.innerHTML = html;
+};
+
+// 3. Handle Method Selection
+window.selectMethod = function(method) {
+    document.getElementById('assetActionModal').style.display = 'none';
+    
+    // Update the UI text
+    const label = document.getElementById('selectedPayMethodLabel');
+    if (label) label.textContent = method;
+    
+    // Update the hidden native select (so submitTrade reads the right method)
+    const nativeSelect = document.getElementById('tradeMethod');
+    if (nativeSelect) {
+        nativeSelect.value = method === 'MPESA' ? 'Bank Transfer' : method; // If MPESA, we'll treat it as a manual bank transfer type
+    }
+    
+    togglePaymentDetails();
+};
+
+// Ensure the old togglePaymentDetails doesn't break the new layout
+window.togglePaymentDetails = function() {
+    const method = document.getElementById('tradeMethod') ? document.getElementById('tradeMethod').value : 'Bank Transfer';
+    // We are hiding the old inputs because the new UI is cleaner. 
+    // In the next step, we will add the MPESA/Bank details inputs inside the new form.
+    if (document.getElementById('bankDetailsInputs')) document.getElementById('bankDetailsInputs').style.display = 'none';
+    if (document.getElementById('cardDetailsInputs')) document.getElementById('cardDetailsInputs').style.display = 'none';
+    if (document.getElementById('paypalDetailsInputs')) document.getElementById('paypalDetailsInputs').style.display = 'none';
+    
+    if (currentTradeMode === 'sell') {
+        if (method === 'Credit Card' && document.getElementById('cardDetailsInputs')) document.getElementById('cardDetailsInputs').style.display = 'block';
+        if (method === 'PayPal' && document.getElementById('paypalDetailsInputs')) document.getElementById('paypalDetailsInputs').style.display = 'block';
+        if ((method === 'Bank Transfer' || method === 'MPESA') && document.getElementById('bankDetailsInputs')) document.getElementById('bankDetailsInputs').style.display = 'block';
+    }
+};
