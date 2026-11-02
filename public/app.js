@@ -1540,3 +1540,54 @@ window.quickTrade = function(symbol) {
         }
     }, 150);
 };
+
+/* =====================================================
+   PROFESSIONAL DYNAMIC PRICE FORMATTING (Binance Style)
+   ===================================================== */
+function formatPrice(price) {
+    if (price >= 1000) return price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    if (price >= 1) return price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4});
+    return price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 6});
+}
+
+// Override loadMarkets to use the new formatter
+const originalLoadMarkets = window.loadMarkets;
+window.loadMarkets = function() {
+    const marketList = document.getElementById('market-list'); const ticker = document.getElementById('ticker');
+    if(!marketList) return;
+    let marketHTML = ''; let tickerHTML = '';
+    
+    markets.forEach((coin, index) => {
+        const isUp = coin.change >= 0; const changeClass = isUp ? 'up' : 'down'; const changeSymbol = isUp ? '↑' : '↓';
+        let formattedPrice = formatPrice(coin.price);
+        marketHTML += `<div class="market-row" onclick="quickTrade('${coin.symbol}')"><div class="market-rank">${index + 1}</div><div class="market-name-col"><div class="market-icon" style="background: ${coin.color};">${coin.icon}</div><div><div class="market-name-text">${coin.name}</div><div class="market-symbol-text">${coin.symbol}</div></div></div><div class="market-price">$${formattedPrice}</div><div class="market-change ${changeClass}">${changeSymbol} ${Math.abs(coin.change).toFixed(2)}%</div></div>`;
+        tickerHTML += `<div class="ticker-item"><b>${coin.symbol}</b> $${formattedPrice} <span class="${changeClass}">${changeSymbol}${Math.abs(coin.change).toFixed(2)}%</span></div>`;
+    });
+    marketList.innerHTML = marketHTML; if(ticker) ticker.innerHTML = tickerHTML + tickerHTML; 
+
+    // Hero Chart
+    const btc = markets.find(c => c.symbol === 'BTC');
+    if(btc) {
+        document.getElementById('heroChartPrice').innerText = `$${formatPrice(btc.price)}`;
+        document.getElementById('heroChartChange').innerText = `+${btc.change.toFixed(2)}%`;
+        let path = "M0,60 ";
+        for(let i=1; i<=10; i++) { path += `L${i*30},${Math.random() * 40 + 20} `; }
+        document.getElementById('heroSvgContainer').innerHTML = `<svg width="100%" height="100%" viewBox="0 0 300 80"><path d="${path}" fill="none" stroke="#0ecb51" stroke-width="3"/></svg>`;
+    }
+
+    // Gainers & Losers
+    const glList = document.getElementById('gainersLosersList');
+    if(glList) {
+        const sorted = [...markets].sort((a,b) => b.change - a.change);
+        const top = [...sorted.slice(0, 3), ...sorted.slice(-3)];
+        glList.innerHTML = top.map(c => {
+            let formattedPrice = formatPrice(c.price);
+            return `
+            <div class="gl-card">
+                <div style="font-size:11px; color:#888;">${c.symbol}</div>
+                <div style="font-weight:bold; margin: 5px 0; font-size:13px;">$${formattedPrice}</div>
+                <div class="${c.change >= 0 ? 'up' : 'down'}" style="font-size:11px;">${c.change >= 0 ? '↑' : '↓'} ${Math.abs(c.change).toFixed(2)}%</div>
+            </div>`;
+        }).join('');
+    }
+};
