@@ -264,9 +264,8 @@ async function fetchBalances() {
     try {
         const res = await fetch(`/api/user/${currentUser.email}/balances`);
         const balances = await res.json();
-        const assetsHeader = Array.from(document.querySelectorAll('h3')).find(el => el.textContent.trim() === 'Your Assets');
+        const assetsCard = document.querySelector('.assets-section');
         if (!assetsHeader) return;
-        const assetsCard = assetsHeader.closest('.assets-section') || assetsHeader.parentElement;
         
         let hideZero = localStorage.getItem('hideZeroBalances') === 'true';
         let html = `
@@ -2255,7 +2254,7 @@ window.fetchBalances = async function() {
         const balances = await resBalances.json();
         
         const resOrders = await fetch(`/api/orders/user/${currentUser.email}`);
-        const orders = await resOrders.json();
+        const orderData = await resOrders.json(); const orders = Array.isArray(orderData) ? orderData : [];
         
         // Calculate pending amounts
         let pendingAmounts = {};
@@ -2267,9 +2266,8 @@ window.fetchBalances = async function() {
             }
         });
 
-        const assetsHeader = Array.from(document.querySelectorAll('h3')).find(el => el.textContent.trim() === 'Your Assets');
+        const assetsCard = document.querySelector('.assets-section');
         if (!assetsHeader) return;
-        const assetsCard = assetsHeader.closest('.assets-section') || assetsHeader.parentElement;
         
         let hideZero = localStorage.getItem('hideZeroBalances') === 'true';
         let html = `
