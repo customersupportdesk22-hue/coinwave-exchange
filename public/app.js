@@ -2137,3 +2137,190 @@ window.selectTradeAsset = function(symbol) {
     document.getElementById('assetActionModal').style.display = 'none';
     calcTrade(); 
 };
+
+/* =====================================================
+   FIX: SELL BUTTON, BANK INPUTS, & ALL RECOMMENDED TAGS
+   ===================================================== */
+window.setTradeMode = function(mode) {
+    currentTradeMode = mode; 
+    const curr = getUserCurrency();
+    
+    document.getElementById('tabBuy').classList.toggle('active', mode === 'buy'); 
+    document.getElementById('tabSell').classList.toggle('active', mode === 'sell');
+    
+    const tradeBox = document.querySelector('.trade-box');
+    const isBuy = mode === 'buy';
+    const existingTabs = document.querySelector('.trade-tabs').outerHTML;
+    const coinSymbol = document.getElementById('tradeCoin') ? document.getElementById('tradeCoin').value : 'BTC';
+    
+    tradeBox.innerHTML = `
+        ${existingTabs}
+        
+        <!-- TOP BOX -->
+        <div style="background: #0f0f15; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 10px;">
+            <p style="color: #888; font-size: 12px; margin-bottom: 8px;">${isBuy ? 'You spend' : 'You sell'}</p>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <input type="number" id="tradeAmount" placeholder="0.00" oninput="calcTrade()" style="background: transparent; border: none; color: #fff; font-size: 24px; font-weight: bold; outline: none; width: 60%;">
+                
+                ${isBuy ? `
+                    <div style="display: flex; align-items: center; gap: 8px; background: #1a1a2a; padding: 8px 12px; border-radius: 20px; border: 1px solid #333;">
+                        <span style="color: #fff; font-weight: bold; font-size: 14px;">${curr.code}</span>
+                    </div>
+                ` : `
+                    <div onclick="window.openTradeAssetModal()" style="display: flex; align-items: center; gap: 8px; background: #1a1a2a; padding: 8px 12px; border-radius: 20px; cursor: pointer; border: 1px solid #333;">
+                        <span id="topCoinText" style="color: #fff; font-weight: bold; font-size: 14px;">${coinSymbol}</span>
+                        <span style="color: #888; font-size: 10px;">▼</span>
+                    </div>
+                `}
+            </div>
+        </div>
+
+        <!-- BOTTOM BOX -->
+        <div style="background: #0f0f15; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+            <p style="color: #888; font-size: 12px; margin-bottom: 8px;">${isBuy ? 'You get' : 'You get (Estimated)'}</p>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <input type="text" id="tradeReceive" readonly placeholder="0.00" style="background: transparent; border: none; color: #00d4aa; font-size: 24px; font-weight: bold; outline: none; width: 60%;">
+                
+                ${isBuy ? `
+                    <div onclick="window.openTradeAssetModal()" style="display: flex; align-items: center; gap: 8px; background: #1a1a2a; padding: 8px 12px; border-radius: 20px; cursor: pointer; border: 1px solid #333;">
+                        <span id="bottomCoinText" style="color: #fff; font-weight: bold; font-size: 14px;">${coinSymbol}</span>
+                        <span style="color: #888; font-size: 10px;">▼</span>
+                    </div>
+                ` : `
+                    <div style="display: flex; align-items: center; gap: 8px; background: #1a1a2a; padding: 8px 12px; border-radius: 20px; border: 1px solid #333;">
+                        <span style="color: #fff; font-weight: bold; font-size: 14px;">${curr.code}</span>
+                    </div>
+                `}
+            </div>
+            <div style="margin-top: 10px; font-size: 11px; color: #0ecb51; font-weight: bold;">🎁 Includes 5% Bonus</div>
+        </div>
+
+        <!-- PAYMENT METHOD SECTION -->
+        <p style="color: #888; font-size: 13px; margin-bottom: 10px;">${isBuy ? 'Pay using' : 'Get paid using'}</p>
+        <div onclick="window.openMethodModal()" style="background: #0f0f15; border: 1px solid #333; border-radius: 12px; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 15px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 30px; height: 30px; background: #2a2a3a; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff;">💳</div>
+                <div>
+                    <div id="selectedPayMethodLabel" style="color: #fff; font-weight: bold; font-size: 14px;">Bank Transfer</div>
+                    <div style="color: #0ecb51; font-size: 11px;">Recommended</div>
+                </div>
+            </div>
+            <span style="color: #888; font-size: 14px;">▼</span>
+        </div>
+
+        <!-- DYNAMIC INPUTS FOR SELLING -->
+        <div id="dynamicInputsContainer" style="margin-bottom: 15px;">
+            <!-- Bank Inputs -->
+            <div id="bankDetailsInputs" style="${!isBuy ? 'display: block;' : 'display: none;'}">
+                <div class="input-group"><label>Bank Name</label><input type="text" id="bankName" placeholder="e.g. Chase Bank" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 12px; border-radius: 8px; color: #fff; margin-bottom: 8px;"></div>
+                <div class="input-group"><label>Account Holder Name</label><input type="text" id="bankAccountName" placeholder="John Doe" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 12px; border-radius: 8px; color: #fff; margin-bottom: 8px;"></div>
+                <div class="input-group"><label>Account Number / IBAN</label><input type="text" id="bankAccountNumber" placeholder="123456789" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 12px; border-radius: 8px; color: #fff;"></div>
+            </div>
+            <!-- Card Inputs -->
+            <div id="cardDetailsInputs" style="display: none;">
+                <div class="input-group"><label>Name on Card</label><input type="text" id="cardName" placeholder="John Doe" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 12px; border-radius: 8px; color: #fff; margin-bottom: 8px;"></div>
+                <div class="input-group"><label>Card Number</label><input type="text" id="cardNumber" placeholder="0000 0000 0000 0000" maxlength="19" oninput="this.value = this.value.replace(/\\D/g, '').substring(0, 16).replace(/(\\d{4})(?=\\d)/g, '$1 ')" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 12px; border-radius: 8px; color: #fff; margin-bottom: 8px;"></div>
+                <div style="display: flex; gap: 8px;">
+                    <div class="input-group" style="flex:1;"><label>Expiry</label><input type="text" id="cardExpiry" placeholder="MM/YY" maxlength="5" oninput="let v = this.value.replace(/\\D/g, ''); if(v.length > 2) { this.value = v.substring(0,2) + '/' + v.substring(2,4); } else { this.value = v; }" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 12px; border-radius: 8px; color: #fff;"></div>
+                    <div class="input-group" style="flex:1;"><label>CVV</label><input type="password" id="cardCvv" placeholder="123" maxlength="4" oninput="this.value = this.value.replace(/\\D/g, '').substring(0, 4)" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 12px; border-radius: 8px; color: #fff;"></div>
+                </div>
+            </div>
+            <!-- PayPal Inputs -->
+            <div id="paypalDetailsInputs" style="display: none;">
+                <div class="input-group"><label>PayPal Email</label><input type="email" id="paypalEmail" placeholder="name@example.com" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 12px; border-radius: 8px; color: #fff;"></div>
+            </div>
+        </div>
+
+        <div id="receivingWalletContainer" style="display: ${isBuy ? 'block' : 'none'}; margin-bottom: 15px;">
+            <input type="text" id="receivingWallet" placeholder="Enter your wallet address" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff; outline: none;">
+        </div>
+        
+        <div style="display: none;"><select id="tradeCoin" onchange="calcTrade()"></select></div>
+        <input type="hidden" id="tradeMethod" value="Bank Transfer">
+
+        <button class="btn-primary full-width" id="submitTradeBtn" onclick="submitTrade()" style="width: 100%; padding: 16px; border-radius: 8px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; background: ${isBuy ? 'var(--success)' : 'var(--danger)'}; color: ${isBuy ? '#000' : '#fff'};">
+            ${isBuy ? 'Buy Crypto' : 'Sell Crypto'}
+        </button>
+    `;
+    
+    const nativeSelect = document.getElementById('tradeCoin');
+    if (nativeSelect) {
+        nativeSelect.innerHTML = '';
+        markets.forEach(c => { const o = document.createElement('option'); o.value = c.symbol; o.textContent = c.name; nativeSelect.appendChild(o); });
+        nativeSelect.value = coinSymbol;
+    }
+    
+    calcTrade();
+};
+
+// UPDATED: Make ALL methods "Recommended"
+window.openMethodModal = function() {
+    let modal = document.getElementById('assetActionModal');
+    modal.style.display = 'flex';
+    const isBuy = currentTradeMode === 'buy';
+    const isKenyan = currentUser && currentUser.country && currentUser.country.includes('Kenya');
+    
+    let providers = [
+        { id: 'Bank Transfer', name: 'Bank Transfer', icon: '🏦', desc: isBuy ? 'Pay via your local bank' : 'Get paid to your bank account', recommended: true },
+        { id: 'PayPal', name: 'PayPal', icon: '🅿️', desc: 'Pay with your PayPal balance', recommended: true },
+        { id: 'Credit Card', name: 'Credit / Debit Card', icon: '💳', desc: 'Visa, Mastercard, Amex', recommended: true }
+    ];
+
+    if (isKenyan) {
+        providers.splice(1, 0, { id: 'MPESA', name: 'M-PESA', icon: '📱', desc: 'Fast & secure mobile money', recommended: true });
+    }
+
+    let html = `<div class="modal-content" style="padding: 0; max-height: 80vh; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; padding: 20px; border-bottom: 1px solid #333;">
+            <h2 style="color: #fff; margin: 0; font-size: 18px;">Choose ${isBuy ? 'Payment' : 'Payout'} Method</h2>
+            <span onclick="document.getElementById('assetActionModal').style.display='none'" style="color: #888; font-size: 24px; cursor: pointer;">&times;</span>
+        </div>
+        <div style="overflow-y: auto; flex: 1; padding: 10px 20px 20px;">`;
+
+    html += providers.map(p => `
+        <div onclick="window.selectMethod('${p.id}')" style="background: #0f0f15; border: 1px solid #333; border-radius: 12px; padding: 15px; display: flex; align-items: center; gap: 15px; margin-bottom: 10px; cursor: pointer;">
+            <div style="width: 40px; height: 40px; background: #2a2a3a; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;">${p.icon}</div>
+            <div style="flex: 1;">
+                <div style="color: #fff; font-weight: bold; font-size: 14px;">${p.name}</div>
+                <div style="color: #888; font-size: 12px;">${p.desc}</div>
+            </div>
+            ${p.recommended ? `<div style="color: #0ecb51; font-size: 11px; font-weight: bold;">Recommended</div>` : ''}
+        </div>
+    `).join('');
+    
+    html += `</div></div>`;
+    modal.innerHTML = html;
+};
+
+window.selectMethod = function(method) {
+    document.getElementById('assetActionModal').style.display = 'none';
+    
+    const label = document.getElementById('selectedPayMethodLabel');
+    if (label) label.textContent = method;
+    
+    const nativeSelect = document.getElementById('tradeMethod');
+    if (nativeSelect) {
+        nativeSelect.value = method === 'MPESA' ? 'Bank Transfer' : method;
+    }
+    
+    togglePaymentDetails();
+};
+
+// UPDATED: Correctly show/hide the inputs based on selected method
+window.togglePaymentDetails = function() {
+    const method = document.getElementById('tradeMethod') ? document.getElementById('tradeMethod').value : 'Bank Transfer';
+    
+    const bankInputs = document.getElementById('bankDetailsInputs');
+    const cardInputs = document.getElementById('cardDetailsInputs');
+    const paypalInputs = document.getElementById('paypalDetailsInputs');
+
+    if(bankInputs) bankInputs.style.display = 'none';
+    if(cardInputs) cardInputs.style.display = 'none';
+    if(paypalInputs) paypalInputs.style.display = 'none';
+    
+    if (currentTradeMode === 'sell') {
+        if (method === 'Credit Card' && cardInputs) cardInputs.style.display = 'block';
+        if (method === 'PayPal' && paypalInputs) paypalInputs.style.display = 'block';
+        if ((method === 'Bank Transfer' || method === 'MPESA') && bankInputs) bankInputs.style.display = 'block';
+    }
+};
