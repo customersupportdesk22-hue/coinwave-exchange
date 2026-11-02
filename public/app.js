@@ -2101,3 +2101,80 @@ window.showView = function(viewId, authType = 'login') {
         setTimeout(() => window.checkPendingOrders(), 1000);
     }
 };
+
+/* =====================================================
+   UPGRADED PENDING ORDER REMINDER (Handles Buy & Sell)
+   ===================================================== */
+window.checkPendingOrders = async function() {
+    if (!currentUser) return;
+    const dashContainer = document.querySelector('.dash-container');
+    if (!dashContainer) return;
+
+    try {
+        const res = await fetch(`/api/orders/user/${currentUser.email}`);
+        const orders = await res.json();
+
+        // Remove old banner if it exists
+        const oldBanner = document.getElementById('pendingPaymentBanner');
+        if (oldBanner) oldBanner.remove();
+
+        // Find any Pending order (Buy or Sell)
+        const pendingOrder = orders.find(o => o.status === 'Pending' || o.status === 'pending');
+
+        if (pendingOrder) {
+            const isBuy = pendingOrder.mode === 'buy';
+            
+            // Customize the message based on the order type
+            const title = isBuy ? "Pending Fiat Payment" : "Pending Crypto Transfer";
+            const message = isBuy 
+                ? `You have an unpaid order for ${pendingOrder.getAmount} ${pendingOrder.getCurrency}. Please complete your payment.` 
+                : `You have a pending order to sell ${pendingOrder.sendAmount} ${pendingOrder.sendCurrency}. Please send the crypto to complete it.`;
+            
+            const btnText = isBuy ? "Complete Payment" : "View Crypto Address";
+            const icon = isBuy ? "💳" : "🪙";
+
+            // Create the warning banner
+            const banner = document.createElement('div');
+            banner.id = 'pendingPaymentBanner';
+            banner.style.cssText = "background: rgba(252, 213, 53, 0.1); border: 1px solid #fcd535; border-radius: 12px; padding: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;";
+            
+            banner.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 20px;">${icon}</span>
+                    <div>
+                        <p style="color: #fcd535; font-weight: bold; font-size: 14px; margin: 0;">${title}</p>
+                        <p style="color: #888; font-size: 12px; margin: 0;">${message}</p>
+                    </div>
+                </div>
+                <button onclick="window.resumeOrder('${pendingOrder._id}', '${pendingOrder.mode}')" style="background: #fcd535; color: #000; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer;">${btnText}</button>
+            `;
+
+            // Insert banner at the top of the dashboard
+            dashContainer.insertBefore(banner, dashContainer.firstChild);
+        }
+
+    } catch (e) {
+        console.log("Error checking pending orders:", e);
+    }
+};
+
+// Function to route the user back to the correct payment page
+window.resumeOrder = async function(orderId, mode) {
+    try {
+        const res = await fetch(`/api/orders/user/${currentUser.email}`);
+        const orders = await res.json();
+        const order = orders.find(o => o._id === orderId);
+
+        if (order) {
+            if (mode === 'buy') {
+                // Take them back to the Fiat Checkout page
+                showBuyCheckoutPage(order.getCurrency, order.getAmount, order.sendAmount, order.method);
+            } else {
+                // Take them back to the Crypto Payment Instructions page
+                showPaymentInstructions(order.sendCurrency, order.sendAmount, order.getAmount);
+            }
+        }
+    } catch (e) {
+        showToast("Error loading order details.");
+    }
+};
