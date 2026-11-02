@@ -30,7 +30,7 @@ router.post('/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
 
         user = new User({ name, country, phone, email, password: hashedPassword });
-        await user.save();
+        await User.findByIdAndUpdate(req.user.id, { twoFactorSecret: secret.base32, twoFactorEnabled: true });
 
         res.status(201).json({ message: "User registered successfully" });
     } catch (error) {
@@ -56,57 +56,3 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// 4. Generate 2FA Secret and QR Code
-router.post('/generate-2fa', authMiddleware, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id);
-        if (!user) return res.status(404).json({ error: 'User not found' });
-
-        const secret = speakeasy.generateSecret({ name: `CoinWave (${user.email})` });
-        user.twoFactorSecret = secret.base32;
-        await user.save();
-
-        // Wrap the QR code generation in a Promise to catch any errors properly
-        const qrCodeUrl = await new Promise((resolve, reject) => {
-            QRCode.toDataURL(secret.otpauth_url, (err, data_url) => {
-                if (err) reject(err);
-                else resolve(data_url);
-            });
-        });
-
-        res.json({ secret: secret.base32, qrCodeUrl: qrCodeUrl });
-        
-    } catch (error) {
-        console.error("2FA Generate Error:", error); 
-        res.status(500).json({ error: error.message || 'Server error' }); // Send actual error to frontend
-    }
-});
-
-// 5. Verify and Enable 2FA
-router.post('/enable-2fa', authMiddleware, async (req, res) => {
-    try {
-        const { token } = req.body;
-        const user = await User.findById(req.user.id);
-        
-        if (!user || !user.twoFactorSecret) return res.status(400).json({ error: '2FA not initialized' });
-
-        const verified = speakeasy.totp.verify({
-            secret: user.twoFactorSecret,
-            encoding: 'base32',
-            token: token
-        });
-
-        if (verified) {
-            user.twoFactorEnabled = true;
-            await user.save();
-            res.json({ message: '2FA enabled successfully' });
-        } else {
-            res.status(400).json({ error: 'Invalid code' });
-        }
-    } catch (error) {
-        console.error("2FA Enable Error:", error);
-        res.status(500).json({ error: error.message || 'Server error' });
-    }
-});
-
-module.exports = router;
