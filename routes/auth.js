@@ -1,3 +1,5 @@
+const speakeasy = require('speakeasy');
+const QRCode = require('qrcode');
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
@@ -34,8 +36,6 @@ module.exports = router;
 // ==========================================
 // 2FA SETUP ROUTES
 // ==========================================
-const speakeasy = require('speakeasy');
-const QRCode = require('qrcode');
 
 // 1. Generate 2FA Secret and QR Code
 router.post('/generate-2fa', authMiddleware, async (req, res) => {
@@ -92,8 +92,6 @@ router.post('/enable-2fa', authMiddleware, async (req, res) => {
 // ==========================================
 // SAFE 2FA SETUP ROUTES
 // ==========================================
-const speakeasy = require('speakeasy');
-const QRCode = require('qrcode');
 
 // Define the middleware here so it doesn't crash if missing
 const twoFactorAuthMiddleware = (req, res, next) => {
