@@ -136,4 +136,5 @@ async function deleteCustomAsset(symbol) {
         alert(`${symbol} Deleted.`); loadCustomAssets();
     } catch(e) { alert("Failed."); }
 }
+
 loadOrders();
