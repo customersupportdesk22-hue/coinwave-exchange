@@ -1165,3 +1165,77 @@ window.selectTradeAsset = function(symbol) {
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => window.polishTradeView(), 500);
 });
+
+/* =====================================================
+   FIX: CLARIFY EXTERNAL WALLET SELLING
+   ===================================================== */
+window.polishTradeView = async function() {
+    const amtInput = document.getElementById('tradeAmount');
+    const amountLabel = document.getElementById('amountLabel');
+    if (!amtInput || !amountLabel) return;
+
+    // 1. Wrap the amount input (if not already wrapped)
+    if (!amtInput.parentElement.classList.contains('amount-wrapper')) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'amount-wrapper';
+        amtInput.parentNode.insertBefore(wrapper, amtInput);
+        wrapper.appendChild(amtInput);
+        
+        const suffix = document.createElement('span');
+        suffix.className = 'amount-suffix';
+        suffix.id = 'tradeAmountSuffix';
+        wrapper.appendChild(suffix);
+    }
+
+    // 2. Update the suffix and available balance
+    const coinSymbol = document.getElementById('tradeCoin').value;
+    const suffixEl = document.getElementById('tradeAmountSuffix');
+    const curr = getUserCurrency();
+
+    // Remove old available balance label
+    let balEl = document.getElementById('tradeAvailableBalance');
+    if (balEl) balEl.remove();
+
+    if (currentTradeMode === 'buy') {
+        suffixEl.textContent = curr.code; 
+        
+    } else {
+        suffixEl.textContent = coinSymbol; 
+        try {
+            const res = await fetch(`/api/user/${currentUser.email}/balances`);
+            const balances = await res.json();
+            const bal = balances[coinSymbol] || 0;
+            
+            // Add a clear note for external wallets
+            const label = document.getElementById('receiveLabel').previousElementSibling; // The label before 'You will receive'
+            
+            // Create the available balance note
+            const balSpan = document.createElement('span');
+            balSpan.id = 'tradeAvailableBalance';
+            balSpan.className = 'available-balance';
+            balSpan.style.cssText = "font-size: 11px; color: #888; float: right; font-weight: normal; text-transform: none;";
+            balSpan.innerHTML = `Available on CoinWave: ${bal.toFixed(6)} ${coinSymbol}`;
+            amountLabel.appendChild(balSpan);
+
+            // Add a small helper text below the input
+            let helper = document.getElementById('externalWalletHelper');
+            if (!helper) {
+                helper = document.createElement('div');
+                helper.id = 'externalWalletHelper';
+                helper.style.cssText = "font-size: 11px; color: #00d4aa; margin-top: 5px; text-align: left;";
+                amtInput.parentElement.parentElement.appendChild(helper);
+            }
+            helper.innerHTML = `💡 Selling from an external wallet? No problem. You will be shown a deposit address on the next page.`;
+            
+        } catch(e) { 
+            console.log(e); 
+        }
+    }
+};
+
+// Hook it into setTradeMode so it updates instantly
+var originalSetTradeModeExternal = window.setTradeMode;
+window.setTradeMode = function(mode) {
+    originalSetTradeModeExternal(mode);
+    setTimeout(() => window.polishTradeView(), 50);
+};
