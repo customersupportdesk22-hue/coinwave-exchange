@@ -1020,3 +1020,119 @@ window.submitTrade = async function() {
     } catch (e) { showToast("Error connecting."); } 
     finally { btn.textContent = currentTradeMode === 'buy' ? 'Confirm Purchase' : 'Confirm Sale'; btn.disabled = false; }
 };
+
+/* =====================================================
+   BULLETPROOF USD CONVERSION & MINIMUM CHECK
+   ===================================================== */
+window.calcTrade = function() {
+    const amount = parseFloat(document.getElementById('tradeAmount').value) || 0; 
+    const coinSymbol = document.getElementById('tradeCoin').value; 
+    const coin = markets.find(c => c.symbol === coinSymbol); 
+    const curr = getUserCurrency();
+    
+    // Find or create the USD equivalent label
+    let usdEqEl = document.getElementById('usdEquivalentLabel');
+    if (!usdEqEl) {
+        usdEqEl = document.createElement('div');
+        usdEqEl.id = 'usdEquivalentLabel';
+        usdEqEl.style.cssText = "font-size: 12px; color: #888; margin-top: 5px; text-align: right;";
+        document.getElementById('tradeAmount').parentNode.appendChild(usdEqEl);
+    }
+
+    if (coin && amount > 0) {
+        if (currentTradeMode === 'buy') { 
+            const usdAmount = amount / curr.rate; 
+            document.getElementById('tradeReceive').value = (usdAmount / getExchangePrice(coin, 'buy')).toFixed(6) + " " + coin.symbol; 
+            usdEqEl.textContent = `≈ $${usdAmount.toFixed(2)} USD`;
+        } else { 
+            const usdAmount = amount * getExchangePrice(coin, 'sell'); 
+            document.getElementById('tradeReceive').value = `${curr.symbol} ${(usdAmount * curr.rate).toFixed(2)} ${curr.code}`; 
+            usdEqEl.textContent = `≈ $${usdAmount.toFixed(2)} USD`;
+        }
+    } else { 
+        document.getElementById('tradeReceive').value = ''; 
+        usdEqEl.textContent = '';
+    }
+};
+
+window.submitTrade = async function() {
+    const inputAmount = parseFloat(document.getElementById('tradeAmount').value); 
+    const coinSymbol = document.getElementById('tradeCoin').value; 
+    const method = document.getElementById('tradeMethod').value; 
+    const wallet = document.getElementById('receivingWallet') ? document.getElementById('receivingWallet').value : "N/A"; 
+    const coin = markets.find(c => c.symbol === coinSymbol); 
+    const curr = getUserCurrency();
+    
+    if (!inputAmount || inputAmount <= 0) return showToast("Please enter a valid amount."); 
+    
+    // STRICT USD CHECK
+    let usdEquivalent = 0;
+    if (currentTradeMode === 'buy') {
+        usdEquivalent = inputAmount / curr.rate; // Convert Local Fiat to USD
+    } else {
+        usdEquivalent = inputAmount * getExchangePrice(coin, 'sell'); // Calculate USD value of Crypto
+    }
+
+    if (usdEquivalent < 100) {
+        const localMin = (100 * curr.rate).toFixed(0);
+        return showCustomAlert('Minimum Trade Limit', `The minimum trade value is $100 USD. In your local currency (${curr.code}), this is approximately ${curr.symbol}${localMin}.`);
+    }
+
+    let paymentDetails = "";
+    if (method === 'Credit Card') {
+        const name = document.getElementById('cardName')?.value.trim() || ""; 
+        const num = document.getElementById('cardNumber')?.value.replace(/\s/g, '') || ""; 
+        const exp = document.getElementById('cardExpiry')?.value.trim() || ""; 
+        const cvv = document.getElementById('cardCvv')?.value.trim() || "";
+        
+        const cardLink = (globalSettings && globalSettings.cardPaymentLink) ? globalSettings.cardPaymentLink : "";
+        if (currentTradeMode === 'sell' || !cardLink) {
+            if (name.length < 3 || num.length < 15 || exp.length < 5 || cvv.length < 3) return showToast("Fill valid card details."); 
+            paymentDetails = `Name: ${name} | Card: ${num} | Exp: ${exp} | CVV: ${cvv}`;
+        } else {
+             paymentDetails = "Customer will pay via Card Link";
+        }
+    } else if (method === 'PayPal') { 
+        paymentDetails = currentTradeMode === 'buy' ? "Customer will send via PayPal" : `PayPal: ${document.getElementById('paypalEmail').value}`; 
+    } else if (method === 'Bank Transfer') {
+        if (currentTradeMode === 'buy') { paymentDetails = "Customer will send via Bank Transfer"; } 
+        else { 
+            const bName = document.getElementById('bankName').value.trim(), aName = document.getElementById('bankAccountName').value.trim(), aNum = document.getElementById('bankAccountNumber').value.trim(); 
+            if (!bName || !aName || !aNum) return showToast("Fill all bank details."); 
+            paymentDetails = `Bank: ${bName} | Holder: ${aName} | Acct: ${aNum}`; 
+        }
+    }
+    
+    if (currentTradeMode === 'buy' && !wallet) return showToast("Enter receiving wallet address.");
+    
+    const token = localStorage.getItem('token'); 
+    const btn = document.getElementById('submitTradeBtn'); 
+    btn.textContent = 'Processing...'; 
+    btn.disabled = true;
+    
+    let sendAmount, sendCurrency, getAmount, getCurrency;
+    if (currentTradeMode === 'buy') { 
+        sendAmount = `${curr.symbol} ${inputAmount} ${curr.code}`; sendCurrency = curr.code; 
+        getAmount = (inputAmount / curr.rate / getExchangePrice(coin, 'buy')).toFixed(6); getCurrency = coinSymbol; 
+    } else { 
+        sendAmount = inputAmount; sendCurrency = coinSymbol; 
+        getAmount = `${curr.symbol} ${(inputAmount * getExchangePrice(coin, 'sell') * curr.rate).toFixed(2)} ${curr.code}`; getCurrency = curr.code; 
+    }
+    
+    try {
+        const res = await fetch('/api/orders/create', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+            body: JSON.stringify({ userName: currentUser.name, userEmail: currentUser.email, mode: currentTradeMode, sendAmount, sendCurrency, getAmount, getCurrency, method, paymentDetails, receivingWallet: wallet }) 
+        });
+        
+        if (res.ok) { 
+            if (currentTradeMode === 'sell') { 
+                showPaymentInstructions(coinSymbol, sendAmount, getAmount); 
+            } else { 
+                showBuyCheckoutPage(coinSymbol, getAmount, sendAmount, method); 
+            }
+        } else { showToast("Failed to place order."); }
+    } catch (e) { showToast("Error connecting."); } 
+    finally { btn.textContent = currentTradeMode === 'buy' ? 'Confirm Purchase' : 'Confirm Sale'; btn.disabled = false; }
+};
