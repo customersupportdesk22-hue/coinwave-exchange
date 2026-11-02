@@ -402,3 +402,39 @@ html, body {
     background: #1a1a2a !important;
     padding: 18px !important;
 }
+
+/* =====================================================
+   NAVBAR SPACING FIX (Space between Logo and Links)
+   ===================================================== */
+
+/* 1. Add a guaranteed gap between the Logo and the Links */
+.premium-nav {
+    gap: 20px !important; 
+}
+
+/* 2. Prevent the logo from shrinking and squishing the text */
+.logo {
+    flex-shrink: 0 !important;
+    margin-right: auto !important; /* Pushes links to the right */
+}
+
+/* 3. Make sure the links stay on one line and have space */
+.nav-links {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+}
+
+/* 4. Mobile specific tweaks to ensure it fits perfectly */
+@media (max-width: 768px) {
+    .premium-nav {
+        padding: 10px 15px !important;
+        gap: 10px !important;
+    }
+    .logo span {
+        font-size: 18px !important;
+    }
+    .nav-links {
+        gap: 10px !important;
+    }
+}
