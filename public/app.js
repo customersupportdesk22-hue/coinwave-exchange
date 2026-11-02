@@ -1618,3 +1618,106 @@ window.polishTradeView = async function() {
         suffixEl.textContent = currentTradeMode === 'buy' ? curr.code : coinSymbol;
     }
 };
+
+/* =====================================================
+   PROFESSIONAL SELL INVOICE PAGE (Like screenshot)
+   ===================================================== */
+window.showPaymentInstructions = function(symbol, cryptoAmount, fiatAmount) {
+    // Clear any existing timer
+    if (window.paymentTimer) clearInterval(window.paymentTimer);
+
+    if (!fiatAmount || fiatAmount === 'undefined') fiatAmount = "the agreed amount";
+    let address = (globalSettings && globalSettings.wallets && globalSettings.wallets[symbol]) ? globalSettings.wallets[symbol] : "Contact Support";
+    let isMissing = address.includes("Contact"); 
+    let qrCodeUrl = isMissing ? "" : `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${address}`;
+    let formattedAmount = `${cryptoAmount} ${symbol}`;
+
+    const content = `
+        <div style="text-align: center;">
+            <!-- Header with Timer -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #333;">
+                <div style="text-align: left;">
+                    <h3 style="color: #fff; margin: 0; font-size: 20px;">Send Payment</h3>
+                    <p style="color: #888; font-size: 13px; margin: 5px 0 0 0;">To complete your sale</p>
+                </div>
+                <div style="text-align: right;">
+                    <div id="paymentCountdown" style="color: #fcd535; font-size: 24px; font-weight: bold; font-family: monospace;">15:00</div>
+                    <p style="color: #888; font-size: 11px; margin: 0;">Time remaining</p>
+                </div>
+            </div>
+
+            <!-- QR Code -->
+            ${qrCodeUrl ? `
+            <div style="background: #fff; padding: 15px; border-radius: 12px; display: inline-block; margin-bottom: 20px;">
+                <img src="${qrCodeUrl}" style="width: 200px; height: 200px; display: block;">
+            </div>
+            ` : `<div style="color: #f6465d; padding: 20px;">QR Code unavailable</div>`}
+            
+            <!-- Network Warning -->
+            <p style="color: #e74c3c; font-size: 14px; font-weight: bold; margin-bottom: 25px;">
+                Only send ${symbol} to this address
+            </p>
+
+            <!-- Address Box -->
+            <div style="background: #0f0f15; border: 1px solid #333; border-radius: 8px; padding: 15px; margin-bottom: 15px; text-align: left;">
+                <p style="color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase;">${symbol} Address</p>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="color: #fff; font-family: monospace; font-size: 14px; word-break: break-all; max-width: 80%;">${address}</div>
+                    ${!isMissing ? `
+                    <button onclick="navigator.clipboard.writeText('${address}'); this.innerHTML='<svg width=\\'20\\' height=\\'20\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'#00d4aa\\' stroke-width=\\'2\\'><polyline points=\\'20 6 9 17 4 12\\'></polyline></svg>';" style="background: transparent; border: none; cursor: pointer; padding: 5px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    </button>` : ''}
+                </div>
+            </div>
+
+            <!-- Amount Box -->
+            <div style="background: #0f0f15; border: 1px solid #333; border-radius: 8px; padding: 15px; margin-bottom: 30px; text-align: left;">
+                <p style="color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase;">Total Amount</p>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="color: #00d4aa; font-family: monospace; font-size: 18px; font-weight: bold;">${formattedAmount}</div>
+                    <button onclick="navigator.clipboard.writeText('${cryptoAmount}'); this.innerHTML='<svg width=\\'20\\' height=\\'20\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'#00d4aa\\' stroke-width=\\'2\\'><polyline points=\\'20 6 9 17 4 12\\'></polyline></svg>';" style="background: transparent; border: none; cursor: pointer; padding: 5px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <button onclick="showView('tradeView')" style="background: transparent; border: none; color: #00d4aa; font-size: 15px; font-weight: bold; cursor: pointer; text-decoration: underline; margin-bottom: 20px;">
+                Make a new transaction
+            </button>
+            <button onclick="showView('dashboardView')" style="background: #2a2a3a; color: #fff; width: 100%; padding: 16px; border-radius: 8px; font-weight: bold; font-size: 16px; border: none; cursor: pointer;">
+                I Have Sent The Payment
+            </button>
+        </div>
+    `;
+    
+    createPageView('paymentPageView', 'Payment', content); 
+    showView('paymentPageView');
+
+    // Start the 15-minute countdown timer
+    let timeLeft = 15 * 60; // 15 minutes in seconds
+    const timerEl = document.getElementById('paymentCountdown');
+    
+    window.paymentTimer = setInterval(() => {
+        if (timeLeft <= 0) {
+            clearInterval(window.paymentTimer);
+            if(timerEl) timerEl.textContent = "00:00";
+            showCustomAlert("Order Expired", "The payment window has expired. Please create a new order.");
+            showView('dashboardView');
+            return;
+        }
+        timeLeft--;
+        let minutes = Math.floor(timeLeft / 60);
+        let seconds = timeLeft % 60;
+        if(timerEl) timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }, 1000);
+};
+
+// Ensure timer is cleared if user leaves the page manually
+var originalShowViewClearTimer = window.showView;
+window.showView = function(viewId, authType = 'login') {
+    if (viewId !== 'paymentPageView' && window.paymentTimer) {
+        clearInterval(window.paymentTimer);
+    }
+    originalShowViewClearTimer(viewId, authType);
+};
