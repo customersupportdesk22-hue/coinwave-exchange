@@ -1046,3 +1046,40 @@ window.setTradeMode = function(mode) {
         window.updateTradeUIExtras();
     }
 };
+
+/* =====================================================
+   PROFESSIONAL 2FA MODAL CLOSE BUTTON
+   ===================================================== */
+window.open2FAModal = async function() {
+    let modal = document.getElementById('assetActionModal'); 
+    modal.style.display = 'flex'; 
+    modal.innerHTML = `<div class="modal-content"><p style="color:#fff; text-align:center;">Loading 2FA Settings...</p></div>`;
+    
+    try {
+        const token = localStorage.getItem('token'); 
+        const res = await fetch('/api/auth/generate-2fa', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }); 
+        const data = await res.json();
+        
+        if (!res.ok) throw new Error(data.error);
+        
+        modal.innerHTML = `
+            <div class="modal-content" style="text-align: center; position: relative;">
+                <!-- New Professional Close Button -->
+                <span onclick="document.getElementById('assetActionModal').style.display='none'" style="position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.1); border-radius: 50%; color: #fff; font-size: 20px; cursor: pointer; z-index: 10; transition: 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">&times;</span>
+                
+                <h2 style="color: #fff; margin-bottom: 10px; padding: 0 20px;">Two-Factor Authentication</h2>
+                <p style="color: #888; font-size: 13px; margin-bottom: 20px;">Scan this QR code with Google Authenticator or Authy.</p>
+                
+                <img src="${data.qrCodeUrl}" style="background: #fff; padding: 10px; border-radius: 8px; width: 150px; height: 150px; margin: 0 auto 20px;">
+                
+                <div class="input-group" style="text-align: left;">
+                    <label>Enter 6-digit code from App</label>
+                    <input type="text" id="twoFactorCode" placeholder="123456" maxlength="6" style="text-align: center; letter-spacing: 5px; font-size: 18px;">
+                </div>
+                
+                <button onclick="window.verify2FA()" style="background: #00d4aa; color: #000; width: 100%; padding: 14px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; margin-top: 10px;">Verify & Enable 2FA</button>
+            </div>`;
+    } catch (err) { 
+        modal.innerHTML = `<div class="modal-content"><p style="color:#f6465d; text-align:center;">Error: ${err.message}</p></div>`; 
+    }
+};
