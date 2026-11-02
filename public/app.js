@@ -1962,3 +1962,24 @@ window.submitLogin2FA = async function() {
         btn.textContent = 'Verify Code & Log In';
     }
 };
+
+/* =====================================================
+   FIX: WRAP BADGES IN A CONTAINER
+   ===================================================== */
+setInterval(() => {
+    const trustBadge = document.getElementById('dynamicTrustBadge');
+    const bonusBadge = document.getElementById('bonusBadge');
+
+    if (trustBadge && bonusBadge && !document.querySelector('.badge-container')) {
+        // Create the wrapper
+        const wrapper = document.createElement('div');
+        wrapper.className = 'badge-container';
+        
+        // Insert wrapper before the first badge
+        trustBadge.parentNode.insertBefore(wrapper, trustBadge);
+        
+        // Move both badges inside the wrapper
+        wrapper.appendChild(trustBadge);
+        wrapper.appendChild(bonusBadge);
+    }
+}, 1000);

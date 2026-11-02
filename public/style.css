@@ -438,3 +438,25 @@ html, body {
         gap: 10px !important;
     }
 }
+
+/* =====================================================
+   FIX: FORCE BADGES TO STAY ON ONE LINE
+   ===================================================== */
+.badge-container {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 10px !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    padding-bottom: 5px;
+    /* Hide scrollbar for a clean look */
+    -ms-overflow-style: none;  
+    scrollbar-width: none;  
+}
+.badge-container::-webkit-scrollbar {
+    display: none;
+}
+#dynamicTrustBadge, #bonusBadge {
+    flex-shrink: 0 !important; /* Prevents them from squishing */
+    margin-bottom: 0 !important;
+}
