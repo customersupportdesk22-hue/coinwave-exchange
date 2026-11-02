@@ -279,3 +279,64 @@ html, body {
 .modal-content::-webkit-scrollbar, .assets-section::-webkit-scrollbar {
     display: none !important;
 }
+
+/* =====================================================
+   PROFESSIONAL DASHBOARD SPACING & NAVBAR FIX
+   ===================================================== */
+
+/* 1. Fix the Navbar spacing */
+.premium-nav {
+    padding: 12px 20px !important;
+}
+.logo {
+    margin-right: auto !important; /* Push everything else to the right */
+}
+.nav-links {
+    gap: 18px !important; /* More space between links */
+    align-items: center !important;
+}
+.nav-links a {
+    font-size: 13px !important;
+    white-space: nowrap !important;
+}
+
+/* 2. Fix the "Security" button style */
+#securityNavBtn {
+    color: #fff !important;
+    background: #2a2a3a !important;
+    padding: 8px 12px !important;
+    border-radius: 6px !important;
+    border: 1px solid #333 !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+}
+
+/* 3. Fix the Wallet Card Header spacing */
+#web3WalletCard .wallet-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 20px !important;
+}
+#web3WalletCard .wallet-header > div {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important; /* Space between icon and text */
+}
+#web3WalletCard .wallet-header h3 {
+    font-size: 16px !important;
+    margin: 0 !important;
+    font-weight: 600 !important;
+}
+#walletStatusBadge {
+    font-size: 10px !important;
+    padding: 5px 10px !important;
+    white-space: nowrap !important;
+}
+
+/* 4. Give the Dashboard more breathing room */
+.dash-container {
+    padding: 20px 15px !important;
+    max-width: 600px !important;
+    margin: 0 auto !important;
+}
