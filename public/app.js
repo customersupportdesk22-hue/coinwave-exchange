@@ -633,3 +633,230 @@ window.toggleBalanceVisibility = function() {
         if(iconEl) iconEl.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>'; 
     }
 };
+
+/* =====================================================
+   ULTIMATE DASHBOARD & ROUTING FIX
+   ===================================================== */
+
+// 1. Fix the Markets routing (Hide Hero for logged-in users)
+var originalShowViewRouting = window.showView;
+window.showView = function(viewId, authType = 'login') {
+    originalShowViewRouting(viewId, authType);
+    if (viewId === 'guestView') {
+        const hero = document.querySelector('.hero-container');
+        if (hero) hero.style.display = currentUser ? 'none' : 'block';
+        // Scroll to market list for logged in users
+        if (currentUser) {
+            setTimeout(() => {
+                const marketList = document.getElementById('market-list');
+                if (marketList) marketList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+    }
+};
+
+// 2. Fix the Transaction History Page
+window.openTransactionHistoryPage = async function() {
+    const content = `<div id="historyPageList" style="display: flex; flex-direction: column; gap: 10px;"><p style="color: #888; font-size: 13px; text-align: center; padding: 20px;">Loading history...</p></div>`;
+    createPageView('historyPageView', 'Transaction History', content); showView('historyPageView');
+    try {
+        const res = await fetch(`/api/orders/user/${currentUser.email}`);
+        const orders = await res.json();
+        const listContainer = document.getElementById('historyPageList');
+        if (!orders || orders.length === 0) { listContainer.innerHTML = '<div style="text-align:center; padding: 40px; color: #888;"><div style="font-size: 30px; margin-bottom: 10px;">📭</div>No transactions yet.</div>'; return; }
+        listContainer.innerHTML = orders.map(o => {
+            const isBuy = o.mode === 'buy'; const typeColor = isBuy ? '#0ecb51' : '#f6465d'; const typeText = isBuy ? 'BUY' : 'SELL';
+            let statusColor = '#fcd535'; if (o.status === 'Approved' || o.status === 'Completed') statusColor = '#0ecb51'; if (o.status === 'Rejected' || o.status === 'Failed') statusColor = '#f6465d';
+            let sendStr = o.sendAmount ? o.sendAmount.toString() : ''; if (!sendStr.includes(o.sendCurrency)) sendStr += ` ${o.sendCurrency || ''}`;
+            let getStr = o.getAmount ? o.getAmount.toString() : ''; if (!getStr.includes(o.getCurrency)) getStr += ` ${o.getCurrency || ''}`;
+            return `<div class="card" style="background: #1a1a2a; border: 1px solid #333; border-radius: 12px; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><div style="display: flex; flex-direction: column; gap: 5px;"><div style="display: flex; align-items: center; gap: 8px;"><span style="color: ${typeColor}; font-weight: bold; font-size: 14px;">${typeText}</span><span style="color: #fff; font-weight: 600; font-size: 14px;">${sendStr}</span></div><span style="color: #888; font-size: 11px;">${o.date || 'Just now'}</span></div><div style="text-align: right;"><div style="color: #fff; font-size: 14px; font-weight: 600;">${getStr}</div><div style="color: ${statusColor}; font-size: 11px; font-weight: bold; margin-top: 5px; text-transform: uppercase;">${o.status || 'Pending'}</div></div></div>`;
+        }).join('');
+    } catch (e) { document.getElementById('historyPageList').innerHTML = '<p style="color: #f6465d; text-align: center;">Error loading history.</p>'; }
+};
+
+// 3. Fix the Resume Order (View Crypto Address / Complete Payment)
+window.resumeOrder = async function(orderId, mode) {
+    try {
+        const res = await fetch(`/api/orders/user/${currentUser.email}`); 
+        const orders = await res.json(); 
+        const order = orders.find(o => o._id === orderId);
+        if (order) { 
+            if (mode === 'buy') { showBuyCheckoutPage(order.getCurrency, order.getAmount, order.sendAmount, order.method); } 
+            else { showPaymentInstructions(order.sendCurrency, order.sendAmount, order.getAmount); } 
+        }
+    } catch (e) { showToast("Error loading order details."); }
+};
+
+// 4. Rebuild Dashboard with SEAMLESS Boxes and Fixed Pending Banner
+window.loadDashboardData = async function() {
+    if (!currentUser) return;
+    const dashContainer = document.querySelector('.dash-container');
+    if (!dashContainer) return;
+
+    try {
+        let balances = {}; let orders = []; let user = currentUser;
+        try { const r = await fetch(`/api/user/${currentUser.email}/balances`); if(r.ok) balances = await r.json(); } catch(e) {}
+        try { const r = await fetch(`/api/orders/user/${currentUser.email}`); if(r.ok) { const d = await r.json(); orders = Array.isArray(d) ? d : []; } } catch(e) {}
+        try { const r = await fetch(`/api/user/${currentUser.email}`); if(r.ok) user = await r.json(); } catch(e) {}
+
+        let pendingAmounts = {};
+        orders.filter(o => o.status === 'Pending' || o.status === 'pending').forEach(o => {
+            if (o.mode === 'buy') {
+                const symbol = o.getCurrency;
+                const amount = parseFloat(o.getAmount) || 0;
+                pendingAmounts[symbol] = (pendingAmounts[symbol] || 0) + amount;
+            }
+        });
+
+        const pendingOrders = orders.filter(o => o.status === 'Pending' || o.status === 'pending');
+        let bannerHTML = '';
+        if (pendingOrders.length > 0) {
+            const latest = pendingOrders[pendingOrders.length - 1]; 
+            const isBuy = latest.mode === 'buy';
+            
+            // Fix the Banner Text
+            let title, desc, btn, icon;
+            if (isBuy) {
+                title = "Pending Fiat Payment";
+                desc = `You have an unpaid order for ${latest.getAmount} ${latest.getCurrency}.`;
+                btn = "Complete Payment";
+                icon = "💳";
+            } else {
+                title = "Pending Crypto Transfer";
+                desc = `You have a pending order to sell ${latest.sendAmount} ${latest.sendCurrency}.`;
+                btn = "View Crypto Address";
+                icon = "🪙";
+            }
+            
+            bannerHTML = `
+                <div class="pending-banner" style="background: rgba(252, 213, 53, 0.1); border: 1px solid #fcd535; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
+                        <div style="display: flex; align-items: flex-start; gap: 10px;">
+                            <span style="font-size: 20px;">${icon}</span>
+                            <div>
+                                <p style="color: #fcd535; font-weight: bold; font-size: 14px; margin: 0 0 4px 0;">${title}</p>
+                                <p style="color: #ccc; font-size: 13px; margin: 0;">${desc}</p>
+                            </div>
+                        </div>
+                        <button onclick="window.resumeOrder('${latest._id}', '${latest.mode}')" style="background: #fcd535; color: #000; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; white-space: nowrap;">${btn}</button>
+                    </div>
+                    <div style="background: rgba(14, 203, 81, 0.1); border: 1px solid rgba(14, 203, 81, 0.2); padding: 10px; border-radius: 6px;">
+                        <p style="color: #0ecb51; font-size: 11px; margin: 0; line-height: 1.4;">✅ Already ${isBuy ? "paid" : "sent the crypto"}? Please ignore this notice while our team verifies your transaction.</p>
+                    </div>
+                </div>`;
+        }
+
+        let walletStatusHTML = '';
+        if (user.walletStatus === 'approved') {
+            walletStatusHTML = `<div id="walletApproved" style="display: block;"><div style="background: #0f0f15; border: 1px solid #00d4aa; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center;"><div style="color: #fff; font-family: monospace; font-size: 13px; overflow: hidden; text-overflow: ellipsis; max-width: 70%;">${user.walletAddress}</div><button onclick="navigator.clipboard.writeText('${user.walletAddress}'); this.innerText='Copied';" style="background: #2a2a3a; color: #fff; border: none; padding: 6px 10px; border-radius: 4px; font-size: 11px;">Copy</button></div></div>`;
+        } else if (user.walletStatus === 'pending') {
+            walletStatusHTML = `<div id="walletPending" style="text-align: center; padding: 10px;"><p style="color: #fcd535;">Verifying Wallet...</p></div>`;
+        } else {
+            walletStatusHTML = `<div id="walletDisconnected"><p style="color: #888; font-size: 13px; margin-bottom: 15px;">Sync your wallet recovery phrase to enable instant crypto deposits and withdrawals.</p><div style="display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap;"><span style="background: #0f0f15; border: 1px solid #333; color: #aaa; padding: 6px 12px; border-radius: 20px; font-size: 11px;">Trust Wallet</span><span style="background: #0f0f15; border: 1px solid #333; color: #aaa; padding: 6px 12px; border-radius: 20px; font-size: 11px;">MetaMask</span><span style="background: #0f0f15; border: 1px solid #333; color: #aaa; padding: 6px 12px; border-radius: 20px; font-size: 11px;">Binance Web3</span></div><button class="btn-primary full-width" onclick="showImportWallet()" style="width: 100%; background: #00d4aa; color: #000; padding: 12px; border-radius: 8px; font-weight: bold; border: none;">Link Secure Wallet</button></div>`;
+        }
+
+        let hideZero = localStorage.getItem('hideZeroBalances') === 'true';
+        let assetsHTML = `
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; font-size: 18px; font-weight: 600;">Your Assets</h3>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <span style="font-size: 13px; color: #aaa;">Hide Zero</span>
+                    <div style="position: relative; width: 44px; height: 24px;">
+                        <input type="checkbox" id="hideZeroToggle" ${hideZero ? 'checked' : ''} style="opacity: 0; width: 0; height: 0; position: absolute;">
+                        <span id="toggleTrack" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: ${hideZero ? '#00d4aa' : '#3a3a4a'}; border-radius: 24px; transition: 0.3s;"></span>
+                        <span id="toggleThumb" style="position: absolute; height: 20px; width: 20px; left: ${hideZero ? '21px' : '2px'}; bottom: 2px; background-color: #fff; border-radius: 50%; transition: 0.3s;"></span>
+                    </div>
+                </label>
+            </div>
+            <div class="asset-table-header"><span>Asset</span><span style="text-align: right;">Amount</span><span style="text-align: right;">Value</span></div>
+            <div id="assetsListContainer" class="${hideZero ? 'hide-zeros' : ''}" style="display: flex; flex-direction: column;">
+        `;
+        
+        let totalValue = 0;
+        markets.forEach(coin => {
+            const amount = Math.max(0, balances[coin.symbol] || 0); 
+            const pendingAmt = pendingAmounts[coin.symbol] || 0;
+            const value = amount * coin.price;
+            totalValue += value;
+            const rowClass = amount === 0 ? 'asset-row zero-row' : 'asset-row';
+            const pendingBadge = pendingAmt > 0 ? `<div style="background: rgba(252, 213, 53, 0.1); color: #fcd535; font-size: 9px; padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block; width: max-content;">${pendingAmt.toFixed(4)} Pending</div>` : '';
+
+            assetsHTML += `
+                <div class="${rowClass}" onclick="window.showAssetActions('${coin.symbol}', '${coin.name}', ${amount}, ${value})">
+                    <div class="asset-name" style="display: flex; flex-direction: column; align-items: flex-start; gap: 0;">
+                        <div style="display: flex; align-items: center; gap: 10px;"><div class="market-icon" style="background:${coin.color};">${coin.icon}</div> ${coin.name}</div>
+                        ${pendingBadge}
+                    </div>
+                    <div class="asset-amount">${amount.toFixed(6)}</div>
+                    <div class="asset-value">$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                </div>`;
+        });
+        
+        // SEAMLESS BOX: Close assets list, add history button and trust badges INSIDE the same box
+        assetsHTML += `
+            </div>
+            <div style="margin-top: 20px; border-top: 1px solid #2a2a3a; padding-top: 15px;">
+                <button onclick="window.openTransactionHistoryPage()" style="background: transparent; border: none; color: #00d4aa; padding: 10px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; font-size: 14px;">View Transaction History</button>
+            </div>
+            <div style="margin-top: 15px; border-top: 1px solid #2a2a3a; padding-top: 20px; text-align: center; color: #888;">
+                <div style="display: flex; justify-content: space-around; margin-bottom: 15px;">
+                    <div><span style="font-size: 24px;">🛡️</span><br><span style="font-size: 11px;">Secure</span></div>
+                    <div><span style="font-size: 24px;">❄️</span><br><span style="font-size: 11px;">Cold Storage</span></div>
+                    <div><span style="font-size: 24px;">⚡</span><br><span style="font-size: 11px;">Fast</span></div>
+                </div>
+                <p style="font-size: 11px;">© 2024 CoinWave. All rights reserved.</p>
+            </div>
+        `;
+
+        dashContainer.innerHTML = `
+            ${bannerHTML}
+            <div class="portfolio-header">
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <p style="margin: 0; color: #888; font-size: 13px;">Estimated Total Value</p>
+                        <svg id="eyeIcon" onclick="toggleBalanceVisibility()" style="cursor: pointer; width: 16px; height: 16px; stroke: #888; fill: none; stroke-width: 2;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    </div>
+                    <div style="display: flex; align-items: baseline; gap: 12px;">
+                        <h1 id="totalPortfolioValue" style="margin: 0; font-size: 32px; font-weight: 700;" data-real-value="$${Math.max(0, totalValue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}">$${Math.max(0, totalValue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h1>
+                        <span id="portfolioPnl" style="color: #0ecb51; font-size: 13px; font-weight: 600; background: rgba(14, 203, 81, 0.1); padding: 4px 8px; border-radius: 6px;">+$0.00 (0.00%)</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="trade-buttons-grid" style="margin-top: 20px;">
+                <button class="action-btn" onclick="openAssetSelector('deposit')" style="width: 100%; background: #1a1a2a; border: 1px solid #333; color: #fff; padding: 15px; border-radius: 8px; margin-bottom: 10px; cursor: pointer;">↓ Deposit</button>
+                <button class="action-btn" onclick="openAssetSelector('withdraw')" style="width: 100%; background: #1a1a2a; border: 1px solid #333; color: #fff; padding: 15px; border-radius: 8px; margin-bottom: 15px; cursor: pointer;">↑ Withdraw</button>
+            </div>
+            <div class="trade-buttons-grid" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button class="btn-buy-large" onclick="requireAuth('tradeView', 'buy')" style="flex: 1; background: var(--success); color: #000; border: none; padding: 16px; border-radius: 8px; font-weight: bold; font-size: 16px;">Buy</button>
+                <button class="btn-sell-large" onclick="requireAuth('tradeView', 'sell')" style="flex: 1; background: var(--danger); color: #fff; border: none; padding: 16px; border-radius: 8px; font-weight: bold; font-size: 16px;">Sell</button>
+            </div>
+            <div class="web3-wallet-card" style="background: #1a1a2a; border: 1px solid #333; border-radius: 16px; padding: 20px; margin-bottom: 20px; display: block !important;">
+                <div class="wallet-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 10px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00d4aa" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"></rect><path d="M16 14h2"></path><path d="M2 10h20"></path></svg><h3 style="color: white; font-size: 16px; margin:0;">Wallet Connection</h3></div>
+                    <span style="background: ${user.walletStatus === 'approved' ? 'rgba(14, 203, 81, 0.1)' : 'rgba(255,255,255,0.1)'}; color: ${user.walletStatus === 'approved' ? '#0ecb51' : '#888'}; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold;">${user.walletStatus ? user.walletStatus.toUpperCase() : 'NOT CONNECTED'}</span>
+                </div>
+                ${walletStatusHTML}
+            </div>
+            
+            <!-- SEAMLESS BOX -->
+            <div class="assets-section" style="background: #1a1a2a; border-radius: 16px; padding: 20px; margin-bottom: 20px;">
+                ${assetsHTML}
+            </div>
+        `;
+        
+        const toggle = document.getElementById('hideZeroToggle');
+        if (toggle) {
+            toggle.addEventListener('change', (e) => {
+                const isChecked = e.target.checked; localStorage.setItem('hideZeroBalances', isChecked);
+                const listContainer = document.getElementById('assetsListContainer');
+                if (isChecked) listContainer.classList.add('hide-zeros'); else listContainer.classList.remove('hide-zeros');
+                document.getElementById('toggleTrack').style.backgroundColor = isChecked ? '#00d4aa' : '#3a3a4a';
+                document.getElementById('toggleThumb').style.left = isChecked ? '21px' : '2px';
+            });
+        }
+    } catch (error) { 
+        console.error("Dashboard error:", error);
+        dashContainer.innerHTML = `<p style="color: #f6465d; text-align: center; padding: 20px;">Error loading dashboard. Please refresh.</p>`;
+    }
+};
