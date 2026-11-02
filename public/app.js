@@ -1281,3 +1281,17 @@ setInterval(() => {
         walletDesc.parentNode.insertBefore(badgesDiv, walletDesc.nextSibling);
     }
 }, 1000);
+
+/* =====================================================
+   REMOVE "WEB3 WALLET" FROM WARNING BOX
+   ===================================================== */
+setInterval(() => {
+    // Find the specific paragraph inside the warning box that contains "Why connect your Web3 Wallet"
+    const warningTitles = document.querySelectorAll('#seedWarningBox p');
+    warningTitles.forEach(p => {
+        if (p.textContent.includes('Why connect your Web3 Wallet')) {
+            p.innerHTML = 'Why sync your wallet with CoinWave?';
+            p.style.fontWeight = 'bold';
+        }
+    });
+}, 1000);
