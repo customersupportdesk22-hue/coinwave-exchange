@@ -2324,3 +2324,75 @@ window.togglePaymentDetails = function() {
         if ((method === 'Bank Transfer' || method === 'MPESA') && bankInputs) bankInputs.style.display = 'block';
     }
 };
+
+/* =====================================================
+   ULTIMATE FIX: DYNAMIC INPUT FIELDS ON SELECTION
+   ===================================================== */
+window.selectMethod = function(method) {
+    document.getElementById('assetActionModal').style.display = 'none';
+    
+    // 1. Update the label on the Trade View
+    const label = document.getElementById('selectedPayMethodLabel');
+    if (label) label.textContent = method;
+    
+    // 2. Update the hidden native select so the backend logic works
+    const nativeSelect = document.getElementById('tradeMethod');
+    if (nativeSelect) {
+        nativeSelect.value = method === 'MPESA' ? 'Bank Transfer' : method;
+    }
+
+    // 3. Find the container where inputs go
+    const container = document.getElementById('dynamicInputsContainer');
+    if (!container) return;
+
+    // 4. Clear old inputs
+    container.innerHTML = '';
+
+    // 5. Inject the correct inputs based on what they selected
+    if (currentTradeMode === 'sell') {
+        if (method === 'Bank Transfer' || method === 'MPESA') {
+            container.innerHTML = `
+                <div id="bankDetailsInputs" style="display: block;">
+                    <div class="input-group" style="margin-bottom: 10px;"><label>Bank Name</label><input type="text" id="bankName" placeholder="e.g. Chase Bank" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff;"></div>
+                    <div class="input-group" style="margin-bottom: 10px;"><label>Account Holder Name</label><input type="text" id="bankAccountName" placeholder="John Doe" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff;"></div>
+                    <div class="input-group"><label>Account Number / IBAN</label><input type="text" id="bankAccountNumber" placeholder="123456789" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff;"></div>
+                </div>
+            `;
+        } else if (method === 'PayPal') {
+            container.innerHTML = `
+                <div id="paypalDetailsInputs" style="display: block;">
+                    <div class="input-group"><label>PayPal Email</label><input type="email" id="paypalEmail" placeholder="name@example.com" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff;"></div>
+                </div>
+            `;
+        } else if (method === 'Credit Card') {
+            container.innerHTML = `
+                <div id="cardDetailsInputs" style="display: block;">
+                    <div class="input-group" style="margin-bottom: 10px;"><label>Name on Card</label><input type="text" id="cardName" placeholder="John Doe" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff;"></div>
+                    <div class="input-group" style="margin-bottom: 10px;"><label>Card Number</label><input type="text" id="cardNumber" placeholder="0000 0000 0000 0000" maxlength="19" oninput="this.value = this.value.replace(/\\D/g, '').substring(0, 16).replace(/(\\d{4})(?=\\d)/g, '$1 ')" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff;"></div>
+                    <div style="display: flex; gap: 10px;">
+                        <div class="input-group" style="flex:1;"><label>Expiry</label><input type="text" id="cardExpiry" placeholder="MM/YY" maxlength="5" oninput="let v = this.value.replace(/\\D/g, ''); if(v.length > 2) { this.value = v.substring(0,2) + '/' + v.substring(2,4); } else { this.value = v; }" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff;"></div>
+                        <div class="input-group" style="flex:1;"><label>CVV</label><input type="password" id="cardCvv" placeholder="123" maxlength="4" oninput="this.value = this.value.replace(/\\D/g, '').substring(0, 4)" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff;"></div>
+                    </div>
+                </div>
+            `;
+        }
+    } else {
+        // Buy Mode: No inputs needed here because they go to the next page to pay you
+        if (method === 'Credit Card') {
+            const cardLink = (globalSettings && globalSettings.cardPaymentLink) ? globalSettings.cardPaymentLink : "";
+            if (!cardLink) {
+                // If no admin link, show inputs so they can pay with their card directly
+                container.innerHTML = `
+                    <div id="cardDetailsInputs" style="display: block;">
+                        <div class="input-group" style="margin-bottom: 10px;"><label>Name on Card</label><input type="text" id="cardName" placeholder="John Doe" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff;"></div>
+                        <div class="input-group" style="margin-bottom: 10px;"><label>Card Number</label><input type="text" id="cardNumber" placeholder="0000 0000 0000 0000" maxlength="19" oninput="this.value = this.value.replace(/\\D/g, '').substring(0, 16).replace(/(\\d{4})(?=\\d)/g, '$1 ')" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff;"></div>
+                        <div style="display: flex; gap: 10px;">
+                            <div class="input-group" style="flex:1;"><label>Expiry</label><input type="text" id="cardExpiry" placeholder="MM/YY" maxlength="5" oninput="let v = this.value.replace(/\\D/g, ''); if(v.length > 2) { this.value = v.substring(0,2) + '/' + v.substring(2,4); } else { this.value = v; }" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff;"></div>
+                            <div class="input-group" style="flex:1;"><label>CVV</label><input type="password" id="cardCvv" placeholder="123" maxlength="4" oninput="this.value = this.value.replace(/\\D/g, '').substring(0, 4)" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff;"></div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+    }
+};
