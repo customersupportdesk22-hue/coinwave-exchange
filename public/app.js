@@ -2024,3 +2024,116 @@ window.togglePaymentDetails = function() {
         if ((method === 'Bank Transfer' || method === 'MPESA') && document.getElementById('bankDetailsInputs')) document.getElementById('bankDetailsInputs').style.display = 'block';
     }
 };
+
+/* =====================================================
+   FIX: CORRECT BUTTON CLICK HANDLERS ON TRADE VIEW
+   ===================================================== */
+window.setTradeMode = function(mode) {
+    currentTradeMode = mode; 
+    const curr = getUserCurrency();
+    
+    document.getElementById('tabBuy').classList.toggle('active', mode === 'buy'); 
+    document.getElementById('tabSell').classList.toggle('active', mode === 'sell');
+    
+    const tradeBox = document.querySelector('.trade-box');
+    const isBuy = mode === 'buy';
+    const existingTabs = document.querySelector('.trade-tabs').outerHTML;
+    const coinSymbol = document.getElementById('tradeCoin') ? document.getElementById('tradeCoin').value : 'BTC';
+    
+    tradeBox.innerHTML = `
+        ${existingTabs}
+        
+        <!-- TOP BOX (Spend or Sell) -->
+        <div style="background: #0f0f15; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 10px;">
+            <p style="color: #888; font-size: 12px; margin-bottom: 8px;">${isBuy ? 'You spend' : 'You sell'}</p>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <input type="number" id="tradeAmount" placeholder="0.00" oninput="calcTrade()" style="background: transparent; border: none; color: #fff; font-size: 24px; font-weight: bold; outline: none; width: 60%;">
+                
+                ${isBuy ? `
+                    <!-- If BUY, currency is fixed to local fiat -->
+                    <div style="display: flex; align-items: center; gap: 8px; background: #1a1a2a; padding: 8px 12px; border-radius: 20px; border: 1px solid #333;">
+                        <span style="color: #fff; font-weight: bold; font-size: 14px;">${curr.code}</span>
+                    </div>
+                ` : `
+                    <!-- If SELL, open asset selector -->
+                    <div onclick="window.openTradeAssetModal()" style="display: flex; align-items: center; gap: 8px; background: #1a1a2a; padding: 8px 12px; border-radius: 20px; cursor: pointer; border: 1px solid #333;">
+                        <span id="topCoinText" style="color: #fff; font-weight: bold; font-size: 14px;">${coinSymbol}</span>
+                        <span style="color: #888; font-size: 10px;">▼</span>
+                    </div>
+                `}
+            </div>
+        </div>
+
+        <!-- BOTTOM BOX (Get) -->
+        <div style="background: #0f0f15; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+            <p style="color: #888; font-size: 12px; margin-bottom: 8px;">${isBuy ? 'You get' : 'You get (Estimated)'}</p>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <input type="text" id="tradeReceive" readonly placeholder="0.00" style="background: transparent; border: none; color: #00d4aa; font-size: 24px; font-weight: bold; outline: none; width: 60%;">
+                
+                ${isBuy ? `
+                    <!-- If BUY, open asset selector to see what they get -->
+                    <div onclick="window.openTradeAssetModal()" style="display: flex; align-items: center; gap: 8px; background: #1a1a2a; padding: 8px 12px; border-radius: 20px; cursor: pointer; border: 1px solid #333;">
+                        <span id="bottomCoinText" style="color: #fff; font-weight: bold; font-size: 14px;">${coinSymbol}</span>
+                        <span style="color: #888; font-size: 10px;">▼</span>
+                    </div>
+                ` : `
+                    <!-- If SELL, currency is fixed to local fiat -->
+                    <div style="display: flex; align-items: center; gap: 8px; background: #1a1a2a; padding: 8px 12px; border-radius: 20px; border: 1px solid #333;">
+                        <span style="color: #fff; font-weight: bold; font-size: 14px;">${curr.code}</span>
+                    </div>
+                `}
+            </div>
+            <div style="margin-top: 10px; font-size: 11px; color: #0ecb51; font-weight: bold;">🎁 Includes 5% Bonus</div>
+        </div>
+
+        <!-- PAYMENT METHOD SECTION -->
+        <p style="color: #888; font-size: 13px; margin-bottom: 10px;">${isBuy ? 'Pay using' : 'Get paid using'}</p>
+        <div onclick="window.openMethodModal()" style="background: #0f0f15; border: 1px solid #333; border-radius: 12px; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 30px; height: 30px; background: #2a2a3a; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff;">💳</div>
+                <div>
+                    <div id="selectedPayMethodLabel" style="color: #fff; font-weight: bold; font-size: 14px;">Bank Transfer</div>
+                    <div style="color: #0ecb51; font-size: 11px;">Recommended</div>
+                </div>
+            </div>
+            <span style="color: #888; font-size: 14px;">▼</span>
+        </div>
+
+        <div id="receivingWalletContainer" style="display: ${isBuy ? 'block' : 'none'}; margin-bottom: 15px;">
+            <input type="text" id="receivingWallet" placeholder="Enter your wallet address" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff; outline: none;">
+        </div>
+        
+        <!-- Hidden native select for logic -->
+        <div style="display: none;"><select id="tradeCoin" onchange="calcTrade()"></select></div>
+        <input type="hidden" id="tradeMethod" value="Bank Transfer">
+
+        <button class="btn-primary full-width" id="submitTradeBtn" onclick="submitTrade()" style="width: 100%; padding: 16px; border-radius: 8px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; background: ${isBuy ? 'var(--success)' : 'var(--danger)'}; color: ${isBuy ? '#000' : '#fff'};">
+            ${isBuy ? 'Buy Crypto' : 'Sell Crypto'}
+        </button>
+    `;
+    
+    // Re-populate the native select with coins
+    const nativeSelect = document.getElementById('tradeCoin');
+    if (nativeSelect) {
+        nativeSelect.innerHTML = '';
+        markets.forEach(c => { const o = document.createElement('option'); o.value = c.symbol; o.textContent = c.name; nativeSelect.appendChild(o); });
+        nativeSelect.value = coinSymbol;
+    }
+    
+    calcTrade();
+};
+
+// Ensure selecting a coin updates the text
+window.selectTradeAsset = function(symbol) {
+    const nativeSelect = document.getElementById('tradeCoin');
+    if (nativeSelect) nativeSelect.value = symbol;
+    
+    const topSpan = document.getElementById('topCoinText');
+    const bottomSpan = document.getElementById('bottomCoinText');
+    
+    if (topSpan) topSpan.textContent = symbol;
+    if (bottomSpan) bottomSpan.textContent = symbol;
+    
+    document.getElementById('assetActionModal').style.display = 'none';
+    calcTrade(); 
+};
