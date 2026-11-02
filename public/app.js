@@ -731,3 +731,28 @@ window.showBuyCheckoutPage = function(symbol, cryptoAmount, fiatAmount, method) 
     createPageView('buyCheckoutPage', 'Complete Payment', content);
     showView('buyCheckoutPage');
 };
+
+/* =====================================================
+   FIX: FORMAT PRICE IN TOP GAINERS CARDS
+   ===================================================== */
+const originalLoadMarkets = window.loadMarkets;
+window.loadMarkets = function() {
+    if(originalLoadMarkets) originalLoadMarkets();
+    
+    const glList = document.getElementById('gainersLosersList');
+    if(glList && typeof markets !== 'undefined') {
+        const sorted = [...markets].sort((a,b) => b.change - a.change);
+        const top = [...sorted.slice(0, 3), ...sorted.slice(-3)];
+        
+        glList.innerHTML = top.map(c => {
+            // Format the price properly (max 6 decimals)
+            let formattedPrice = c.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 6});
+            return `
+            <div class="gl-card">
+                <div style="font-size:11px; color:#888;">${c.symbol}</div>
+                <div style="font-weight:bold; margin: 5px 0; font-size:13px;">$${formattedPrice}</div>
+                <div class="${c.change >= 0 ? 'up' : 'down'}" style="font-size:11px;">${c.change >= 0 ? '↑' : '↓'} ${Math.abs(c.change).toFixed(2)}%</div>
+            </div>`;
+        }).join('');
+    }
+};
