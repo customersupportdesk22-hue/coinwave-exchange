@@ -10,25 +10,11 @@
     --border: #2a2a3a;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent !important; }
 body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Inter', -apple-system, sans-serif; overflow-x: hidden; }
 a { text-decoration: none; color: inherit; }
-button { font-family: inherit; cursor: pointer; }
-
-/* ===== PREMIUM NAVBAR ===== */
-.premium-nav {
-    position: sticky; top: 0; z-index: 1000;
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 12px 20px;
-    background: rgba(15, 15, 21, 0.85);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(42, 42, 58, 0.5);
-}
-.nav-links { display: flex; align-items: center; gap: 15px; }
-.nav-links a { font-size: 13px; font-weight: 600; color: var(--text-muted); transition: color 0.2s; }
-.nav-links a:hover { color: var(--accent); }
-.nav-links .btn-primary { background: #fcd535 !important; color: #000 !important; padding: 8px 14px !important; border-radius: 6px !important; white-space: nowrap !important; font-size: 13px !important; }
-.profile-avatar-nav { background: linear-gradient(135deg, #00d4aa 0%, #007a62 100%) !important; color: #fff !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; width: 32px !important; height: 32px !important; border-radius: 50% !important; font-weight: bold !important; }
+button { font-family: inherit; cursor: pointer; touch-action: manipulation; transition: transform 0.1s ease; }
+button:active { transform: scale(0.97); }
 
 /* ===== TICKER ===== */
 .ticker-wrap { width: 100%; overflow: hidden; background: #09090d; border-bottom: 1px solid var(--border); padding: 8px 0; }
@@ -39,11 +25,28 @@ button { font-family: inherit; cursor: pointer; }
 .up { color: var(--success) !important; }
 .down { color: var(--danger) !important; }
 
+/* ===== PREMIUM NAVBAR ===== */
+.premium-nav {
+    position: sticky; top: 0; z-index: 1000;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 20px;
+    background: rgba(15, 15, 21, 0.9);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+}
+.nav-links { display: flex; align-items: center; gap: 15px; }
+.nav-links a { font-size: 13px; font-weight: 600; color: var(--text-muted); transition: color 0.2s; }
+.nav-links a:hover { color: var(--accent); }
+.nav-links .btn-primary { background: #fcd535 !important; color: #000 !important; padding: 8px 16px !important; border-radius: 6px !important; white-space: nowrap !important; font-size: 13px !important; font-weight: 700; }
+.profile-avatar-nav { background: linear-gradient(135deg, #00d4aa 0%, #007a62 100%) !important; color: #fff !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; width: 32px !important; height: 32px !important; border-radius: 50% !important; font-weight: bold !important; }
+#securityNavBtn { background: #2a2a3a !important; color: #fff !important; padding: 8px 12px !important; border-radius: 6px !important; border: 1px solid #444 !important; font-size: 12px !important; font-weight: 600 !important; }
+
 /* ===== HERO SECTION ===== */
 .hero-container { display: flex; flex-direction: column; padding: 30px 15px; max-width: 1200px; margin: 0 auto; }
 @media(min-width: 768px) { .hero-container { flex-direction: row; align-items: center; justify-content: space-between; padding: 80px 20px; } }
 .hero-content { flex: 1; max-width: 600px; }
-.trust-badge { display: inline-block; background: rgba(0, 212, 170, 0.1); color: var(--accent); padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-bottom: 15px; border: 1px solid rgba(0, 212, 170, 0.2); }
+.badge-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
+.trust-badge { display: inline-flex; align-items: center; background: rgba(0, 212, 170, 0.1); color: var(--accent); padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; border: 1px solid rgba(0, 212, 170, 0.2); }
 .hero-title { font-size: 32px; line-height: 1.2; font-weight: 800; margin-bottom: 15px; }
 .gradient-text { background: linear-gradient(90deg, #00d4aa, #fcd535); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .hero-subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; line-height: 1.5; }
@@ -68,7 +71,6 @@ button { font-family: inherit; cursor: pointer; }
 .market-symbol-text { font-size: 10px; color: var(--text-muted); }
 .market-price { text-align: right; font-weight: 600; font-size: 13px; }
 .market-change { text-align: right; font-weight: 600; font-size: 12px; }
-
 .gainers-losers-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
 .gainers-losers-row::-webkit-scrollbar { display: none; }
 .gl-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; min-width: 120px; flex-shrink: 0; }
@@ -92,12 +94,7 @@ button { font-family: inherit; cursor: pointer; }
 .asset-amount, .asset-value { text-align: right; font-weight: 600; font-size: 13px; }
 .hide-zeros .zero-row { display: none !important; }
 
-/* Web3 Card */
 .web3-wallet-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
-.status-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
-.status-badge.approved { background: rgba(14, 203, 81, 0.1); color: var(--success); }
-.status-badge.pending { background: rgba(252, 213, 53, 0.1); color: #fcd535; }
-.status-badge.disconnected { background: rgba(255, 255, 255, 0.1); color: var(--text-muted); }
 .trust-sections { background: var(--bg-card); border-radius: 16px; padding: 25px; text-align: center; color: var(--text-muted); border: 1px solid var(--border); }
 
 /* ===== TRADE VIEW ===== */
@@ -108,435 +105,39 @@ button { font-family: inherit; cursor: pointer; }
 .trade-tab.active#tabBuy { background: var(--success); color: #000; box-shadow: 0 4px 15px rgba(14, 203, 81, 0.3); }
 .trade-tab.active#tabSell { background: var(--danger); color: #fff; box-shadow: 0 4px 15px rgba(246, 70, 93, 0.3); }
 
-/* Warnings */
+/* ===== WARNINGS & MODALS ===== */
 .warning-banner { background: rgba(246, 70, 93, 0.1); border: 1px solid rgba(246, 70, 93, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 20px; display: flex; gap: 10px; align-items: flex-start; }
 .warning-banner p { color: #f6465d; font-size: 12px; margin: 0; line-height: 1.4; }
 
-/* Modals */
-#assetActionModal, #paymentInstructionModal, #customAlertModal { position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background: rgba(0,0,0,0.85) !important; backdrop-filter: blur(5px) !important; z-index: 99999 !important; align-items: center !important; justify-content: center !important; padding: 20px !important; overflow-y: auto !important; }
-.modal-content { background: var(--bg-card); border-radius: 16px; padding: 25px; width: 100%; max-width: 400px; position: relative; border: 1px solid var(--border); margin: auto !important; }
-.custom-alert-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 25px; width: 100%; max-width: 340px; text-align: center; margin: auto !important; }
+#assetActionModal, #paymentInstructionModal, #customAlertModal, #countrySelectorModal { position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background: rgba(0,0,0,0.85) !important; backdrop-filter: blur(5px) !important; z-index: 99999 !important; align-items: center !important; justify-content: center !important; padding: 20px !important; overflow-y: auto !important; }
+.modal-content { background: var(--bg-card); border-radius: 16px; padding: 25px; width: 100%; max-width: 400px; position: relative; border: 1px solid var(--border); margin: auto !important; animation: modalPop 0.25s ease forwards; }
+.custom-alert-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 25px; width: 100%; max-width: 340px; text-align: center; margin: auto !important; animation: modalPop 0.25s ease forwards; }
 .custom-alert-icon { width: 55px; height: 55px; border-radius: 50%; background: rgba(246, 70, 93, 0.1); display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; }
 
-/* Toast */
+@keyframes modalPop { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+/* ===== TOAST & VIEWS ===== */
 .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--success); color: #000; padding: 12px 24px; border-radius: 8px; font-weight: bold; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 10000; }
 .toast.show { opacity: 1; }
-
-/* Views */
 .app-view { display: none; animation: fadeIn 0.3s ease; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-/* Mobile */
+/* ===== MOBILE RESPONSIVENESS ===== */
 @media (max-width: 768px) {
+    .premium-nav { padding: 10px 15px !important; gap: 5px !important; }
+    .logo span { font-size: 16px !important; }
+    .nav-links { gap: 8px !important; }
+    .nav-links a { font-size: 11px !important; }
+    .nav-links .btn-primary { padding: 6px 10px !important; font-size: 11px !important; }
+    .profile-avatar-nav { width: 28px !important; height: 28px !important; font-size: 12px !important; }
+    #securityNavBtn { padding: 6px 8px !important; font-size: 10px !important; }
+    .hero-title { font-size: 32px !important; }
+    .hero-cta { width: 100% !important; gap: 10px !important; }
     .market-table-header, .market-row { grid-template-columns: 25px 2fr 1fr 1fr; padding: 10px 5px; }
     .asset-table-header, .asset-row { padding: 10px 5px; }
 }
 
-/* Form Inputs general */
+/* Hide number input spinners */
 input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 input[type="number"] { -moz-appearance: textfield; }
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-dark); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-/* =====================================================
-   COMPACT HERO & GAINERS SECTION (Mobile Fix)
-   ===================================================== */
-@media (max-width: 768px) {
-    /* 1. Shrink Hero Buttons */
-    .btn-primary-large, .btn-outline-large {
-        padding: 12px 20px !important;
-        font-size: 14px !important;
-        width: 100% !important;
-    }
-    .hero-cta {
-        gap: 10px !important;
-    }
-
-    /* 2. Shrink the Floating Chart Card */
-    .floating-card {
-        padding: 15px !important;
-        max-width: 280px !important;
-        margin: 0 auto !important;
-    }
-    .card-price {
-        font-size: 20px !important;
-    }
-
-    /* 3. Fix Top Gainers & Losers Cards */
-    .gl-card {
-        min-width: 130px !important;
-        padding: 10px 12px !important;
-    }
-    .gl-card div:nth-child(1) { /* Symbol */
-        font-size: 11px !important; 
-    }
-    .gl-card div:nth-child(2) { /* Price */
-        font-size: 12px !important; 
-        margin: 4px 0 !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        max-width: 110px !important;
-    }
-    .gl-card div:nth-child(3) { /* Change % */
-        font-size: 11px !important; 
-    }
-}
-
-/* =====================================================
-   ULTRA-PREMIUM TAP & CLICK FEEDBACK
-   ===================================================== */
-
-/* 1. Remove the ugly blue highlight on mobile */
-* {
-    -webkit-tap-highlight-color: transparent !important;
-}
-
-/* 2. Add smooth transitions and disable text selection on interactive elements */
-button, .market-row, .asset-row, .action-btn, .trade-tab, .gl-card, a, select {
-    -webkit-user-select: none !important; 
-    user-select: none !important;
-    touch-action: manipulation !important; /* Removes the 300ms delay */
-    transition: transform 0.1s ease, background-color 0.2s ease, opacity 0.2s ease !important;
-}
-
-/* 3. The "Press" effect (scales down slightly when touched) */
-button:active, .market-row:active, .asset-row:active, .action-btn:active, .trade-tab:active, .gl-card:active {
-    transform: scale(0.96) !important;
-    opacity: 0.8 !important;
-}
-
-/* 4. Smooth Modal Pop-in Animation */
-.modal-content, .custom-alert-box, .modal-overlay > div {
-    animation: modalPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-@keyframes modalPop {
-    0% { transform: scale(0.9); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-/* 5. Smooth View Transitions (switching pages) */
-.app-view {
-    animation: fadeInView 0.3s ease forwards;
-}
-
-@keyframes fadeInView {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* =====================================================
-   SEAMLESS DASHBOARD: CONNECT ASSETS & TRUST SECTIONS
-   ===================================================== */
-
-/* 1. Remove the bottom margin from the Assets box and square off the bottom corners */
-.assets-section {
-    margin-bottom: 0 !important;
-    border-bottom-left-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
-    border-bottom: none !important; /* Remove bottom border so it connects perfectly */
-}
-
-/* 2. Remove the top margin from the Trust section and square off the top corners */
-.trust-sections {
-    margin-top: 0 !important;
-    border-top-left-radius: 0 !important;
-    border-top-right-radius: 0 !important;
-    border-top: 1px solid #2a2a3a !important; /* Add a subtle divider line */
-    background: #1a1a2a !important;
-}
-
-/* 3. Optional: Tighten up the padding inside the trust section so it's not too tall */
-.trust-sections {
-    padding: 20px 15px !important;
-}
-
-/* =====================================================
-   HIDE UGLY SCROLLBAR (Make it feel like a native app)
-   ===================================================== */
-
-/* 1. Hide scrollbar for Chrome, Safari and Opera */
-::-webkit-scrollbar {
-    display: none !important;
-    width: 0px !important;
-    background: transparent !important;
-}
-
-/* 2. Hide scrollbar for IE, Edge and Firefox */
-html, body {
-    -ms-overflow-style: none !important;  /* IE and Edge */
-    scrollbar-width: none !important;  /* Firefox */
-    overflow-x: hidden !important; /* Prevents horizontal scrolling */
-}
-
-/* 3. Ensure internal scrollable areas (like modals) also hide the bar */
-.modal-content, .assets-section {
-    -ms-overflow-style: none !important;
-    scrollbar-width: none !important;
-}
-.modal-content::-webkit-scrollbar, .assets-section::-webkit-scrollbar {
-    display: none !important;
-}
-
-/* =====================================================
-   PROFESSIONAL DASHBOARD SPACING & NAVBAR FIX
-   ===================================================== */
-
-/* 1. Fix the Navbar spacing */
-.premium-nav {
-    padding: 12px 20px !important;
-}
-.logo {
-    margin-right: auto !important; /* Push everything else to the right */
-}
-.nav-links {
-    gap: 18px !important; /* More space between links */
-    align-items: center !important;
-}
-.nav-links a {
-    font-size: 13px !important;
-    white-space: nowrap !important;
-}
-
-/* 2. Fix the "Security" button style */
-#securityNavBtn {
-    color: #fff !important;
-    background: #2a2a3a !important;
-    padding: 8px 12px !important;
-    border-radius: 6px !important;
-    border: 1px solid #333 !important;
-    font-size: 12px !important;
-    font-weight: 600 !important;
-}
-
-/* 3. Fix the Wallet Card Header spacing */
-#web3WalletCard .wallet-header {
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    margin-bottom: 20px !important;
-}
-#web3WalletCard .wallet-header > div {
-    display: flex !important;
-    align-items: center !important;
-    gap: 10px !important; /* Space between icon and text */
-}
-#web3WalletCard .wallet-header h3 {
-    font-size: 16px !important;
-    margin: 0 !important;
-    font-weight: 600 !important;
-}
-#walletStatusBadge {
-    font-size: 10px !important;
-    padding: 5px 10px !important;
-    white-space: nowrap !important;
-}
-
-/* 4. Give the Dashboard more breathing room */
-.dash-container {
-    padding: 20px 15px !important;
-    max-width: 600px !important;
-    margin: 0 auto !important;
-}
-
-/* =====================================================
-   MOBILE NAVBAR & DASHBOARD BOTTOM FIX
-   ===================================================== */
-
-/* 1. Fix Navbar overflow on mobile */
-@media (max-width: 768px) {
-    .premium-nav {
-        padding: 10px 12px !important;
-        gap: 5px !important;
-    }
-    .logo span {
-        font-size: 16px !important;
-    }
-    .nav-links {
-        gap: 8px !important;
-    }
-    .nav-links a {
-        font-size: 11px !important;
-    }
-    #securityNavBtn {
-        padding: 6px 8px !important;
-        font-size: 11px !important;
-    }
-    .profile-avatar-nav {
-        width: 28px !important;
-        height: 28px !important;
-        font-size: 12px !important;
-    }
-    .btn-logout {
-        font-size: 11px !important;
-        padding: 6px 8px !important;
-    }
-}
-
-/* 2. Make the Dashboard footer (Trust & Assets) seamless */
-.assets-section {
-    margin-bottom: 0 !important;
-    border-bottom-left-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
-    border-bottom: none !important;
-}
-.trust-sections {
-    margin-top: 0 !important;
-    border-top-left-radius: 0 !important;
-    border-top-right-radius: 0 !important;
-    border-top: 1px solid #2a2a3a !important;
-    background: #1a1a2a !important;
-    padding: 30px 15px !important; /* Adds breathing room at the bottom */
-    margin-bottom: 20px !important;
-}
-
-/* 3. Ensure the "View History" button sits perfectly between them */
-#viewHistoryBtn {
-    margin: 0 !important;
-    border-radius: 0 !important;
-    border-left: none !important;
-    border-right: none !important;
-    border-bottom: 1px solid #2a2a3a !important;
-    background: #1a1a2a !important;
-    padding: 18px !important;
-}
-
-/* =====================================================
-   NAVBAR SPACING FIX (Space between Logo and Links)
-   ===================================================== */
-
-/* 1. Add a guaranteed gap between the Logo and the Links */
-.premium-nav {
-    gap: 20px !important; 
-}
-
-/* 2. Prevent the logo from shrinking and squishing the text */
-.logo {
-    flex-shrink: 0 !important;
-    margin-right: auto !important; /* Pushes links to the right */
-}
-
-/* 3. Make sure the links stay on one line and have space */
-.nav-links {
-    display: flex !important;
-    align-items: center !important;
-    gap: 12px !important;
-}
-
-/* 4. Mobile specific tweaks to ensure it fits perfectly */
-@media (max-width: 768px) {
-    .premium-nav {
-        padding: 10px 15px !important;
-        gap: 10px !important;
-    }
-    .logo span {
-        font-size: 18px !important;
-    }
-    .nav-links {
-        gap: 10px !important;
-    }
-}
-
-/* =====================================================
-   FIX: FORCE BADGES TO STAY ON ONE LINE
-   ===================================================== */
-.badge-container {
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    gap: 10px !important;
-    overflow-x: auto !important;
-    white-space: nowrap !important;
-    padding-bottom: 5px;
-    /* Hide scrollbar for a clean look */
-    -ms-overflow-style: none;  
-    scrollbar-width: none;  
-}
-.badge-container::-webkit-scrollbar {
-    display: none;
-}
-#dynamicTrustBadge, #bonusBadge {
-    flex-shrink: 0 !important; /* Prevents them from squishing */
-    margin-bottom: 0 !important;
-}
-
-/* =====================================================
-   FIX: BADGE LAYOUT (No More Cut-offs or Jumping)
-   ===================================================== */
-.badge-container {
-    display: flex !important;
-    flex-wrap: wrap !important; /* Allows them to stack if the text is long */
-    gap: 10px !important;
-    justify-content: flex-start !important;
-    align-items: center !important;
-    margin-bottom: 15px !important;
-    width: 100% !important;
-    overflow: visible !important; /* Remove scrollbar */
-}
-
-#dynamicTrustBadge, #bonusBadge {
-    margin: 0 !important;
-    padding: 8px 14px !important;
-    font-size: 12px !important;
-    font-weight: 600 !important;
-    border-radius: 20px !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    white-space: nowrap !important;
-}
-
-/* Keep the specific colors consistent */
-#dynamicTrustBadge {
-    background: rgba(0, 212, 170, 0.1) !important;
-    color: #00d4aa !important;
-    border: 1px solid rgba(0, 212, 170, 0.2) !important;
-}
-
-#bonusBadge {
-    background: rgba(14, 203, 81, 0.1) !important;
-    color: #0ecb51 !important;
-    border: 1px solid rgba(14, 203, 81, 0.3) !important;
-}
-
-/* =====================================================
-   FINAL LAYOUT FIX: BADGES & GAINERS
-   ===================================================== */
-
-/* 1. Fix the Badge layout (No more awkward stacking) */
-.badge-container {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 8px !important;
-    margin-bottom: 20px !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-}
-#dynamicTrustBadge, #bonusBadge {
-    display: inline-flex !important;
-    margin: 0 !important;
-    padding: 6px 12px !important;
-    font-size: 11px !important;
-    font-weight: 600 !important;
-    border-radius: 20px !important;
-    white-space: nowrap !important;
-}
-#dynamicTrustBadge { background: rgba(0, 212, 170, 0.1) !important; color: #00d4aa !important; border: 1px solid rgba(0, 212, 170, 0.2) !important; }
-#bonusBadge { background: rgba(14, 203, 81, 0.1) !important; color: #0ecb51 !important; border: 1px solid rgba(14, 203, 81, 0.3) !important; }
-
-/* 2. Fix Top Gainers Overflow */
-.gainers-losers-row {
-    display: flex !important;
-    gap: 10px !important;
-    overflow-x: auto !important;
-    padding-bottom: 15px !important;
-    padding-right: 15px !important; /* Prevents the last card from touching the edge */
-    scrollbar-width: none !important;
-    -webkit-overflow-scrolling: touch !important;
-}
-.gainers-losers-row::-webkit-scrollbar { display: none !important; }
-.gl-card {
-    min-width: 110px !important;
-    flex-shrink: 0 !important;
-    padding: 12px !important;
-}
+::-webkit-scrollbar { width: 0px; background: transparent; }
