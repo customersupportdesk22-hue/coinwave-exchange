@@ -2378,3 +2378,78 @@ window.executeWithdrawal = function(symbol, balance) {
     showCustomAlert('Withdrawal Submitted', `Your request to withdraw ${amount} ${symbol} has been submitted.`);
     showView('dashboardView');
 };
+
+/* =====================================================
+   UPGRADE: PENDING BANNER WITH "IGNORE IF PAID" NOTICE
+   ===================================================== */
+window.checkPendingOrders = async function() {
+    if (!currentUser) return;
+    const dashContainer = document.querySelector('.dash-container');
+    if (!dashContainer) return;
+
+    try {
+        const res = await fetch(`/api/orders/user/${currentUser.email}`);
+        const orders = await res.json();
+
+        // 1. Remove ALL old banners first
+        document.querySelectorAll('.pending-banner').forEach(el => el.remove());
+
+        // 2. Find ALL pending orders
+        const pendingOrders = orders.filter(o => o.status === 'Pending' || o.status === 'pending');
+
+        if (pendingOrders.length === 0) return;
+
+        // 3. Create a container for the banners
+        const bannerContainer = document.createElement('div');
+        bannerContainer.id = 'pendingBannerContainer';
+        bannerContainer.style.cssText = "display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;";
+
+        // 4. Loop through and create a banner for each pending order
+        pendingOrders.forEach(order => {
+            const isBuy = order.mode === 'buy';
+            
+            const title = isBuy ? "Pending Fiat Payment" : "Pending Crypto Transfer";
+            const actionText = isBuy 
+                ? `You have an unpaid order for ${order.getAmount} ${order.getCurrency}. Please complete your payment.` 
+                : `You have a pending order to sell ${order.sendAmount} ${order.sendCurrency}. Please send the crypto to complete it.`;
+            
+            // THE NEW REASSURANCE TEXT
+            const reassuranceText = isBuy
+                ? "✅ Already paid? Please ignore this notice while our team manually verifies your payment."
+                : "✅ Already sent the crypto? Please ignore this notice while we verify the transaction on the blockchain.";
+
+            const btnText = isBuy ? "Complete Payment" : "View Crypto Address";
+            const icon = isBuy ? "💳" : "🪙";
+
+            const banner = document.createElement('div');
+            banner.className = 'pending-banner';
+            banner.style.cssText = "background: rgba(252, 213, 53, 0.1); border: 1px solid #fcd535; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 12px;";
+            
+            banner.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; align-items: flex-start; gap: 10px;">
+                        <span style="font-size: 20px;">${icon}</span>
+                        <div>
+                            <p style="color: #fcd535; font-weight: bold; font-size: 14px; margin: 0 0 4px 0;">${title}</p>
+                            <p style="color: #ccc; font-size: 13px; margin: 0;">${actionText}</p>
+                        </div>
+                    </div>
+                    <button onclick="window.resumeOrder('${order._id}', '${order.mode}')" style="background: #fcd535; color: #000; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; white-space: nowrap;">${btnText}</button>
+                </div>
+                
+                <!-- NEW REASSURANCE BOX -->
+                <div style="background: rgba(14, 203, 81, 0.1); border: 1px solid rgba(14, 203, 81, 0.2); padding: 10px; border-radius: 6px;">
+                    <p style="color: #0ecb51; font-size: 11px; margin: 0; line-height: 1.4;">${reassuranceText}</p>
+                </div>
+            `;
+            
+            bannerContainer.appendChild(banner);
+        });
+
+        // 5. Insert the stacked banners at the top of the dashboard
+        dashContainer.insertBefore(bannerContainer, dashContainer.firstChild);
+
+    } catch (e) {
+        console.log("Error checking pending orders:", e);
+    }
+};
