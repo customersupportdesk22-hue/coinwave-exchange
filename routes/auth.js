@@ -6,7 +6,7 @@ const User = require('../models/User');
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 
-// 1. Authentication Middleware
+// Middleware
 const authMiddleware = (req, res, next) => {
     const token = req.header('Authorization')?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'No token, authorization denied' });
@@ -19,7 +19,7 @@ const authMiddleware = (req, res, next) => {
     }
 };
 
-// 2. Register Route
+// Register
 router.post('/register', async (req, res) => {
     try {
         const { name, country, phone, email, password } = req.body;
@@ -38,7 +38,7 @@ router.post('/register', async (req, res) => {
     }
 });
 
-// 3. Login Route
+// Login (Updated with 2FA Check)
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -48,47 +48,25 @@ router.post('/login', async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
+        // IF 2FA IS ENABLED, DO NOT GIVE TOKEN YET
+        if (user.twoFactorEnabled) {
+            return res.json({ requires2FA: true, userId: user._id });
+        }
+
+        // Normal Login
         const token = jwt.sign({ id: user._id.toString(), email: user.email }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '7d' });
-        
         res.json({ token, user: { name: user.name, email: user.email, country: user.country } });
     } catch (error) {
         res.status(500).json({ message: "Server error" });
     }
 });
 
-// 4. Generate 2FA Secret and QR Code
-router.post('/generate-2fa', authMiddleware, async (req, res) => {
+// Verify 2FA during Login
+router.post('/verify-2fa-login', async (req, res) => {
     try {
-        const user = await User.findById(req.user.id);
-        if (!user) return res.status(404).json({ error: 'User not found' });
-
-        const secret = speakeasy.generateSecret({ name: `CoinWave (${user.email})` });
-        
-        // Bypass strict validation for older accounts missing phone numbers
-        await User.findByIdAndUpdate(req.user.id, { twoFactorSecret: secret.base32 });
-
-        const qrCodeUrl = await new Promise((resolve, reject) => {
-            QRCode.toDataURL(secret.otpauth_url, (err, data_url) => {
-                if (err) reject(err);
-                else resolve(data_url);
-            });
-        });
-
-        res.json({ secret: secret.base32, qrCodeUrl: qrCodeUrl });
-        
-    } catch (error) {
-        console.error("2FA Generate Error:", error); 
-        res.status(500).json({ error: error.message || 'Server error' }); 
-    }
-});
-
-// 5. Verify and Enable 2FA
-router.post('/enable-2fa', authMiddleware, async (req, res) => {
-    try {
-        const { token } = req.body;
-        const user = await User.findById(req.user.id);
-        
-        if (!user || !user.twoFactorSecret) return res.status(400).json({ error: '2FA not initialized' });
+        const { userId, token } = req.body;
+        const user = await User.findById(userId);
+        if (!user || !user.twoFactorSecret) return res.status(400).json({ message: "User not found or 2FA not set" });
 
         const verified = speakeasy.totp.verify({
             secret: user.twoFactorSecret,
@@ -97,14 +75,49 @@ router.post('/enable-2fa', authMiddleware, async (req, res) => {
         });
 
         if (verified) {
+            const jwtToken = jwt.sign({ id: user._id.toString(), email: user.email }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '7d' });
+            res.json({ token: jwtToken, user: { name: user.name, email: user.email, country: user.country } });
+        } else {
+            res.status(400).json({ message: "Invalid 2FA code" });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+// 2FA Setup Routes (Same as before)
+router.post('/generate-2fa', authMiddleware, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const secret = speakeasy.generateSecret({ name: `CoinWave (${user.email})` });
+        await User.findByIdAndUpdate(req.user.id, { twoFactorSecret: secret.base32 });
+
+        QRCode.toDataURL(secret.otpauth_url, (err, data_url) => {
+            if (err) return res.status(500).json({ error: 'Error generating QR' });
+            res.json({ secret: secret.base32, qrCodeUrl: data_url });
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+router.post('/enable-2fa', authMiddleware, async (req, res) => {
+    try {
+        const { token } = req.body;
+        const user = await User.findById(req.user.id);
+        if (!user || !user.twoFactorSecret) return res.status(400).json({ error: '2FA not initialized' });
+
+        const verified = speakeasy.totp.verify({ secret: user.twoFactorSecret, encoding: 'base32', token: token });
+        if (verified) {
             await User.findByIdAndUpdate(req.user.id, { twoFactorEnabled: true });
             res.json({ message: '2FA enabled successfully' });
         } else {
             res.status(400).json({ error: 'Invalid code' });
         }
     } catch (error) {
-        console.error("2FA Enable Error:", error);
-        res.status(500).json({ error: error.message || 'Server error' });
+        res.status(500).json({ error: 'Server error' });
     }
 });
 

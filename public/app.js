@@ -1880,3 +1880,85 @@ window.openTransactionHistoryPage = async function() {
         document.getElementById('historyPageList').innerHTML = '<p style="color: #f6465d; text-align: center;">Error loading history.</p>';
     }
 };
+
+/* =====================================================
+   FRONTEND LOGIN 2FA FLOW
+   ===================================================== */
+// Override handleLogin to catch the 2FA requirement
+const originalHandleLogin = window.handleLogin;
+window.handleLogin = async function() {
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    if (!email || !password) return showToast("Please fill all fields.");
+    
+    try {
+        const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+        const data = await res.json();
+        
+        if (res.ok) {
+            if (data.requires2FA) {
+                // 2FA is required! Change the form
+                window._tempUserId = data.userId;
+                document.getElementById('loginEmail').style.display = 'none';
+                document.getElementById('loginPassword').style.display = 'none';
+                document.querySelector('#loginForm .input-group').style.display = 'none'; // Hide Email label
+                document.querySelectorAll('#loginForm .input-group')[1].style.display = 'none'; // Hide Password label
+                
+                // Create 2FA input
+                if (!document.getElementById('login2faCode')) {
+                    const twoFactorHtml = `
+                        <div id="login2faContainer" class="input-group" style="text-align: center;">
+                            <label style="color: #00d4aa;">Enter 6-digit 2FA Code</label>
+                            <input type="text" id="login2faCode" placeholder="123456" maxlength="6" style="text-align: center; letter-spacing: 5px; font-size: 20px;">
+                        </div>
+                    `;
+                    document.getElementById('loginPassword').parentNode.insertAdjacentHTML('afterend', twoFactorHtml);
+                }
+                
+                // Change button
+                const btn = document.querySelector('#loginForm .btn-primary');
+                btn.textContent = 'Verify Code & Log In';
+                btn.onclick = window.submitLogin2FA;
+                
+            } else {
+                // Normal login success
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                checkAuthState(); 
+            }
+        } else { 
+            showToast(data.message); 
+        }
+    } catch (error) { showToast("Error connecting."); }
+};
+
+// Submit the 2FA code during login
+window.submitLogin2FA = async function() {
+    const code = document.getElementById('login2faCode').value;
+    if (code.length !== 6) return showToast("Enter a valid 6-digit code.");
+    
+    const btn = document.querySelector('#loginForm .btn-primary');
+    btn.textContent = 'Verifying...';
+    
+    try {
+        const res = await fetch('/api/auth/verify-2fa-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: window._tempUserId, token: code })
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            showToast("Login successful!");
+            checkAuthState(); 
+        } else {
+            showToast(data.message);
+            btn.textContent = 'Verify Code & Log In';
+        }
+    } catch (error) {
+        showToast("Error connecting.");
+        btn.textContent = 'Verify Code & Log In';
+    }
+};
