@@ -1785,3 +1785,98 @@ window.verify2FA = async function() {
         btn.textContent = 'Verify & Enable 2FA'; btn.disabled = false;
     }
 };
+
+/* =====================================================
+   PROFESSIONAL FULL-PAGE TRANSACTION HISTORY
+   ===================================================== */
+// 1. Remove the old inline history injection so the dashboard is clean
+setInterval(() => {
+    const oldHistorySection = document.getElementById('transactionHistorySection');
+    if (oldHistorySection) {
+        oldHistorySection.remove();
+    }
+
+    // 2. Add a "View History" button to the dashboard
+    const assetsSection = document.querySelector('.assets-section');
+    if (assetsSection && !document.getElementById('viewHistoryBtn')) {
+        const btnContainer = document.createElement('div');
+        btnContainer.style.cssText = "margin-top: 15px; text-align: center;";
+        btnContainer.innerHTML = `
+            <button id="viewHistoryBtn" onclick="window.openTransactionHistoryPage()" style="background: transparent; border: 1px solid #333; color: #00d4aa; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; transition: 0.2s;">
+                View Transaction History
+            </button>
+        `;
+        assetsSection.parentNode.insertBefore(btnContainer, assetsSection.nextSibling);
+    }
+}, 1000);
+
+// 3. Create the Full-Page View
+window.openTransactionHistoryPage = async function() {
+    const content = `
+        <div id="historyPageList" style="display: flex; flex-direction: column; gap: 10px;">
+            <p style="color: #888; font-size: 13px; text-align: center; padding: 20px;">Loading history...</p>
+        </div>
+    `;
+    
+    // Use your existing createPageView function to make it a full page
+    createPageView('historyPageView', 'Transaction History', content);
+    showView('historyPageView');
+
+    // Fetch and render the data
+    try {
+        const res = await fetch(`/api/orders/user/${currentUser.email}`);
+        const orders = await res.json();
+        const listContainer = document.getElementById('historyPageList');
+
+        if (!orders || orders.length === 0) {
+            listContainer.innerHTML = '<div style="text-align:center; padding: 40px; color: #888;"><div style="font-size: 30px; margin-bottom: 10px;">📭</div>No transactions yet.</div>';
+            return;
+        }
+
+        listContainer.innerHTML = orders.map(o => {
+            const isBuy = o.mode === 'buy';
+            const typeColor = isBuy ? '#0ecb51' : '#f6465d';
+            const typeText = isBuy ? 'BUY' : 'SELL';
+            
+            let statusColor = '#fcd535'; // Pending
+            if (o.status === 'Approved' || o.status === 'Completed') statusColor = '#0ecb51';
+            if (o.status === 'Rejected' || o.status === 'Failed') statusColor = '#f6465d';
+
+            // Fix the "USD USD" bug by cleaning the string
+            let sendStr = o.sendAmount ? o.sendAmount.toString() : '';
+            let getStr = o.getAmount ? o.getAmount.toString() : '';
+            
+            // If the string already contains "USD", remove the duplicate
+            if (sendStr.includes('USD') && o.sendCurrency === 'USD') {
+                // Do nothing, the string already has it
+            } else if (o.sendCurrency && !sendStr.includes(o.sendCurrency)) {
+                sendStr += ` ${o.sendCurrency}`;
+            }
+
+            if (getStr.includes('USD') && o.getCurrency === 'USD') {
+                // Do nothing
+            } else if (o.getCurrency && !getStr.includes(o.getCurrency)) {
+                getStr += ` ${o.getCurrency}`;
+            }
+
+            return `
+                <div class="card" style="background: #1a1a2a; border: 1px solid #333; border-radius: 12px; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div style="display: flex; flex-direction: column; gap: 5px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="color: ${typeColor}; font-weight: bold; font-size: 14px;">${typeText}</span>
+                            <span style="color: #fff; font-weight: 600; font-size: 14px;">${sendStr}</span>
+                        </div>
+                        <span style="color: #888; font-size: 11px;">${o.date || 'Just now'}</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="color: #fff; font-size: 14px; font-weight: 600;">${getStr}</div>
+                        <div style="color: ${statusColor}; font-size: 11px; font-weight: bold; margin-top: 5px; text-transform: uppercase;">${o.status || 'Pending'}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (e) {
+        document.getElementById('historyPageList').innerHTML = '<p style="color: #f6465d; text-align: center;">Error loading history.</p>';
+    }
+};
