@@ -860,3 +860,50 @@ window.loadDashboardData = async function() {
         dashContainer.innerHTML = `<p style="color: #f6465d; text-align: center; padding: 20px;">Error loading dashboard. Please refresh.</p>`;
     }
 };
+
+/* =====================================================
+   SURGICAL FIX: VIEW CRYPTO ADDRESS AFTER REFRESH
+   ===================================================== */
+// 1. Store the orders globally when the dashboard loads
+var originalLoadDashboardForResume = window.loadDashboardData;
+window.loadDashboardData = async function() {
+    if (originalLoadDashboardForResume) await originalLoadDashboardForResume();
+    
+    // After the dashboard loads, silently fetch and cache the orders
+    try {
+        const res = await fetch(`/api/orders/user/${currentUser.email}`);
+        if (res.ok) {
+            window.cachedOrders = await res.json();
+        }
+    } catch (e) { console.log("Could not cache orders", e); }
+};
+
+// 2. Fix the Resume Order function to use the cached data (No network lag)
+window.resumeOrder = function(orderId, mode) {
+    // Use the cached orders if they exist, otherwise fall back to fetch
+    if (window.cachedOrders && window.cachedOrders.length > 0) {
+        const order = window.cachedOrders.find(o => String(o._id) === String(orderId));
+        
+        if (order) { 
+            if (mode === 'buy') { 
+                showBuyCheckoutPage(order.getCurrency, order.getAmount, order.sendAmount, order.method); 
+            } else { 
+                showPaymentInstructions(order.sendCurrency, order.sendAmount, order.getAmount); 
+            } 
+            return; // Success! Stop here.
+        }
+    }
+
+    // Fallback if cache is empty (e.g., user refreshed and clicked immediately)
+    fetch(`/api/orders/user/${currentUser.email}`)
+        .then(res => res.json())
+        .then(orders => {
+            const order = orders.find(o => String(o._id) === String(orderId));
+            if (order) { 
+                if (mode === 'buy') { showBuyCheckoutPage(order.getCurrency, order.getAmount, order.sendAmount, order.method); } 
+                else { showPaymentInstructions(order.sendCurrency, order.sendAmount, order.getAmount); } 
+            } else {
+                showToast("Order details not found.");
+            }
+        }).catch(e => showToast("Error loading order."));
+};
