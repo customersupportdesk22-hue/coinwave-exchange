@@ -10,7 +10,7 @@ app.use(cors());
 app.use(express.json());
 
 // ==========================================
-// REAL-TIME PRICE FETCH (CoinPaprika API)
+// REAL-TIME PRICE FETCH (CoinPaprika API - Top 200)
 // ==========================================
 let cachedPrices = null;
 let lastFetched = 0;
@@ -24,7 +24,6 @@ app.get('/api/market/prices', async (req, res) => {
     }
 
     try {
-        // Fetch from CoinPaprika
         const response = await fetch('https://api.coinpaprika.com/v1/tickers?quotes=USD', {
             headers: { 'User-Agent': 'Mozilla/5.0' }
         });
@@ -33,29 +32,27 @@ app.get('/api/market/prices', async (req, res) => {
         
         const data = await response.json();
 
-        // Map CoinPaprika data to our frontend format
-        const formattedData = data.map(item => {
+        // Fetch top 200 coins
+        const topCoins = data.slice(0, 200).map(item => {
             return {
+                name: item.name || item.symbol, // Fallback to symbol if name is missing
                 symbol: item.symbol.toUpperCase(),
                 current_price: item.quotes.USD.price,
                 price_change_percentage_24h: item.quotes.USD.percent_change_24h || 0
             };
         });
 
-        cachedPrices = formattedData; 
+        cachedPrices = topCoins; 
         lastFetched = now;   
-        res.json(formattedData);
+        res.json(topCoins);
 
     } catch (error) {
         console.error("Price fetch error:", error.message);
-        
         if (cachedPrices) {
             return res.json(cachedPrices); 
         } else {
-            // Fallback
             const fallback = [
-                { symbol: 'BTC', current_price: 65000, price_change_percentage_24h: 1.5 },
-                { symbol: 'ETH', current_price: 3400, price_change_percentage_24h: 1.2 }
+                { name: 'Bitcoin', symbol: 'BTC', current_price: 65000, price_change_percentage_24h: 1.5 }
             ];
             res.json(fallback);
         }

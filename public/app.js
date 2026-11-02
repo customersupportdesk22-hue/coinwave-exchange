@@ -2576,3 +2576,51 @@ window.calcTrade = function() {
         if (bonusMathEl) bonusMathEl.style.display = 'none';
     }
 };
+
+/* =====================================================
+   DYNAMIC MARKET FETCH (Supports up to 200 coins)
+   ===================================================== */
+// A palette of colors for new coins
+const fallbackColors = ['#f7931a', '#627eea', '#00d2ff', '#f3ba2f', '#23292f', '#0033ad', '#c2a633', '#e84142', '#e6007a', '#2a5ada', '#8247e5', '#f00500', '#345d9d', '#eb0029', '#ff007a', '#2e3148', '#000000', '#00ec97', '#12aaff', '#ff0420', '#0090ff', '#6fbcf0', '#3d8130'];
+
+async function fetchRealMarketPrices() {
+    try {
+        const res = await fetch('/api/market/prices');
+        if (!res.ok) throw new Error("Server error");
+        const data = await res.json();
+
+        data.forEach((apiCoin) => {
+            const existingCoin = markets.find(m => m.symbol.toUpperCase() === apiCoin.symbol.toUpperCase());
+            
+            if (existingCoin) {
+                // Update existing coin
+                existingCoin.price = apiCoin.current_price;
+                existingCoin.change = apiCoin.price_change_percentage_24h || 0;
+            } else {
+                // Add new coin dynamically
+                const randomColor = fallbackColors[Math.floor(Math.random() * fallbackColors.length)];
+                markets.push({
+                    name: apiCoin.name || apiCoin.symbol, // Prevents "undefined"
+                    symbol: apiCoin.symbol.toUpperCase(),
+                    price: apiCoin.current_price,
+                    change: apiCoin.price_change_percentage_24h || 0,
+                    icon: apiCoin.symbol.charAt(0).toUpperCase(), // Use first letter as icon
+                    color: randomColor
+                });
+            }
+        });
+
+        // Sort markets by price descending so top coins stay at the top
+        markets.sort((a, b) => b.price - a.price);
+
+        loadMarkets();
+        populateTradeCoins();
+    } catch (error) {
+        console.log("Market fetch error (Using fallback):", error);
+    }
+}
+
+// Override the old interval to use the new function
+if (window.marketInterval) clearInterval(window.marketInterval);
+setInterval(fetchRealMarketPrices, 60000);
+fetchRealMarketPrices();
