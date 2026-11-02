@@ -226,3 +226,29 @@ button:active, .market-row:active, .asset-row:active, .action-btn:active, .trade
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* =====================================================
+   SEAMLESS DASHBOARD: CONNECT ASSETS & TRUST SECTIONS
+   ===================================================== */
+
+/* 1. Remove the bottom margin from the Assets box and square off the bottom corners */
+.assets-section {
+    margin-bottom: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-bottom: none !important; /* Remove bottom border so it connects perfectly */
+}
+
+/* 2. Remove the top margin from the Trust section and square off the top corners */
+.trust-sections {
+    margin-top: 0 !important;
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+    border-top: 1px solid #2a2a3a !important; /* Add a subtle divider line */
+    background: #1a1a2a !important;
+}
+
+/* 3. Optional: Tighten up the padding inside the trust section so it's not too tall */
+.trust-sections {
+    padding: 20px 15px !important;
+}
