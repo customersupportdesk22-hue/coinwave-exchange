@@ -1385,3 +1385,67 @@ window.setTradeMode = function(mode) {
         window.polishTradeView(); 
     }, 50);
 };
+
+/* =====================================================
+   FINAL FIX: REMOVE DUPLICATE STACKING TEXT
+   ===================================================== */
+window.polishTradeView = async function() {
+    const amtInput = document.getElementById('tradeAmount');
+    const amountLabel = document.getElementById('amountLabel');
+    if (!amtInput || !amountLabel) return;
+
+    // 1. Remove ALL previous instances to prevent stacking
+    document.querySelectorAll('.trade-available-balance').forEach(el => el.remove());
+    document.querySelectorAll('.external-wallet-helper').forEach(el => el.remove());
+
+    const curr = getUserCurrency();
+    
+    // 2. Reset the label text cleanly
+    if (currentTradeMode === 'buy') {
+        amountLabel.textContent = `Amount to Spend (${curr.code})`;
+    } else {
+        amountLabel.textContent = `Amount to Sell (Crypto)`;
+    }
+
+    // 3. Wrap the input (if not already done)
+    if (!amtInput.parentElement.classList.contains('amount-wrapper')) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'amount-wrapper';
+        amtInput.parentNode.insertBefore(wrapper, amtInput);
+        wrapper.appendChild(amtInput);
+        
+        const suffix = document.createElement('span');
+        suffix.className = 'amount-suffix';
+        suffix.id = 'tradeAmountSuffix';
+        wrapper.appendChild(suffix);
+    }
+
+    const coinSymbol = document.getElementById('tradeCoin').value;
+    const suffixEl = document.getElementById('tradeAmountSuffix');
+
+    if (currentTradeMode === 'buy') {
+        suffixEl.textContent = curr.code; 
+    } else {
+        suffixEl.textContent = coinSymbol; 
+        try {
+            const res = await fetch(`/api/user/${currentUser.email}/balances`);
+            const balances = await res.json();
+            const bal = balances[coinSymbol] || 0;
+            
+            // 4. Add the balance text using a CLASS
+            const balSpan = document.createElement('span');
+            balSpan.className = 'trade-available-balance';
+            balSpan.style.cssText = "font-size: 11px; color: #888; float: right; font-weight: normal; text-transform: none;";
+            balSpan.innerHTML = `Available on CoinWave: ${bal.toFixed(6)} ${coinSymbol}`;
+            amountLabel.appendChild(balSpan);
+
+            // 5. Add the helper note using a CLASS
+            const helper = document.createElement('div');
+            helper.className = 'external-wallet-helper';
+            helper.style.cssText = "font-size: 11px; color: #00d4aa; margin-top: 5px; text-align: left;";
+            amtInput.parentElement.parentElement.appendChild(helper);
+            helper.innerHTML = `💡 Selling from an external wallet? No problem. You will be shown a deposit address on the next page.`;
+            
+        } catch(e) { console.log(e); }
+    }
+};
