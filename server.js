@@ -54,7 +54,7 @@ app.use('/api/wallet', require('./routes/auth')); // Assuming wallet import is i
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Catch-all route to serve index.html for any frontend routing
-app.get('*', (req, res) => {
+app.get('/*splat', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
