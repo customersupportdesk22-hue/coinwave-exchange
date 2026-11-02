@@ -10,7 +10,7 @@ app.use(cors());
 app.use(express.json());
 
 // ==========================================
-// REAL-TIME PRICE FETCH (CoinCap API - No limits, No blocks)
+// REAL-TIME PRICE FETCH (CoinPaprika API)
 // ==========================================
 let cachedPrices = null;
 let lastFetched = 0;
@@ -24,29 +24,23 @@ app.get('/api/market/prices', async (req, res) => {
     }
 
     try {
-        // Fetch top 30 assets from CoinCap
-        const response = await fetch('https://api.coincap.io/v2/assets?limit=30', {
+        // Fetch from CoinPaprika
+        const response = await fetch('https://api.coinpaprika.com/v1/tickers?quotes=USD', {
             headers: { 'User-Agent': 'Mozilla/5.0' }
         });
         
-        if (!response.ok) throw new Error(`CoinCap Error: ${response.status}`);
+        if (!response.ok) throw new Error(`CoinPaprika Error: ${response.status}`);
         
-        const json = await response.json();
-        const data = json.data;
+        const data = await response.json();
 
-        // Map CoinCap data to the format our frontend expects
+        // Map CoinPaprika data to our frontend format
         const formattedData = data.map(item => {
             return {
                 symbol: item.symbol.toUpperCase(),
-                current_price: parseFloat(item.priceUsd),
-                price_change_percentage_24h: parseFloat(item.changePercent24Hr) || 0
+                current_price: item.quotes.USD.price,
+                price_change_percentage_24h: item.quotes.USD.percent_change_24h || 0
             };
         });
-
-        // Ensure USDT is in the list (CoinCap sometimes doesn't return stablecoins in top 30)
-        if (!formattedData.find(d => d.symbol === 'USDT')) {
-            formattedData.push({ symbol: "USDT", current_price: 1.00, price_change_percentage_24h: 0.01 });
-        }
 
         cachedPrices = formattedData; 
         lastFetched = now;   
@@ -54,15 +48,14 @@ app.get('/api/market/prices', async (req, res) => {
 
     } catch (error) {
         console.error("Price fetch error:", error.message);
+        
         if (cachedPrices) {
             return res.json(cachedPrices); 
         } else {
-            // Fallback if completely down
+            // Fallback
             const fallback = [
                 { symbol: 'BTC', current_price: 65000, price_change_percentage_24h: 1.5 },
-                { symbol: 'ETH', current_price: 3400, price_change_percentage_24h: 1.2 },
-                { symbol: 'SOL', current_price: 150, price_change_percentage_24h: 5.0 },
-                { symbol: 'USDT', current_price: 1.0, price_change_percentage_24h: 0.0 }
+                { symbol: 'ETH', current_price: 3400, price_change_percentage_24h: 1.2 }
             ];
             res.json(fallback);
         }
