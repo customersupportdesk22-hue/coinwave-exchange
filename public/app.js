@@ -1616,3 +1616,91 @@ setInterval(() => {
         receiveLabel.appendChild(bonusLabel);
     }
 }, 1000);
+
+/* =====================================================
+   PROFESSIONAL TRANSACTION HISTORY (Dashboard)
+   ===================================================== */
+setInterval(() => {
+    const assetsSection = document.querySelector('.assets-section');
+    
+    // Only inject if the assets section exists and history isn't there yet
+    if (assetsSection && !document.getElementById('transactionHistorySection')) {
+        
+        // Create the container
+        const historySection = document.createElement('div');
+        historySection.id = 'transactionHistorySection';
+        historySection.className = 'assets-section';
+        historySection.style.marginTop = '20px';
+        
+        historySection.innerHTML = `
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; font-size: 18px; font-weight: 600;">Transaction History</h3>
+                <span style="font-size: 11px; color: #888;">Every transaction is recorded</span>
+            </div>
+            <div id="transactionList" style="display: flex; flex-direction: column; gap: 10px;">
+                <p style="color: #888; font-size: 13px; text-align: center; padding: 20px;">Loading history...</p>
+            </div>
+        `;
+        
+        // Insert it right after the Assets section
+        assetsSection.parentNode.insertBefore(historySection, assetsSection.nextSibling);
+        
+        // Trigger the load
+        window.loadTransactionHistory();
+    }
+}, 1000);
+
+window.loadTransactionHistory = async function() {
+    if (!currentUser) return;
+    const listContainer = document.getElementById('transactionList');
+    if (!listContainer) return;
+
+    try {
+        const res = await fetch(`/api/order/user/${currentUser.email}`);
+        const orders = await res.json();
+
+        if (!orders || orders.length === 0) {
+            listContainer.innerHTML = '<p style="color: #888; font-size: 13px; text-align: center; padding: 20px;">No transactions yet.</p>';
+            return;
+        }
+
+        listContainer.innerHTML = orders.map(o => {
+            const isBuy = o.mode === 'buy';
+            const typeColor = isBuy ? '#0ecb51' : '#f6465d';
+            const typeText = isBuy ? 'BUY' : 'SELL';
+            
+            // Format status
+            let statusColor = '#fcd535'; // Pending (Yellow)
+            if (o.status === 'Approved' || o.status === 'Completed') statusColor = '#0ecb51'; // Green
+            if (o.status === 'Rejected' || o.status === 'Failed') statusColor = '#f6465d'; // Red
+
+            return `
+                <div style="background: #0f0f15; border: 1px solid #333; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="color: ${typeColor}; font-weight: bold; font-size: 13px;">${typeText}</span>
+                            <span style="color: #fff; font-weight: 600; font-size: 14px;">${o.sendAmount} ${o.sendCurrency}</span>
+                        </div>
+                        <span style="color: #888; font-size: 11px;">${o.date || 'Just now'}</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="color: #fff; font-size: 13px; font-weight: 600;">${o.getAmount || 'Market Price'} ${o.getCurrency}</div>
+                        <div style="color: ${statusColor}; font-size: 11px; font-weight: bold; margin-top: 4px; text-transform: uppercase;">${o.status || 'Pending'}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (e) {
+        listContainer.innerHTML = '<p style="color: #f6465d; font-size: 13px; text-align: center; padding: 20px;">Error loading history.</p>';
+    }
+};
+
+// Ensure history reloads when switching back to the dashboard
+const originalShowViewForHistory = window.showView;
+window.showView = function(viewId, authType = 'login') {
+    originalShowViewForHistory(viewId, authType);
+    if (viewId === 'dashboardView') {
+        setTimeout(() => window.loadTransactionHistory(), 500);
+    }
+};

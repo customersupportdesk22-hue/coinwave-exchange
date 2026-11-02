@@ -13,3 +13,15 @@ router.post('/create', async (req, res) => {
     } catch (e) { res.status(500).json({ message: "Error" }); }
 });
 module.exports = router;
+
+// ==========================================
+// GET USER ORDERS (For Transaction History)
+// ==========================================
+router.get("/user/:email", async (req, res) => {
+    try {
+        const orders = await Order.find({ userEmail: req.params.email }).sort({ _id: -1 });
+        res.json(orders);
+    } catch (e) {
+        res.status(500).json({ message: "Error fetching user orders" });
+    }
+});
