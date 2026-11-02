@@ -498,3 +498,45 @@ html, body {
     color: #0ecb51 !important;
     border: 1px solid rgba(14, 203, 81, 0.3) !important;
 }
+
+/* =====================================================
+   FINAL LAYOUT FIX: BADGES & GAINERS
+   ===================================================== */
+
+/* 1. Fix the Badge layout (No more awkward stacking) */
+.badge-container {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    margin-bottom: 20px !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+}
+#dynamicTrustBadge, #bonusBadge {
+    display: inline-flex !important;
+    margin: 0 !important;
+    padding: 6px 12px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    border-radius: 20px !important;
+    white-space: nowrap !important;
+}
+#dynamicTrustBadge { background: rgba(0, 212, 170, 0.1) !important; color: #00d4aa !important; border: 1px solid rgba(0, 212, 170, 0.2) !important; }
+#bonusBadge { background: rgba(14, 203, 81, 0.1) !important; color: #0ecb51 !important; border: 1px solid rgba(14, 203, 81, 0.3) !important; }
+
+/* 2. Fix Top Gainers Overflow */
+.gainers-losers-row {
+    display: flex !important;
+    gap: 10px !important;
+    overflow-x: auto !important;
+    padding-bottom: 15px !important;
+    padding-right: 15px !important; /* Prevents the last card from touching the edge */
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+.gainers-losers-row::-webkit-scrollbar { display: none !important; }
+.gl-card {
+    min-width: 110px !important;
+    flex-shrink: 0 !important;
+    padding: 12px !important;
+}

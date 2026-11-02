@@ -3848,3 +3848,29 @@ setInterval(() => {
         trustBadge.parentNode.insertBefore(bonusBadge, trustBadge.nextSibling);
     }
 }, 1000);
+
+/* =====================================================
+   RESTORE NAVBAR CLICKS & STATE
+   ===================================================== */
+window.checkAuthState = function() {
+    currentUser = JSON.parse(localStorage.getItem('user'));
+    if (currentUser && (currentUser.isAdmin || currentUser.email.includes('admin'))) { window.location.href = '/admin.html'; return; }
+    
+    const navLinks = document.getElementById('navLinks');
+    if (currentUser) {
+        navLinks.innerHTML = `
+            <a href="#" onclick="showView('guestView')">Markets</a>
+            <a href="#" class="profile-avatar-nav" onclick="showView('dashboardView')">${currentUser.name.charAt(0).toUpperCase()}</a>
+            <a href="#" id="securityNavBtn" style="color: #fff; background: #2a2a3a; padding: 8px 12px; border-radius: 6px; border: 1px solid #333; font-size: 12px; font-weight: 600; margin-right: 10px;" onclick="window.open2FAModal()">Security</a>
+            <a href="#" class="btn-logout" onclick="handleLogout()">Logout</a>
+        `;
+        showView('dashboardView');
+    } else {
+        navLinks.innerHTML = `
+            <a href="#" onclick="showView('guestView')">Markets</a>
+            <a href="#" onclick="showView('authView', 'login')">Login</a>
+            <a href="#" class="btn-primary" onclick="showView('authView', 'register')">Get Started</a>
+        `;
+        showView('guestView');
+    }
+};
