@@ -1523,3 +1523,55 @@ window.selectTradeAsset = function(symbol) {
     originalSelectTradeAssetFinal(symbol);
     window.polishTradeView(); // Run immediately
 };
+
+/* =====================================================
+   FINAL FIX: DELETE GREEN HELPER TEXT & STABILIZE
+   ===================================================== */
+window.polishTradeView = async function() {
+    // 1. Force delete ALL instances of the green text
+    document.querySelectorAll('.external-wallet-helper').forEach(el => el.remove());
+
+    const amtInput = document.getElementById('tradeAmount');
+    const amountLabel = document.getElementById('amountLabel');
+    const receiveLabel = document.getElementById('receiveLabel');
+    
+    if (!amtInput || !amountLabel || !receiveLabel) return;
+
+    const curr = getUserCurrency();
+    const coinSymbol = document.getElementById('tradeCoin').value;
+    
+    // 2. Rebuild the labels using innerHTML (Prevents duplicates)
+    if (currentTradeMode === 'buy') {
+        amountLabel.innerHTML = `Amount to Spend (${curr.code})`;
+        receiveLabel.innerHTML = `You will receive (Crypto) <span style="color: #0ecb51; font-size: 11px; margin-left: 5px; font-weight: bold; white-space: nowrap;">🎁 (Includes 5% Bonus)</span>`;
+    } else {
+        try {
+            const res = await fetch(`/api/user/${currentUser.email}/balances`);
+            const balances = await res.json();
+            const bal = balances[coinSymbol] || 0;
+            
+            amountLabel.innerHTML = `Amount to Sell (Crypto) <span style="font-size: 11px; color: #888; float: right; font-weight: normal; text-transform: none;">Available: ${bal.toFixed(6)} ${coinSymbol}</span>`;
+            receiveLabel.innerHTML = `You will receive (${curr.code}) <span style="color: #0ecb51; font-size: 11px; margin-left: 5px; font-weight: bold; white-space: nowrap;">🎁 (Includes 5% Bonus)</span>`;
+            
+        } catch(e) { 
+            amountLabel.innerHTML = `Amount to Sell (Crypto)`;
+        }
+    }
+
+    // 3. Ensure the input has the correct suffix
+    let suffixEl = document.getElementById('tradeAmountSuffix');
+    if (!suffixEl && !amtInput.parentElement.classList.contains('amount-wrapper')) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'amount-wrapper';
+        amtInput.parentNode.insertBefore(wrapper, amtInput);
+        wrapper.appendChild(amtInput);
+        
+        suffixEl = document.createElement('span');
+        suffixEl.className = 'amount-suffix';
+        suffixEl.id = 'tradeAmountSuffix';
+        wrapper.appendChild(suffixEl);
+    }
+    if (suffixEl) {
+        suffixEl.textContent = currentTradeMode === 'buy' ? curr.code : coinSymbol;
+    }
+};
