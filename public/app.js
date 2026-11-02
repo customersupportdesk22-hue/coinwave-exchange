@@ -1444,3 +1444,99 @@ setInterval(() => {
         innerTitle.textContent = 'Wallet Connection';
     }
 }, 1000);
+
+/* =====================================================
+   PROFESSIONAL DARK-MODE ASSET DROPDOWN (For Trade View)
+   ===================================================== */
+// 1. Replace the native <select> with a custom clickable div
+window.setupCustomAssetDropdown = function() {
+    const nativeSelect = document.getElementById('tradeCoin');
+    if (!nativeSelect || nativeSelect.dataset.customized) return;
+    nativeSelect.dataset.customized = 'true';
+    
+    // Hide the ugly native select
+    nativeSelect.style.display = 'none';
+    
+    // Create our custom display box
+    const displayDiv = document.createElement('div');
+    displayDiv.id = 'tradeCoinDisplay';
+    displayDiv.style.cssText = "width: 100%; padding: 14px; background: #0f0f15; color: #fff; border: 1px solid #333; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;";
+    
+    const selectedText = document.createElement('span');
+    selectedText.id = 'selectedCoinText';
+    selectedText.textContent = nativeSelect.options[nativeSelect.selectedIndex]?.text || "Select Asset";
+    
+    const arrow = document.createElement('span');
+    arrow.textContent = '▼';
+    arrow.style.color = '#888';
+    arrow.style.fontSize = '12px';
+    
+    displayDiv.appendChild(selectedText);
+    displayDiv.appendChild(arrow);
+    
+    // Insert it right after the hidden native select
+    nativeSelect.parentNode.insertBefore(displayDiv, nativeSelect.nextSibling);
+    
+    // Open our custom modal when clicked
+    displayDiv.onclick = () => window.openTradeAssetModal();
+};
+
+// 2. The Dark-Themed Modal
+window.openTradeAssetModal = function() {
+    let modal = document.getElementById('assetActionModal');
+    modal.style.display = 'flex';
+    
+    let html = `<div class="modal-content" style="padding: 0; max-height: 80vh; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; padding: 20px; border-bottom: 1px solid #333;">
+            <h2 style="color: #fff; margin: 0; font-size: 18px;">Select Asset</h2>
+            <span onclick="document.getElementById('assetActionModal').style.display='none'" style="color: #888; font-size: 24px; cursor: pointer;">&times;</span>
+        </div>
+        <div style="overflow-y: auto; flex: 1;">`;
+        
+    html += markets.map(coin => `
+        <div onclick="window.selectTradeAsset('${coin.symbol}')" style="display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #2a2a3a; cursor: pointer; align-items: center;">
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div style="background:${coin.color}; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size:16px;">${coin.icon}</div>
+                <div><div style="color: #fff; font-weight: bold; font-size: 14px;">${coin.name}</div><div style="color: #888; font-size: 12px;">${coin.symbol}</div></div>
+            </div>
+        </div>
+    `).join('');
+    
+    html += `</div></div>`;
+    modal.innerHTML = html;
+};
+
+// 3. Handle the selection
+window.selectTradeAsset = function(symbol) {
+    const nativeSelect = document.getElementById('tradeCoin');
+    nativeSelect.value = symbol;
+    
+    const coin = markets.find(c => c.symbol === symbol);
+    document.getElementById('selectedCoinText').textContent = `${coin.name} (${coin.symbol})`;
+    
+    document.getElementById('assetActionModal').style.display = 'none';
+    calcTrade(); // Recalculate the receive amount
+};
+
+// 4. Ensure it initializes when the Trade view opens
+const originalShowView = window.showView;
+window.showView = function(viewId, authType = 'login') {
+    originalShowView(viewId, authType);
+    if (viewId === 'tradeView') {
+        setTimeout(() => window.setupCustomAssetDropdown(), 100);
+    }
+};
+
+// 5. Fix the Homepage quickTrade to update the custom dropdown text
+const originalQuickTrade = window.quickTrade;
+window.quickTrade = function(symbol) {
+    if(originalQuickTrade) originalQuickTrade(symbol);
+    setTimeout(() => {
+        const nativeSelect = document.getElementById('tradeCoin');
+        if(nativeSelect) nativeSelect.value = symbol;
+        const coin = markets.find(c => c.symbol === symbol);
+        if(coin && document.getElementById('selectedCoinText')) {
+            document.getElementById('selectedCoinText').textContent = `${coin.name} (${coin.symbol})`;
+        }
+    }, 150);
+};
