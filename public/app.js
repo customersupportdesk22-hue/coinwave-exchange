@@ -2481,3 +2481,98 @@ badgeFixStyle.innerHTML = `
     }
 `;
 document.head.appendChild(badgeFixStyle);
+
+/* =====================================================
+   REAL MARKET DATA & 5% BONUS MATH
+   ===================================================== */
+// 1. Fetch real prices from YOUR server
+async function fetchRealMarketPrices() {
+    try {
+        const res = await fetch('/api/market/prices');
+        if (!res.ok) throw new Error("Server error");
+        const data = await res.json();
+
+        data.forEach((apiCoin) => {
+            const localCoin = markets.find(m => m.symbol.toUpperCase() === apiCoin.symbol.toUpperCase());
+            if (localCoin) {
+                localCoin.price = apiCoin.current_price;
+                localCoin.change = apiCoin.price_change_percentage_24h || 0;
+            } else {
+                markets.push({
+                    name: apiCoin.name,
+                    symbol: apiCoin.symbol.toUpperCase(),
+                    price: apiCoin.current_price,
+                    change: apiCoin.price_change_percentage_24h || 0,
+                    icon: apiCoin.symbol.charAt(0).toUpperCase(),
+                    color: '#333333'
+                });
+            }
+        });
+
+        loadMarkets();
+        populateTradeCoins();
+    } catch (error) {
+        console.log("Market fetch error (Using fallback):", error);
+    }
+}
+
+fetchRealMarketPrices();
+setInterval(fetchRealMarketPrices, 60000);
+
+// 2. Update the Trade Math to show the 5% bonus
+window.calcTrade = function() {
+    const amount = parseFloat(document.getElementById('tradeAmount').value) || 0; 
+    const coinSymbol = document.getElementById('tradeCoin').value; 
+    const coin = markets.find(c => c.symbol === coinSymbol); 
+    const curr = getUserCurrency();
+    
+    let bonusMathEl = document.getElementById('bonusMathDisplay');
+    if (!bonusMathEl) {
+        bonusMathEl = document.createElement('div');
+        bonusMathEl.id = 'bonusMathDisplay';
+        bonusMathEl.style.cssText = "font-size: 11px; color: #888; margin-top: 8px; text-align: left; display: none;";
+        const tradeReceiveParent = document.getElementById('tradeReceive').parentElement.parentElement;
+        tradeReceiveParent.appendChild(bonusMathEl);
+    }
+
+    if (coin && amount > 0) {
+        if (currentTradeMode === 'buy') { 
+            const usdAmount = amount / curr.rate; 
+            const bonusPrice = coin.price * 0.95; // 5% off
+            const cryptoReceived = usdAmount / bonusPrice;
+            
+            document.getElementById('tradeReceive').value = cryptoReceived.toFixed(6) + " " + coin.symbol; 
+            
+            bonusMathEl.style.display = 'block';
+            bonusMathEl.innerHTML = `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                    <span>Market Price:</span>
+                    <span style="text-decoration: line-through;">$${formatPrice(coin.price)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; color: #0ecb51; font-weight: bold;">
+                    <span>🎁 Your Bonus Price (5% Off):</span>
+                    <span>$${formatPrice(bonusPrice)}</span>
+                </div>
+            `;
+        } else { 
+            const usdAmount = amount * (coin.price * 1.05); // 5% extra payout
+            document.getElementById('tradeReceive').value = `${curr.symbol} ${(usdAmount * curr.rate).toFixed(2)} ${curr.code}`; 
+            
+            const bonusPrice = coin.price * 1.05;
+            bonusMathEl.style.display = 'block';
+            bonusMathEl.innerHTML = `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                    <span>Market Price:</span>
+                    <span>$${formatPrice(coin.price)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; color: #0ecb51; font-weight: bold;">
+                    <span>🎁 Your Bonus Price (5% Extra):</span>
+                    <span>$${formatPrice(bonusPrice)}</span>
+                </div>
+            `;
+        }
+    } else { 
+        document.getElementById('tradeReceive').value = ''; 
+        if (bonusMathEl) bonusMathEl.style.display = 'none';
+    }
+};

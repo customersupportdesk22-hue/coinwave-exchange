@@ -51,3 +51,36 @@ app.use((req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html'))
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server on port ${PORT}`));
+
+// ==========================================
+// REAL-TIME PRICE CACHE (Bypasses API Limits)
+// ==========================================
+let cachedPrices = null;
+let lastFetched = 0;
+const CACHE_DURATION = 60000; // 1 minute
+
+app.get('/api/market/prices', async (req, res) => {
+    const now = Date.now();
+
+    // Serve from cache if less than 60 seconds old
+    if (cachedPrices && (now - lastFetched < CACHE_DURATION)) {
+        return res.json(cachedPrices);
+    }
+
+    // Otherwise, fetch fresh data from CoinGecko
+    try {
+        const response = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=26&page=1&sparkline=false');
+        if (!response.ok) throw new Error("CoinGecko API limit reached");
+        
+        const data = await response.json();
+        cachedPrices = data; 
+        lastFetched = now;   
+        res.json(data);
+    } catch (error) {
+        console.error("Price fetch error:", error);
+        if (cachedPrices) {
+            return res.json(cachedPrices); // Serve old data if API fails
+        }
+        res.status(500).json({ error: "Could not fetch market data" });
+    }
+});
