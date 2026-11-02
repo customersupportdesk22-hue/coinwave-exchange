@@ -2396,3 +2396,58 @@ window.selectMethod = function(method) {
         }
     }
 };
+
+/* =====================================================
+   FIX: CUSTOM ALERT BUTTON STYLING
+   ===================================================== */
+const alertStyle = document.createElement('style');
+alertStyle.innerHTML = `
+    .custom-alert-box {
+        background: #1a1a2a;
+        border: 1px solid #2a2a3a;
+        border-radius: 16px;
+        padding: 25px;
+        width: 100%;
+        max-width: 340px;
+        text-align: center;
+        margin: auto !important;
+        animation: modalPop 0.25s ease forwards;
+    }
+    .custom-alert-box h3 {
+        color: #fff;
+        margin-bottom: 10px;
+        font-size: 18px;
+    }
+    .custom-alert-box p {
+        color: #888;
+        font-size: 14px;
+        margin-bottom: 25px;
+        line-height: 1.4;
+    }
+    .custom-alert-btn {
+        background: #2a2a3a !important;
+        color: #fff !important;
+        border: 1px solid #333 !important;
+        width: 100% !important;
+        padding: 14px !important;
+        border-radius: 8px !important;
+        font-weight: bold !important;
+        font-size: 15px !important;
+        cursor: pointer !important;
+        transition: 0.2s;
+    }
+    .custom-alert-btn:hover {
+        background: #333 !important;
+    }
+    .custom-alert-icon {
+        width: 55px;
+        height: 55px;
+        border-radius: 50%;
+        background: rgba(246, 70, 93, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+    }
+`;
+document.head.appendChild(alertStyle);
