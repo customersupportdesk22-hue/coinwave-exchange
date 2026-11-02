@@ -1575,3 +1575,46 @@ window.polishTradeView = async function() {
         suffixEl.textContent = currentTradeMode === 'buy' ? curr.code : coinSymbol;
     }
 };
+
+/* =====================================================
+   REMOVE "AVAILABLE BALANCE" TEXT COMPLETELY
+   ===================================================== */
+window.polishTradeView = async function() {
+    // Force delete old helper texts
+    document.querySelectorAll('.external-wallet-helper').forEach(el => el.remove());
+
+    const amtInput = document.getElementById('tradeAmount');
+    const amountLabel = document.getElementById('amountLabel');
+    const receiveLabel = document.getElementById('receiveLabel');
+    
+    if (!amtInput || !amountLabel || !receiveLabel) return;
+
+    const curr = getUserCurrency();
+    const coinSymbol = document.getElementById('tradeCoin').value;
+    
+    // Rebuild labels without the "Available" text
+    if (currentTradeMode === 'buy') {
+        amountLabel.innerHTML = `Amount to Spend (${curr.code})`;
+        receiveLabel.innerHTML = `You will receive (Crypto) <span style="color: #0ecb51; font-size: 11px; margin-left: 5px; font-weight: bold; white-space: nowrap;">🎁 (Includes 5% Bonus)</span>`;
+    } else {
+        amountLabel.innerHTML = `Amount to Sell (Crypto)`; 
+        receiveLabel.innerHTML = `You will receive (${curr.code}) <span style="color: #0ecb51; font-size: 11px; margin-left: 5px; font-weight: bold; white-space: nowrap;">🎁 (Includes 5% Bonus)</span>`;
+    }
+
+    // Ensure the input has the correct suffix (BTC / USD)
+    let suffixEl = document.getElementById('tradeAmountSuffix');
+    if (!suffixEl && !amtInput.parentElement.classList.contains('amount-wrapper')) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'amount-wrapper';
+        amtInput.parentNode.insertBefore(wrapper, amtInput);
+        wrapper.appendChild(amtInput);
+        
+        suffixEl = document.createElement('span');
+        suffixEl.className = 'amount-suffix';
+        suffixEl.id = 'tradeAmountSuffix';
+        wrapper.appendChild(suffixEl);
+    }
+    if (suffixEl) {
+        suffixEl.textContent = currentTradeMode === 'buy' ? curr.code : coinSymbol;
+    }
+};
