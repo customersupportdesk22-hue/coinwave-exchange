@@ -183,3 +183,46 @@ input[type="number"] { -moz-appearance: textfield; }
         font-size: 11px !important; 
     }
 }
+
+/* =====================================================
+   ULTRA-PREMIUM TAP & CLICK FEEDBACK
+   ===================================================== */
+
+/* 1. Remove the ugly blue highlight on mobile */
+* {
+    -webkit-tap-highlight-color: transparent !important;
+}
+
+/* 2. Add smooth transitions and disable text selection on interactive elements */
+button, .market-row, .asset-row, .action-btn, .trade-tab, .gl-card, a, select {
+    -webkit-user-select: none !important; 
+    user-select: none !important;
+    touch-action: manipulation !important; /* Removes the 300ms delay */
+    transition: transform 0.1s ease, background-color 0.2s ease, opacity 0.2s ease !important;
+}
+
+/* 3. The "Press" effect (scales down slightly when touched) */
+button:active, .market-row:active, .asset-row:active, .action-btn:active, .trade-tab:active, .gl-card:active {
+    transform: scale(0.96) !important;
+    opacity: 0.8 !important;
+}
+
+/* 4. Smooth Modal Pop-in Animation */
+.modal-content, .custom-alert-box, .modal-overlay > div {
+    animation: modalPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes modalPop {
+    0% { transform: scale(0.9); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* 5. Smooth View Transitions (switching pages) */
+.app-view {
+    animation: fadeInView 0.3s ease forwards;
+}
+
+@keyframes fadeInView {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
