@@ -2560,3 +2560,55 @@ window.fetchBalances = async function() {
         assetsCard.innerHTML = `<div class="section-header"><h3>Your Assets</h3></div><p style="color:#f6465d; text-align:center; padding:20px;">Error loading assets. Please refresh.</p>`;
     }
 };
+
+/* =====================================================
+   FIX FLICKERING: REMOVE INTERVALS & SINGLE RENDER
+   ===================================================== */
+// 1. Override the main view function to control rendering precisely
+var originalShowViewFinal = window.showView;
+window.showView = function(viewId, authType = 'login') {
+    originalShowViewFinal(viewId, authType);
+    
+    if (viewId === 'dashboardView') {
+        // Render the dashboard exactly once, in the correct order
+        setTimeout(() => {
+            if (typeof window.fetchBalances === 'function') window.fetchBalances();
+            if (typeof window.checkPendingOrders === 'function') window.checkPendingOrders();
+            if (typeof window.injectHistoryButton === 'function') window.injectHistoryButton();
+        }, 100);
+    }
+};
+
+// 2. Re-write the History Button injection to not use setInterval
+window.injectHistoryButton = function() {
+    const assetsSection = document.querySelector('.assets-section');
+    if (assetsSection && !document.getElementById('viewHistoryBtn')) {
+        const btnContainer = document.createElement('div');
+        btnContainer.id = 'historyBtnContainer';
+        btnContainer.style.cssText = "margin-top: 15px; text-align: center;";
+        btnContainer.innerHTML = `
+            <button id="viewHistoryBtn" onclick="window.openTransactionHistoryPage()" style="background: transparent; border: 1px solid #333; color: #00d4aa; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; transition: 0.2s;">
+                View Transaction History
+            </button>
+        `;
+        assetsSection.parentNode.insertBefore(btnContainer, assetsSection.nextSibling);
+    }
+};
+
+// 3. Re-write the Trust Badge container wrapper (only runs once)
+var originalCheckAuthStateFinal = window.checkAuthState;
+window.checkAuthState = function() {
+    originalCheckAuthStateFinal();
+    // Wrap the badges safely without interval
+    setTimeout(() => {
+        const trustBadge = document.getElementById('dynamicTrustBadge');
+        const bonusBadge = document.getElementById('bonusBadge');
+        if (trustBadge && bonusBadge && !document.querySelector('.badge-container')) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'badge-container';
+            trustBadge.parentNode.insertBefore(wrapper, trustBadge);
+            wrapper.appendChild(trustBadge);
+            wrapper.appendChild(bonusBadge);
+        }
+    }, 200);
+};
