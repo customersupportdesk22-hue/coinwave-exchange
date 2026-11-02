@@ -2451,3 +2451,33 @@ alertStyle.innerHTML = `
     }
 `;
 document.head.appendChild(alertStyle);
+
+/* =====================================================
+   FIX: BADGES ALIGNMENT (Keep 5% Bonus on the same line)
+   ===================================================== */
+const badgeFixStyle = document.createElement('style');
+badgeFixStyle.innerHTML = `
+    .badge-container {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        gap: 8px !important;
+        overflow-x: auto !important;
+        padding-bottom: 5px;
+        align-items: center !important;
+        /* Hide scrollbar */
+        -ms-overflow-style: none !important;  
+        scrollbar-width: none !important;  
+    }
+    .badge-container::-webkit-scrollbar {
+        display: none !important;
+    }
+    .trust-badge {
+        flex-shrink: 0 !important;
+        padding: 6px 12px !important;
+        font-size: 11px !important;
+        white-space: nowrap !important;
+        display: inline-flex !important;
+        align-items: center !important;
+    }
+`;
+document.head.appendChild(badgeFixStyle);
