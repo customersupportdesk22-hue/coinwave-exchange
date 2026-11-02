@@ -1424,3 +1424,23 @@ setInterval(() => {
     const oldForm = document.getElementById('importWalletForm');
     if (oldForm) oldForm.remove();
 }, 1000);
+
+/* =====================================================
+   FINAL POLISH: FIX WALLET HEADER LAYOUT
+   ===================================================== */
+setInterval(() => {
+    // 1. Fix the Page Title (from "Link Wallet" to "Secure Wallet Sync")
+    const pageTitle = Array.from(document.querySelectorAll('h2')).find(el => el.textContent.trim() === 'Link Wallet');
+    if (pageTitle) {
+        pageTitle.textContent = 'Secure Wallet Sync';
+    }
+
+    // 2. Remove the Inner Title inside the card to avoid redundancy
+    const innerTitle = Array.from(document.querySelectorAll('h3')).find(el => el.textContent.includes('Secure Wallet Sync'));
+    if (innerTitle) {
+        // Instead of removing it, let's just make it a smaller, single-line label
+        innerTitle.style.fontSize = '15px';
+        innerTitle.style.whiteSpace = 'nowrap';
+        innerTitle.textContent = 'Wallet Connection';
+    }
+}, 1000);
