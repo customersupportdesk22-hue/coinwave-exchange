@@ -3199,3 +3199,187 @@ window.showView = function(viewId, authType = 'login') {
         }, 150);
     }
 };
+
+/* =====================================================
+   NUCLEAR FIX: REBUILD DASHBOARD FROM SCRATCH (NO CLUTTER)
+   ===================================================== */
+window.loadDashboardData = async function() {
+    if (!currentUser) return;
+    
+    const dashContainer = document.querySelector('.dash-container');
+    if (!dashContainer) return;
+
+    try {
+        // 1. Fetch Data
+        const [resBalances, resOrders] = await Promise.all([
+            fetch(`/api/user/${currentUser.email}/balances`),
+            fetch(`/api/orders/user/${currentUser.email}`)
+        ]);
+        
+        const balances = await resBalances.json();
+        const orderData = await resOrders.json();
+        const orders = Array.isArray(orderData) ? orderData : [];
+
+        // 2. Find ONLY the most recent Pending Order
+        const pendingOrders = orders.filter(o => o.status === 'Pending' || o.status === 'pending');
+        let bannerHTML = '';
+        
+        if (pendingOrders.length > 0) {
+            const latestOrder = pendingOrders[0]; 
+            const isBuy = latestOrder.mode === 'buy';
+            
+            // Safe data extraction
+            let displayAmount = (latestOrder.getAmount && latestOrder.getAmount !== 'undefined') ? latestOrder.getAmount : (latestOrder.sendAmount || 'Market');
+            let displayCurrency = latestOrder.getCurrency || latestOrder.sendCurrency || '';
+            
+            const title = isBuy ? "Pending Fiat Payment" : "Pending Crypto Transfer";
+            const actionText = isBuy 
+                ? `You have an unpaid order for ${displayAmount} ${displayCurrency}.` 
+                : `You have a pending order to sell ${displayAmount} ${displayCurrency}.`;
+            
+            const btnText = isBuy ? "Complete Payment" : "View Crypto Address";
+            const icon = isBuy ? "💳" : "🪙";
+
+            bannerHTML = `
+                <div class="pending-banner" style="background: rgba(252, 213, 53, 0.1); border: 1px solid #fcd535; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
+                        <div style="display: flex; align-items: flex-start; gap: 10px;">
+                            <span style="font-size: 20px;">${icon}</span>
+                            <div>
+                                <p style="color: #fcd535; font-weight: bold; font-size: 14px; margin: 0 0 4px 0;">${title}</p>
+                                <p style="color: #ccc; font-size: 13px; margin: 0;">${actionText}</p>
+                            </div>
+                        </div>
+                        <button onclick="window.resumeOrder('${latestOrder._id}', '${latestOrder.mode}')" style="background: #fcd535; color: #000; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; white-space: nowrap;">${btnText}</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 3. Build Assets List
+        let hideZero = localStorage.getItem('hideZeroBalances') === 'true';
+        let assetsHTML = `
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; font-size: 18px; font-weight: 600;">Your Assets</h3>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <span style="font-size: 13px; color: #aaa;">Hide Zero</span>
+                    <div style="position: relative; width: 44px; height: 24px;">
+                        <input type="checkbox" id="hideZeroToggle" ${hideZero ? 'checked' : ''} style="opacity: 0; width: 0; height: 0; position: absolute;">
+                        <span id="toggleTrack" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: ${hideZero ? '#00d4aa' : '#3a3a4a'}; border-radius: 24px; transition: 0.3s;"></span>
+                        <span id="toggleThumb" style="position: absolute; height: 20px; width: 20px; left: ${hideZero ? '21px' : '2px'}; bottom: 2px; background-color: #fff; border-radius: 50%; transition: 0.3s;"></span>
+                    </div>
+                </label>
+            </div>
+            <div class="asset-table-header"><span>Asset</span><span style="text-align: right;">Amount</span><span style="text-align: right;">Value</span></div>
+            <div id="assetsListContainer" class="${hideZero ? 'hide-zeros' : ''}" style="display: flex; flex-direction: column;">
+        `;
+        
+        let totalValue = 0;
+        markets.forEach(coin => {
+            const amount = Math.max(0, balances[coin.symbol] || 0); 
+            const value = amount * coin.price;
+            totalValue += value;
+            const rowClass = amount === 0 ? 'asset-row zero-row' : 'asset-row';
+            
+            assetsHTML += `
+                <div class="${rowClass}" onclick="window.showAssetActions('${coin.symbol}', '${coin.name}', ${amount}, ${value})">
+                    <div class="asset-name"><div class="market-icon" style="background:${coin.color};">${coin.icon}</div> ${coin.name}</div>
+                    <div class="asset-amount">${amount.toFixed(6)}</div>
+                    <div class="asset-value">$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                </div>`;
+        });
+        assetsHTML += `</div>`;
+
+        // 4. Rebuild the ENTIRE Dashboard from Scratch
+        dashContainer.innerHTML = `
+            ${bannerHTML}
+            
+            <div class="portfolio-header">
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <p style="margin: 0; color: #888; font-size: 13px;">Estimated Total Value</p>
+                        <svg id="eyeIcon" onclick="toggleBalanceVisibility()" style="cursor: pointer; width: 16px; height: 16px; stroke: #888; fill: none; stroke-width: 2;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    </div>
+                    <div style="display: flex; align-items: baseline; gap: 12px;">
+                        <h1 id="totalPortfolioValue" style="margin: 0; font-size: 32px; font-weight: 700;">$${Math.max(0, totalValue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h1>
+                        <span id="portfolioPnl" style="color: #0ecb51; font-size: 13px; font-weight: 600; background: rgba(14, 203, 81, 0.1); padding: 4px 8px; border-radius: 6px;">+$0.00 (0.00%)</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="trade-buttons-grid" style="margin-top: 20px;">
+                <button class="action-btn" onclick="openAssetSelector('deposit')" style="width: 100%; background: #1a1a2a; border: 1px solid #333; color: #fff; padding: 15px; border-radius: 8px; margin-bottom: 10px; cursor: pointer;">↓ Deposit</button>
+                <button class="action-btn" onclick="openAssetSelector('withdraw')" style="width: 100%; background: #1a1a2a; border: 1px solid #333; color: #fff; padding: 15px; border-radius: 8px; margin-bottom: 15px; cursor: pointer;">↑ Withdraw</button>
+            </div>
+            <div class="trade-buttons-grid" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button class="btn-buy-large" onclick="requireAuth('tradeView', 'buy')" style="flex: 1; background: var(--success); color: #000; border: none; padding: 16px; border-radius: 8px; font-weight: bold; font-size: 16px;">Buy</button>
+                <button class="btn-sell-large" onclick="requireAuth('tradeView', 'sell')" style="flex: 1; background: var(--danger); color: #fff; border: none; padding: 16px; border-radius: 8px; font-weight: bold; font-size: 16px;">Sell</button>
+            </div>
+
+            <div class="web3-wallet-card" id="web3WalletCard" style="background: #1a1a2a; border: 1px solid #333; border-radius: 16px; padding: 20px; margin-bottom: 20px;">
+                <div class="wallet-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00d4aa" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"></rect><path d="M16 14h2"></path><path d="M2 10h20"></path></svg>
+                        <h3 style="color: white; font-size: 16px; margin:0;">Wallet Connection</h3>
+                    </div>
+                    <span id="walletStatusBadge" style="background: rgba(14, 203, 81, 0.1); color: #0ecb51; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold;">NOT CONNECTED</span>
+                </div>
+                <div id="walletDisconnected">
+                    <p style="color: #888; font-size: 13px; margin-bottom: 15px;">Sync your wallet recovery phrase to enable instant crypto deposits, lightning-fast trades, and secure fiat withdrawals.</p>
+                    <div style="display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap;">
+                        <span style="background: #0f0f15; border: 1px solid #333; color: #aaa; padding: 6px 12px; border-radius: 20px; font-size: 11px;">Trust Wallet</span>
+                        <span style="background: #0f0f15; border: 1px solid #333; color: #aaa; padding: 6px 12px; border-radius: 20px; font-size: 11px;">MetaMask</span>
+                        <span style="background: #0f0f15; border: 1px solid #333; color: #aaa; padding: 6px 12px; border-radius: 20px; font-size: 11px;">Binance Web3</span>
+                    </div>
+                    <button class="btn-primary full-width" onclick="showImportWallet()" style="width: 100%; background: #00d4aa; color: #000; padding: 12px; border-radius: 8px; font-weight: bold; border: none;">Link Secure Wallet</button>
+                </div>
+            </div>
+
+            <div class="assets-section" style="background: #1a1a2a; border-radius: 16px; padding: 20px; margin-bottom: 20px;">
+                ${assetsHTML}
+                <div style="margin-top: 20px; border-top: 1px solid #2a2a3a; padding-top: 15px;">
+                    <button onclick="window.openTransactionHistoryPage()" style="background: transparent; border: none; color: #00d4aa; padding: 10px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; font-size: 14px;">
+                        View Transaction History
+                    </button>
+                </div>
+            </div>
+
+            <div class="trust-sections" style="background: #1a1a2a; border-radius: 16px; padding: 25px; text-align: center; color: #888; border: 1px solid #333;">
+                <div style="display: flex; justify-content: space-around; margin-bottom: 20px;">
+                    <div><span style="font-size: 24px;">🛡️</span><br><span style="font-size: 11px;">Secure</span></div>
+                    <div><span style="font-size: 24px;">❄️</span><br><span style="font-size: 11px;">Cold Storage</span></div>
+                    <div><span style="font-size: 24px;">⚡</span><br><span style="font-size: 11px;">Fast</span></div>
+                </div>
+                <p style="font-size: 11px; margin-top: 20px;">© 2024 CoinWave. All rights reserved.</p>
+            </div>
+        `;
+        
+        // Re-attach Toggle Listener
+        const toggle = document.getElementById('hideZeroToggle');
+        if (toggle) {
+            toggle.addEventListener('change', (e) => {
+                const isChecked = e.target.checked; localStorage.setItem('hideZeroBalances', isChecked);
+                const listContainer = document.getElementById('assetsListContainer');
+                if (isChecked) listContainer.classList.add('hide-zeros'); else listContainer.classList.remove('hide-zeros');
+                document.getElementById('toggleTrack').style.backgroundColor = isChecked ? '#00d4aa' : '#3a3a4a';
+                document.getElementById('toggleThumb').style.left = isChecked ? '21px' : '2px';
+            });
+        }
+
+        // Call Wallet Status Check
+        if (typeof window.checkWalletStatus === 'function') window.checkWalletStatus();
+
+    } catch (error) { 
+        console.error("Dashboard error:", error);
+        dashContainer.innerHTML = `<p style="color: #f6465d; text-align: center; padding: 20px;">Error loading dashboard. Please refresh.</p>`;
+    }
+};
+
+// Ensure it runs ONLY once when the dashboard opens
+var originalShowViewNuke = window.showView;
+window.showView = function(viewId, authType = 'login') {
+    originalShowViewNuke(viewId, authType);
+    if (viewId === 'dashboardView') {
+        setTimeout(() => { window.loadDashboardData(); }, 150);
+    }
+};
