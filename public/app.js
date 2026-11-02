@@ -2241,3 +2241,140 @@ window.checkPendingOrders = async function() {
         console.log("Error checking pending orders:", e);
     }
 };
+
+/* =====================================================
+   SHOW PENDING BALANCE & LOCK WITHDRAWALS
+   ===================================================== */
+// 1. Update the Assets List to show "Pending" tags
+var originalFetchBalancesLock = window.fetchBalances;
+window.fetchBalances = async function() {
+    if (!currentUser) return;
+    try {
+        // We fetch both the total balances and the user's orders to calculate what is pending
+        const resBalances = await fetch(`/api/user/${currentUser.email}/balances`);
+        const balances = await resBalances.json();
+        
+        const resOrders = await fetch(`/api/orders/user/${currentUser.email}`);
+        const orders = await resOrders.json();
+        
+        // Calculate pending amounts
+        let pendingAmounts = {};
+        orders.filter(o => o.status === 'Pending' || o.status === 'pending').forEach(o => {
+            if (o.mode === 'buy') {
+                const symbol = o.getCurrency;
+                const amount = parseFloat(o.getAmount) || 0;
+                pendingAmounts[symbol] = (pendingAmounts[symbol] || 0) + amount;
+            }
+        });
+
+        const assetsHeader = Array.from(document.querySelectorAll('h3')).find(el => el.textContent.trim() === 'Your Assets');
+        if (!assetsHeader) return;
+        const assetsCard = assetsHeader.closest('.assets-section') || assetsHeader.parentElement;
+        
+        let hideZero = localStorage.getItem('hideZeroBalances') === 'true';
+        let html = `
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; font-size: 18px; font-weight: 600;">Your Assets</h3>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <span style="font-size: 13px; color: #aaa;">Hide Zero</span>
+                    <div style="position: relative; width: 44px; height: 24px;">
+                        <input type="checkbox" id="hideZeroToggle" ${hideZero ? 'checked' : ''} style="opacity: 0; width: 0; height: 0; position: absolute;">
+                        <span id="toggleTrack" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: ${hideZero ? '#00d4aa' : '#3a3a4a'}; border-radius: 24px; transition: 0.3s;"></span>
+                        <span id="toggleThumb" style="position: absolute; height: 20px; width: 20px; left: ${hideZero ? '21px' : '2px'}; bottom: 2px; background-color: #fff; border-radius: 50%; transition: 0.3s;"></span>
+                    </div>
+                </label>
+            </div>
+            <div class="asset-table-header"><span>Asset</span><span style="text-align: right;">Amount</span><span style="text-align: right;">Value</span></div>
+            <div id="assetsListContainer" class="${hideZero ? 'hide-zeros' : ''}" style="display: flex; flex-direction: column;">
+        `;
+        
+        let totalValue = 0;
+        markets.forEach(coin => {
+            const amount = Math.max(0, balances[coin.symbol] || 0); 
+            const pendingAmt = pendingAmounts[coin.symbol] || 0;
+            const value = amount * coin.price;
+            totalValue += value;
+            const rowClass = amount === 0 ? 'asset-row zero-row' : 'asset-row';
+            
+            // Show a yellow "Pending" badge if they have unverified funds
+            const pendingBadge = pendingAmt > 0 ? `<span style="background: rgba(252, 213, 53, 0.1); color: #fcd535; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 8px;">${pendingAmt.toFixed(4)} Pending</span>` : '';
+
+            html += `<div class="${rowClass}" onclick="window.showAssetActions('${coin.symbol}', '${coin.name}', ${amount}, ${value})">
+                <div class="asset-name"><div class="market-icon" style="background:${coin.color};">${coin.icon}</div> ${coin.name} ${pendingBadge}</div>
+                <div class="asset-amount">${amount.toFixed(6)}</div>
+                <div class="asset-value">$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+            </div>`;
+        });
+        html += `</div>`;
+        assetsCard.innerHTML = html;
+        
+        const totalEl = document.getElementById('totalPortfolioValue');
+        if (totalEl) {
+            totalEl.dataset.realValue = `$${Math.max(0, totalValue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            totalEl.textContent = localStorage.getItem('hideBalance') === 'true' ? '******' : totalEl.dataset.realValue;
+        }
+        
+        // Re-attach toggle event listener
+        const toggle = document.getElementById('hideZeroToggle');
+        if (toggle) {
+            toggle.addEventListener('change', (e) => {
+                const isChecked = e.target.checked; localStorage.setItem('hideZeroBalances', isChecked);
+                const listContainer = document.getElementById('assetsListContainer');
+                if (isChecked) listContainer.classList.add('hide-zeros'); else listContainer.classList.remove('hide-zeros');
+                document.getElementById('toggleTrack').style.backgroundColor = isChecked ? '#00d4aa' : '#3a3a4a';
+                document.getElementById('toggleThumb').style.left = isChecked ? '21px' : '2px';
+            });
+        }
+
+    } catch (error) { console.log("Balance fetch error:", error); }
+};
+
+// 2. Block Withdrawals if they try to withdraw Pending funds
+window.openWithdrawPage = function(symbol, balance) {
+    // We will pass the balance, but we need to check if it's locked.
+    // For now, we will just show the available balance. If they try to withdraw more than approved, 
+    // the backend will block it (once you fix the backend balance route).
+    
+    const safeBalance = Math.max(0, balance).toFixed(6);
+    const content = `
+        <div>
+            <h3 style="color: #fff; text-align: center;">Withdraw ${symbol}</h3>
+            <p style="color: #888; text-align: center; margin-bottom: 20px;">Available: ${safeBalance} ${symbol}</p>
+            
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <label style="color: #888; font-size: 12px;">Amount</label>
+                <button onclick="document.getElementById('withdrawPageAmount').value = '${safeBalance}';" style="background: none; border: none; color: #00d4aa; font-size: 12px; font-weight: bold; cursor: pointer;">MAX</button>
+            </div>
+            <div style="position: relative; margin-bottom: 15px;">
+                <input type="number" id="withdrawPageAmount" placeholder="0.00" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px 50px 14px 14px; border-radius: 8px; color: #fff;">
+                <span style="position: absolute; right: 15px; top: 15px; color: #888; font-weight: bold;">${symbol}</span>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="color: #888; font-size: 12px; margin-bottom: 5px; display: block;">Destination Address</label>
+                <input type="text" id="withdrawPageAddress" placeholder="Enter ${symbol} address" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff;">
+            </div>
+            
+            <div class="warning-banner">
+                <span style="color: #f6465d; font-size: 16px;">⚠️</span>
+                <p>Ensure the destination address is correct and supports the ${symbol} network.</p>
+            </div>
+            
+            <button onclick="window.executeWithdrawal('${symbol}', ${safeBalance})" style="background: #f6465d; color: #fff; width: 100%; padding: 16px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer;">Confirm Withdrawal</button>
+        </div>`;
+    createPageView('withdrawPageView', 'Withdraw', content);
+    showView('withdrawPageView');
+};
+
+// 3. Tell the user why they can't withdraw pending funds
+window.executeWithdrawal = function(symbol, balance) {
+    const amount = parseFloat(document.getElementById('withdrawPageAmount').value); 
+    const address = document.getElementById('withdrawPageAddress').value.trim();
+    
+    if (!amount || amount <= 0) return showCustomAlert('Error', 'Invalid amount.'); 
+    if (amount > balance) return showCustomAlert('Error', 'Insufficient balance. Remember, some of your funds may still be Pending approval.'); 
+    if (!address || address.length < 20) return showCustomAlert('Error', 'Invalid address.');
+    
+    showCustomAlert('Withdrawal Submitted', `Your request to withdraw ${amount} ${symbol} has been submitted.`);
+    showView('dashboardView');
+};
