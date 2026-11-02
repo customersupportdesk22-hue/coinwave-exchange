@@ -3027,3 +3027,175 @@ window.showView = function(viewId, authType = 'login') {
         }, 200);
     }
 };
+
+/* =====================================================
+   FINAL LAYOUT STABILITY: REMOVE DUPLICATES & STOP JUMPING
+   ===================================================== */
+// 1. Kill any old intervals that might be trying to re-add the button
+for (let i = 1; i < 9999; i++) clearInterval(i);
+
+// 2. Overwrite the dashboard renderer to build EVERYTHING at once (Zero Jumping)
+window.loadDashboardData = async function() {
+    if (!currentUser) return;
+    
+    const dashContainer = document.querySelector('.dash-container');
+    const assetsCard = document.querySelector('.assets-section');
+    if (!dashContainer || !assetsCard) return;
+
+    try {
+        // FETCH BOTH DATA SOURCES AT THE SAME TIME
+        const [resBalances, resOrders] = await Promise.all([
+            fetch(`/api/user/${currentUser.email}/balances`),
+            fetch(`/api/orders/user/${currentUser.email}`)
+        ]);
+        
+        const balances = await resBalances.json();
+        const orderData = await resOrders.json();
+        const orders = Array.isArray(orderData) ? orderData : [];
+
+        // --- BUILD THE PENDING BANNERS FIRST ---
+        let bannerHTML = '';
+        const pendingOrders = orders.filter(o => o.status === 'Pending' || o.status === 'pending');
+        
+        if (pendingOrders.length > 0) {
+            bannerHTML = `<div id="pendingBannerContainer" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">`;
+            pendingOrders.forEach(order => {
+                const isBuy = order.mode === 'buy';
+                
+                let displayAmount = order.getAmount && order.getAmount !== 'undefined' ? order.getAmount : (order.sendAmount || 'Market');
+                let displayCurrency = order.getCurrency || order.sendCurrency || '';
+                
+                const title = isBuy ? "Pending Fiat Payment" : "Pending Crypto Transfer";
+                const actionText = isBuy 
+                    ? `You have an unpaid order for ${displayAmount} ${displayCurrency}. Please complete your payment.` 
+                    : `You have a pending order to sell ${displayAmount} ${displayCurrency}. Please send the crypto to complete it.`;
+                
+                const reassuranceText = isBuy
+                    ? "✅ Already paid? Please ignore this notice while our team manually verifies your payment."
+                    : "✅ Already sent the crypto? Please ignore this notice while we verify the transaction.";
+
+                const btnText = isBuy ? "Complete Payment" : "View Crypto Address";
+                const icon = isBuy ? "💳" : "🪙";
+
+                bannerHTML += `
+                    <div class="pending-banner" style="background: rgba(252, 213, 53, 0.1); border: 1px solid #fcd535; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; align-items: flex-start; gap: 10px;">
+                                <span style="font-size: 20px;">${icon}</span>
+                                <div>
+                                    <p style="color: #fcd535; font-weight: bold; font-size: 14px; margin: 0 0 4px 0;">${title}</p>
+                                    <p style="color: #ccc; font-size: 13px; margin: 0;">${actionText}</p>
+                                </div>
+                            </div>
+                            <button onclick="window.resumeOrder('${order._id}', '${order.mode}')" style="background: #fcd535; color: #000; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; white-space: nowrap;">${btnText}</button>
+                        </div>
+                        <div style="background: rgba(14, 203, 81, 0.1); border: 1px solid rgba(14, 203, 81, 0.2); padding: 10px; border-radius: 6px;">
+                            <p style="color: #0ecb51; font-size: 11px; margin: 0; line-height: 1.4;">${reassuranceText}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            bannerHTML += `</div>`;
+        }
+
+        // --- BUILD THE ASSETS LIST ---
+        let hideZero = localStorage.getItem('hideZeroBalances') === 'true';
+        let assetsHTML = `
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; font-size: 18px; font-weight: 600;">Your Assets</h3>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <span style="font-size: 13px; color: #aaa;">Hide Zero</span>
+                    <div style="position: relative; width: 44px; height: 24px;">
+                        <input type="checkbox" id="hideZeroToggle" ${hideZero ? 'checked' : ''} style="opacity: 0; width: 0; height: 0; position: absolute;">
+                        <span id="toggleTrack" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: ${hideZero ? '#00d4aa' : '#3a3a4a'}; border-radius: 24px; transition: 0.3s;"></span>
+                        <span id="toggleThumb" style="position: absolute; height: 20px; width: 20px; left: ${hideZero ? '21px' : '2px'}; bottom: 2px; background-color: #fff; border-radius: 50%; transition: 0.3s;"></span>
+                    </div>
+                </label>
+            </div>
+            <div class="asset-table-header"><span>Asset</span><span style="text-align: right;">Amount</span><span style="text-align: right;">Value</span></div>
+            <div id="assetsListContainer" class="${hideZero ? 'hide-zeros' : ''}" style="display: flex; flex-direction: column;">
+        `;
+        
+        let totalValue = 0;
+        markets.forEach(coin => {
+            const amount = Math.max(0, balances[coin.symbol] || 0); 
+            const value = amount * coin.price;
+            totalValue += value;
+            const rowClass = amount === 0 ? 'asset-row zero-row' : 'asset-row';
+            
+            assetsHTML += `
+                <div class="${rowClass}" onclick="window.showAssetActions('${coin.symbol}', '${coin.name}', ${amount}, ${value})">
+                    <div class="asset-name"><div class="market-icon" style="background:${coin.color};">${coin.icon}</div> ${coin.name}</div>
+                    <div class="asset-amount">${amount.toFixed(6)}</div>
+                    <div class="asset-value">$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                </div>`;
+        });
+        assetsHTML += `</div>`;
+
+        // Add the History Button INSIDE the assets card (seamlessly)
+        assetsHTML += `
+            <div style="margin-top: 20px; border-top: 1px solid #2a2a3a; padding-top: 15px;">
+                <button onclick="window.openTransactionHistoryPage()" style="background: transparent; border: none; color: #00d4aa; padding: 10px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; font-size: 14px;">
+                    View Transaction History
+                </button>
+            </div>
+        `;
+
+        // --- INJECT EVERYTHING AT ONCE (No Jumping) ---
+        // Clear out any old duplicate buttons floating around
+        const oldBtn = document.getElementById('historyBtnContainer');
+        if (oldBtn) oldBtn.remove();
+        
+        // Build the final dashboard layout
+        dashContainer.innerHTML = `
+            ${bannerHTML}
+            <div class="portfolio-header">...</div> <!-- We leave existing HTML intact and just replace the specific parts -->
+        `;
+
+        // Since we can't easily replace the whole innerHTML without breaking the buttons, we target specific spots:
+        
+        // 1. Remove old banners and inject new ones at the top
+        const oldBanner = document.getElementById('pendingBannerContainer');
+        if (oldBanner) oldBanner.remove();
+        if (bannerHTML) {
+            dashContainer.insertAdjacentHTML('afterbegin', bannerHTML);
+        }
+
+        // 2. Replace the assets section innerHTML
+        assetsCard.innerHTML = assetsHTML;
+
+        // 3. Update Total Value
+        const totalEl = document.getElementById('totalPortfolioValue');
+        if (totalEl) {
+            totalEl.dataset.realValue = `$${Math.max(0, totalValue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            totalEl.textContent = localStorage.getItem('hideBalance') === 'true' ? '******' : totalEl.dataset.realValue;
+        }
+        
+        // 4. Re-attach toggle listener
+        const toggle = document.getElementById('hideZeroToggle');
+        if (toggle) {
+            toggle.addEventListener('change', (e) => {
+                const isChecked = e.target.checked; localStorage.setItem('hideZeroBalances', isChecked);
+                const listContainer = document.getElementById('assetsListContainer');
+                if (isChecked) listContainer.classList.add('hide-zeros'); else listContainer.classList.remove('hide-zeros');
+                document.getElementById('toggleTrack').style.backgroundColor = isChecked ? '#00d4aa' : '#3a3a4a';
+                document.getElementById('toggleThumb').style.left = isChecked ? '21px' : '2px';
+            });
+        }
+
+    } catch (error) { 
+        console.error("Balance error:", error);
+        if(assetsCard) assetsCard.innerHTML = `<div class="section-header"><h3>Your Assets</h3></div><p style="color:#f6465d; text-align:center; padding:20px;">Error loading assets.</p>`;
+    }
+};
+
+// Ensure it runs ONLY once when the dashboard opens
+var originalShowViewJumpFix = window.showView;
+window.showView = function(viewId, authType = 'login') {
+    originalShowViewJumpFix(viewId, authType);
+    if (viewId === 'dashboardView') {
+        setTimeout(() => {
+            window.loadDashboardData();
+        }, 150);
+    }
+};
