@@ -88,3 +88,72 @@ router.post('/enable-2fa', authMiddleware, async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 });
+
+// ==========================================
+// SAFE 2FA SETUP ROUTES
+// ==========================================
+const speakeasy = require('speakeasy');
+const QRCode = require('qrcode');
+
+// Define the middleware here so it doesn't crash if missing
+const twoFactorAuthMiddleware = (req, res, next) => {
+  const token = req.header('Authorization')?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'No token, authorization denied' });
+  try {
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; 
+    next();
+  } catch (err) {
+    res.status(401).json({ error: 'Token is not valid' });
+  }
+};
+
+router.post('/generate-2fa', twoFactorAuthMiddleware, async (req, res) => {
+    try {
+        const User = require('../models/User');
+        const user = await User.findById(req.user.id || req.user._id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const secret = speakeasy.generateSecret({ name: `CoinWave (${user.email})` });
+        user.twoFactorSecret = secret.base32;
+        await user.save();
+
+        QRCode.toDataURL(secret.otpauth_url, (err, data_url) => {
+            if (err) return res.status(500).json({ error: 'Error generating QR code' });
+            res.json({ secret: secret.base32, qrCodeUrl: data_url });
+        });
+    } catch (error) {
+        console.error("2FA Generate Error:", error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+router.post('/enable-2fa', twoFactorAuthMiddleware, async (req, res) => {
+    try {
+        const User = require('../models/User');
+        const { token } = req.body;
+        const user = await User.findById(req.user.id || req.user._id);
+        
+        if (!user || !user.twoFactorSecret) {
+            return res.status(400).json({ error: '2FA setup not initialized' });
+        }
+
+        const verified = speakeasy.totp.verify({
+            secret: user.twoFactorSecret,
+            encoding: 'base32',
+            token: token
+        });
+
+        if (verified) {
+            user.twoFactorEnabled = true;
+            await user.save();
+            res.json({ message: '2FA enabled successfully' });
+        } else {
+            res.status(400).json({ error: 'Invalid code. Please try again.' });
+        }
+    } catch (error) {
+        console.error("2FA Enable Error:", error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
