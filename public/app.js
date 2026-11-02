@@ -756,3 +756,100 @@ window.loadMarkets = function() {
         }).join('');
     }
 };
+
+/* =====================================================
+   FIX: DASHBOARD RENDERING (Web3 & Assets)
+   ===================================================== */
+
+// 1. Force the Web3 card to be visible when checking status
+window.checkWalletStatus = async function() {
+    if (!currentUser) return;
+    
+    // FORCE SHOW THE WEB3 CARD
+    const card = document.getElementById('web3WalletCard');
+    if (card) card.style.display = 'block';
+    
+    try {
+        const res = await fetch(`/api/user/${currentUser.email}`);
+        const user = await res.json();
+        const disconnected = document.getElementById('walletDisconnected'), pending = document.getElementById('walletPending'), approved = document.getElementById('walletApproved'), badge = document.getElementById('walletStatusBadge');
+        
+        if(disconnected) disconnected.style.display = 'none'; 
+        if(pending) pending.style.display = 'none'; 
+        if(approved) approved.style.display = 'none';
+        
+        if (user.walletStatus === 'approved') {
+            if(approved) approved.style.display = 'block'; 
+            if(document.getElementById('displayWalletAddress')) document.getElementById('displayWalletAddress').textContent = user.walletAddress; 
+            if(badge) { badge.textContent = 'CONNECTED'; badge.className = 'status-badge approved'; }
+        } else if (user.walletStatus === 'pending') {
+            if(pending) pending.style.display = 'block'; 
+            if(badge) { badge.textContent = 'VERIFYING'; badge.className = 'status-badge pending'; }
+        } else {
+            if(disconnected) disconnected.style.display = 'block'; 
+            if(badge) { badge.textContent = 'NOT CONNECTED'; badge.className = 'status-badge disconnected'; }
+        }
+    } catch (error) { console.log(error); }
+};
+
+// 2. Fix fetchBalances to target the assets-section directly
+window.fetchBalances = async function() {
+    if (!currentUser) return;
+    try {
+        const res = await fetch(`/api/user/${currentUser.email}/balances`);
+        const balances = await res.json();
+        
+        // Target the container directly
+        const assetsCard = document.querySelector('.assets-section');
+        if (!assetsCard) return;
+        
+        let hideZero = localStorage.getItem('hideZeroBalances') === 'true';
+        let html = `
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; font-size: 18px; font-weight: 600;">Your Assets</h3>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <span style="font-size: 13px; color: #aaa;">Hide Zero</span>
+                    <div style="position: relative; width: 44px; height: 24px;">
+                        <input type="checkbox" id="hideZeroToggle" ${hideZero ? 'checked' : ''} style="opacity: 0; width: 0; height: 0; position: absolute;">
+                        <span id="toggleTrack" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: ${hideZero ? '#00d4aa' : '#3a3a4a'}; border-radius: 24px; transition: 0.3s;"></span>
+                        <span id="toggleThumb" style="position: absolute; height: 20px; width: 20px; left: ${hideZero ? '21px' : '2px'}; bottom: 2px; background-color: #fff; border-radius: 50%; transition: 0.3s;"></span>
+                    </div>
+                </label>
+            </div>
+            <div class="asset-table-header"><span>Asset</span><span style="text-align: right;">Amount</span><span style="text-align: right;">Value</span></div>
+            <div id="assetsListContainer" class="${hideZero ? 'hide-zeros' : ''}" style="display: flex; flex-direction: column;">
+        `;
+        
+        let totalValue = 0;
+        markets.forEach(coin => {
+            const amount = Math.max(0, balances[coin.symbol] || 0); 
+            const value = amount * coin.price;
+            totalValue += value;
+            const rowClass = amount === 0 ? 'asset-row zero-row' : 'asset-row';
+            html += `<div class="${rowClass}" onclick="window.showAssetActions('${coin.symbol}', '${coin.name}', ${amount}, ${value})">
+                <div class="asset-name"><div class="market-icon" style="background:${coin.color};">${coin.icon}</div> ${coin.name}</div>
+                <div class="asset-amount">${amount.toFixed(6)}</div>
+                <div class="asset-value">$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+            </div>`;
+        });
+        html += `</div>`;
+        assetsCard.innerHTML = html;
+        
+        const totalEl = document.getElementById('totalPortfolioValue');
+        if (totalEl) {
+            totalEl.dataset.realValue = `$${Math.max(0, totalValue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            totalEl.textContent = localStorage.getItem('hideBalance') === 'true' ? '******' : totalEl.dataset.realValue;
+        }
+        
+        const toggle = document.getElementById('hideZeroToggle');
+        if (toggle) {
+            toggle.addEventListener('change', (e) => {
+                const isChecked = e.target.checked; localStorage.setItem('hideZeroBalances', isChecked);
+                const listContainer = document.getElementById('assetsListContainer');
+                if (isChecked) listContainer.classList.add('hide-zeros'); else listContainer.classList.remove('hide-zeros');
+                document.getElementById('toggleTrack').style.backgroundColor = isChecked ? '#00d4aa' : '#3a3a4a';
+                document.getElementById('toggleThumb').style.left = isChecked ? '21px' : '2px';
+            });
+        }
+    } catch (error) { console.log("Balance fetch error:", error); }
+};
