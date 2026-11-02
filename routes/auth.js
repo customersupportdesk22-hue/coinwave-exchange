@@ -9,13 +9,13 @@ const QRCode = require('qrcode');
 // 1. Define the Authentication Middleware
 const authMiddleware = (req, res, next) => {
     const token = req.header('Authorization')?.split(' ')[1];
-    if (!token) return res.status(401).json({ message: 'No token, authorization denied' });
+    if (!token) return res.status(401).json({ error: 'No token, authorization denied' });
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
         req.user = decoded;
         next();
     } catch (err) {
-        res.status(401).json({ message: 'Token is not valid' });
+        res.status(401).json({ error: 'Token is not valid' });
     }
 };
 
@@ -48,7 +48,7 @@ router.post('/login', async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
-        const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '7d' });
+        const token = jwt.sign({ id: user._id.toString(), email: user.email }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '7d' });
         
         res.json({ token, user: { name: user.name, email: user.email, country: user.country } });
     } catch (error) {
@@ -59,19 +59,26 @@ router.post('/login', async (req, res) => {
 // 4. Generate 2FA Secret and QR Code
 router.post('/generate-2fa', authMiddleware, async (req, res) => {
     try {
-        const user = await User.findById(req.user.id || req.user._id);
+        const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         const secret = speakeasy.generateSecret({ name: `CoinWave (${user.email})` });
         user.twoFactorSecret = secret.base32;
         await user.save();
 
-        QRCode.toDataURL(secret.otpauth_url, (err, data_url) => {
-            if (err) return res.status(500).json({ error: 'Error generating QR' });
-            res.json({ secret: secret.base32, qrCodeUrl: data_url });
+        // Wrap the QR code generation in a Promise to catch any errors properly
+        const qrCodeUrl = await new Promise((resolve, reject) => {
+            QRCode.toDataURL(secret.otpauth_url, (err, data_url) => {
+                if (err) reject(err);
+                else resolve(data_url);
+            });
         });
+
+        res.json({ secret: secret.base32, qrCodeUrl: qrCodeUrl });
+        
     } catch (error) {
-        res.status(500).json({ error: 'Server error' });
+        console.error("2FA Generate Error:", error); 
+        res.status(500).json({ error: error.message || 'Server error' }); // Send actual error to frontend
     }
 });
 
@@ -79,7 +86,7 @@ router.post('/generate-2fa', authMiddleware, async (req, res) => {
 router.post('/enable-2fa', authMiddleware, async (req, res) => {
     try {
         const { token } = req.body;
-        const user = await User.findById(req.user.id || req.user._id);
+        const user = await User.findById(req.user.id);
         
         if (!user || !user.twoFactorSecret) return res.status(400).json({ error: '2FA not initialized' });
 
@@ -97,7 +104,8 @@ router.post('/enable-2fa', authMiddleware, async (req, res) => {
             res.status(400).json({ error: 'Invalid code' });
         }
     } catch (error) {
-        res.status(500).json({ error: 'Server error' });
+        console.error("2FA Enable Error:", error);
+        res.status(500).json({ error: error.message || 'Server error' });
     }
 });
 
