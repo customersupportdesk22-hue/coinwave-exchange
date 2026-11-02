@@ -1083,3 +1083,85 @@ window.open2FAModal = async function() {
         modal.innerHTML = `<div class="modal-content"><p style="color:#f6465d; text-align:center;">Error: ${err.message}</p></div>`; 
     }
 };
+
+/* =====================================================
+   BINANCE-STYLE TRADE VIEW POLISH
+   ===================================================== */
+// 1. Inject CSS for tighter spacing and input suffixes
+const tradeStyle = document.createElement('style');
+tradeStyle.innerHTML = `
+    .trade-box .input-group { margin-bottom: 12px !important; }
+    .trade-box .input-group label { font-size: 11px !important; margin-bottom: 4px !important; }
+    .amount-wrapper { position: relative; width: 100%; }
+    .amount-suffix { position: absolute; right: 14px; top: 15px; color: #888; font-weight: bold; font-size: 14px; pointer-events: none; }
+    .available-balance { font-size: 11px; color: #888; float: right; font-weight: normal; text-transform: none; }
+    .bank-details-group .input-group { margin-bottom: 8px !important; }
+`;
+document.head.appendChild(tradeStyle);
+
+// 2. Function to apply the UI updates
+window.polishTradeView = async function() {
+    const amtInput = document.getElementById('tradeAmount');
+    const amountLabel = document.getElementById('amountLabel');
+    if (!amtInput || !amountLabel) return;
+
+    // A. Wrap the amount input and add the suffix (e.g., USD or BTC)
+    if (!amtInput.parentElement.classList.contains('amount-wrapper')) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'amount-wrapper';
+        amtInput.parentNode.insertBefore(wrapper, amtInput);
+        wrapper.appendChild(amtInput);
+        
+        const suffix = document.createElement('span');
+        suffix.className = 'amount-suffix';
+        suffix.id = 'tradeAmountSuffix';
+        wrapper.appendChild(suffix);
+    }
+
+    // B. Add "Available Balance" to the label
+    if (!document.getElementById('tradeAvailableBalance')) {
+        const balSpan = document.createElement('span');
+        balSpan.id = 'tradeAvailableBalance';
+        balSpan.className = 'available-balance';
+        amountLabel.appendChild(balSpan);
+    }
+
+    // C. Update the suffix and available balance based on mode and coin
+    const coinSymbol = document.getElementById('tradeCoin').value;
+    const suffixEl = document.getElementById('tradeAmountSuffix');
+    const balEl = document.getElementById('tradeAvailableBalance');
+    const curr = getUserCurrency();
+
+    if (currentTradeMode === 'buy') {
+        suffixEl.textContent = curr.code; // e.g., KES, USD
+        balEl.textContent = ""; // Usually doesn't show available fiat on buy, or we could fetch it
+    } else {
+        suffixEl.textContent = coinSymbol; // e.g., BTC, ETH
+        // Fetch the user's balance for this specific coin to display
+        try {
+            const res = await fetch(`/api/user/${currentUser.email}/balances`);
+            const balances = await res.json();
+            const bal = balances[coinSymbol] || 0;
+            balEl.textContent = `Available: ${bal.toFixed(6)} ${coinSymbol}`;
+        } catch(e) { balEl.textContent = ""; }
+    }
+};
+
+// 3. Hook into setTradeMode to run the polish every time the view changes
+var originalSetTradeModeBinance = window.setTradeMode;
+window.setTradeMode = function(mode) {
+    originalSetTradeModeBinance(mode);
+    setTimeout(() => window.polishTradeView(), 50);
+};
+
+// 4. Hook into selectTradeAsset to update the balance when a new coin is selected
+var originalSelectTradeAssetBinance = window.selectTradeAsset;
+window.selectTradeAsset = function(symbol) {
+    originalSelectTradeAssetBinance(symbol);
+    setTimeout(() => window.polishTradeView(), 50);
+};
+
+// 5. Run on load
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => window.polishTradeView(), 500);
+});
