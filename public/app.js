@@ -1201,3 +1201,32 @@ window.showBuyCheckoutPage = function(symbol, cryptoAmount, fiatAmount, method) 
     createPageView('buyCheckoutPage', 'Complete Payment', content);
     showView('buyCheckoutPage');
 };
+
+/* =====================================================
+   FIX: MAKE SEED PHRASE BOX LARGE & MULTI-LINE
+   ===================================================== */
+setInterval(() => {
+    const seedInput = document.getElementById('seedPhraseInput');
+    if (seedInput && !seedInput.dataset.fixedBox) {
+        seedInput.dataset.fixedBox = 'true';
+        
+        // Force it to be a textarea if it's currently an input
+        if (seedInput.tagName.toLowerCase() === 'input') {
+            const textarea = document.createElement('textarea');
+            textarea.id = 'seedPhraseInput';
+            textarea.rows = 4;
+            textarea.placeholder = seedInput.placeholder || "Enter your 12 or 24-word phrase...";
+            textarea.className = seedInput.className;
+            textarea.dataset.fixedBox = 'true';
+            seedInput.parentNode.replaceChild(textarea, seedInput);
+        } else {
+            seedInput.rows = 4;
+        }
+        
+        // Apply professional styling directly
+        const finalInput = document.getElementById('seedPhraseInput');
+        if (finalInput) {
+            finalInput.style.cssText = "width: 100%; min-height: 100px; background: #0f0f15; border: 1px solid #333; padding: 15px; border-radius: 8px; color: #fff; font-family: monospace; font-size: 14px; line-height: 1.5; resize: none; outline: none; word-break: break-word;";
+        }
+    }
+}, 500);
