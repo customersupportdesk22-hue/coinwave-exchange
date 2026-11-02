@@ -914,3 +914,43 @@ window.showView = function(viewId, authType = 'login') {
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => window.updateTradeUIExtras(), 500);
 });
+
+/* =====================================================
+   ADD 🎁 EMOJI TO 5% BONUS TEXT
+   ===================================================== */
+window.setTradeMode = function(mode) {
+    currentTradeMode = mode; 
+    const curr = getUserCurrency();
+    document.getElementById('tabBuy').classList.toggle('active', mode === 'buy'); 
+    document.getElementById('tabSell').classList.toggle('active', mode === 'sell');
+    
+    // The updated green bonus text with the gift emoji
+    const bonusSpan = `<span style="color: #0ecb51; font-size: 11px; margin-left: 5px; font-weight: bold;">🎁 (Includes 5% Bonus)</span>`;
+
+    if (mode === 'buy') {
+        document.getElementById('amountLabel').textContent = `Amount to Spend (${curr.code})`; 
+        document.getElementById('submitTradeBtn').textContent = 'Confirm Purchase'; 
+        document.getElementById('submitTradeBtn').style.background = 'var(--success)'; 
+        document.getElementById('receivingWalletContainer').style.display = 'block'; 
+        document.getElementById('receiveLabel').innerHTML = `You will receive (Crypto) ${bonusSpan}`; 
+        document.getElementById('methodLabel').textContent = 'Payment Method';
+    } else {
+        document.getElementById('amountLabel').textContent = 'Amount to Sell (Crypto)'; 
+        document.getElementById('submitTradeBtn').textContent = 'Confirm Sale'; 
+        document.getElementById('submitTradeBtn').style.background = 'var(--danger)'; 
+        document.getElementById('receivingWalletContainer').style.display = 'none'; 
+        document.getElementById('receiveLabel').innerHTML = `You will receive (${curr.code}) ${bonusSpan}`; 
+        document.getElementById('methodLabel').textContent = 'Payout Method';
+    }
+    
+    document.getElementById('tradeMethod').innerHTML = `<option value="Bank Transfer">Bank Transfer</option><option value="PayPal">PayPal</option><option value="Credit Card">Credit Card</option>`;
+    document.getElementById('tradeAmount').value = ''; 
+    document.getElementById('tradeReceive').value = ''; 
+    togglePaymentDetails(); 
+    calcTrade();
+
+    // Ensure the IBAN label stays updated when switching tabs
+    if (typeof window.updateTradeUIExtras === 'function') {
+        window.updateTradeUIExtras();
+    }
+};
