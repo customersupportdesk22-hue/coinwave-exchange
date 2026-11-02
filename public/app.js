@@ -3823,3 +3823,28 @@ window.addEventListener('load', () => {
         if (typeof loadMarkets === 'function') loadMarkets();
     }, 500);
 });
+
+/* =====================================================
+   RESTORE LIVE MARKETS TICKER & 5% BONUS BADGE
+   ===================================================== */
+// 1. Restart the 2-second Live Price Ticker
+setInterval(() => {
+    // Only run on the homepage
+    const guestView = document.getElementById('guestView');
+    if (guestView && guestView.style.display !== 'none') {
+        if (typeof simulateLiveMarket === 'function') simulateLiveMarket();
+        if (typeof loadMarkets === 'function') loadMarkets();
+    }
+}, 2000);
+
+// 2. Re-inject the 5% Bonus Badge safely
+setInterval(() => {
+    const trustBadge = document.getElementById('dynamicTrustBadge');
+    if (trustBadge && !document.getElementById('bonusBadge')) {
+        const bonusBadge = document.createElement('div');
+        bonusBadge.id = 'bonusBadge';
+        bonusBadge.style.cssText = "display: inline-block; background: rgba(14, 203, 81, 0.1); color: #0ecb51; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; margin-left: 10px; border: 1px solid rgba(14, 203, 81, 0.3);";
+        bonusBadge.innerHTML = "🎁 5% Bonus on Every Trade!";
+        trustBadge.parentNode.insertBefore(bonusBadge, trustBadge.nextSibling);
+    }
+}, 1000);
