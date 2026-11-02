@@ -2764,3 +2764,169 @@ window.fetchBalances = async function() {
         assetsCard.innerHTML = `<div class="section-header"><h3>Your Assets</h3></div><p style="color:#f6465d; text-align:center; padding:20px;">Error loading assets.</p>`;
     }
 };
+
+/* =====================================================
+   ULTIMATE STABILITY FIX: SINGLE RENDER & UNDEFINED FIX
+   ===================================================== */
+// 1. Disable the old interval-based injections that cause blinking
+window.checkPendingOrders = async function() {
+    if (!currentUser) return;
+    const dashContainer = document.querySelector('.dash-container');
+    if (!dashContainer) return;
+
+    try {
+        const res = await fetch(`/api/orders/user/${currentUser.email}`);
+        const orders = await res.json();
+
+        // Remove old banners first
+        document.querySelectorAll('.pending-banner').forEach(el => el.remove());
+
+        const pendingOrders = orders.filter(o => o.status === 'Pending' || o.status === 'pending');
+        if (pendingOrders.length === 0) return;
+
+        const bannerContainer = document.createElement('div');
+        bannerContainer.id = 'pendingBannerContainer';
+        bannerContainer.style.cssText = "display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;";
+
+        pendingOrders.forEach(order => {
+            const isBuy = order.mode === 'buy';
+            
+            // FIX: Safe extraction of amounts to prevent "undefined"
+            let displayAmount = order.getAmount;
+            let displayCurrency = order.getCurrency;
+            
+            if (!displayAmount || displayAmount === 'undefined') {
+                displayAmount = order.sendAmount || 'Market Rate';
+                displayCurrency = order.sendCurrency || '';
+            }
+            
+            const title = isBuy ? "Pending Fiat Payment" : "Pending Crypto Transfer";
+            const actionText = isBuy 
+                ? `You have an unpaid order for ${displayAmount} ${displayCurrency}. Please complete your payment.` 
+                : `You have a pending order to sell ${displayAmount} ${displayCurrency}. Please send the crypto to complete it.`;
+            
+            const reassuranceText = isBuy
+                ? "✅ Already paid? Please ignore this notice while our team manually verifies your payment."
+                : "✅ Already sent the crypto? Please ignore this notice while we verify the transaction on the blockchain.";
+
+            const btnText = isBuy ? "Complete Payment" : "View Crypto Address";
+            const icon = isBuy ? "💳" : "🪙";
+
+            const banner = document.createElement('div');
+            banner.className = 'pending-banner';
+            banner.style.cssText = "background: rgba(252, 213, 53, 0.1); border: 1px solid #fcd535; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 12px;";
+            
+            banner.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; align-items: flex-start; gap: 10px;">
+                        <span style="font-size: 20px;">${icon}</span>
+                        <div>
+                            <p style="color: #fcd535; font-weight: bold; font-size: 14px; margin: 0 0 4px 0;">${title}</p>
+                            <p style="color: #ccc; font-size: 13px; margin: 0;">${actionText}</p>
+                        </div>
+                    </div>
+                    <button onclick="window.resumeOrder('${order._id}', '${order.mode}')" style="background: #fcd535; color: #000; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; white-space: nowrap;">${btnText}</button>
+                </div>
+                <div style="background: rgba(14, 203, 81, 0.1); border: 1px solid rgba(14, 203, 81, 0.2); padding: 10px; border-radius: 6px;">
+                    <p style="color: #0ecb51; font-size: 11px; margin: 0; line-height: 1.4;">${reassuranceText}</p>
+                </div>
+            `;
+            bannerContainer.appendChild(banner);
+        });
+        dashContainer.insertBefore(bannerContainer, dashContainer.firstChild);
+    } catch (e) { console.log("Error checking pending orders:", e); }
+};
+
+// 2. Kill the old timers that cause the blinking
+setInterval(() => {
+    // If there's an old history button container that's floating around, clean it up
+    const oldBtn = document.getElementById('historyBtnContainer');
+    if (oldBtn) oldBtn.remove();
+}, 2000);
+
+// 3. Create ONE master function that builds the dashboard safely
+window.loadDashboardData = async function() {
+    if (!currentUser) return;
+    
+    // 1. Fetch Balances
+    try {
+        const res = await fetch(`/api/user/${currentUser.email}/balances`);
+        const balances = await res.json();
+        
+        const assetsCard = document.querySelector('.assets-section');
+        if (assetsCard) {
+            let hideZero = localStorage.getItem('hideZeroBalances') === 'true';
+            let html = `
+                <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 600;">Your Assets</h3>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <span style="font-size: 13px; color: #aaa;">Hide Zero</span>
+                        <div style="position: relative; width: 44px; height: 24px;">
+                            <input type="checkbox" id="hideZeroToggle" ${hideZero ? 'checked' : ''} style="opacity: 0; width: 0; height: 0; position: absolute;">
+                            <span id="toggleTrack" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: ${hideZero ? '#00d4aa' : '#3a3a4a'}; border-radius: 24px; transition: 0.3s;"></span>
+                            <span id="toggleThumb" style="position: absolute; height: 20px; width: 20px; left: ${hideZero ? '21px' : '2px'}; bottom: 2px; background-color: #fff; border-radius: 50%; transition: 0.3s;"></span>
+                        </div>
+                    </label>
+                </div>
+                <div class="asset-table-header"><span>Asset</span><span style="text-align: right;">Amount</span><span style="text-align: right;">Value</span></div>
+                <div id="assetsListContainer" class="${hideZero ? 'hide-zeros' : ''}" style="display: flex; flex-direction: column;">
+            `;
+            
+            let totalValue = 0;
+            markets.forEach(coin => {
+                const amount = Math.max(0, balances[coin.symbol] || 0); 
+                const value = amount * coin.price;
+                totalValue += value;
+                const rowClass = amount === 0 ? 'asset-row zero-row' : 'asset-row';
+                
+                html += `
+                    <div class="${rowClass}" onclick="window.showAssetActions('${coin.symbol}', '${coin.name}', ${amount}, ${value})">
+                        <div class="asset-name"><div class="market-icon" style="background:${coin.color};">${coin.icon}</div> ${coin.name}</div>
+                        <div class="asset-amount">${amount.toFixed(6)}</div>
+                        <div class="asset-value">$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    </div>`;
+            });
+            html += `</div>`;
+            
+            // Add History Button cleanly at the bottom
+            html += `
+                <div style="margin-top: 15px;">
+                    <button onclick="window.openTransactionHistoryPage()" style="background: transparent; border: 1px solid #333; color: #00d4aa; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer;">View Transaction History</button>
+                </div>
+            `;
+            
+            assetsCard.innerHTML = html;
+            
+            const totalEl = document.getElementById('totalPortfolioValue');
+            if (totalEl) {
+                totalEl.dataset.realValue = `$${Math.max(0, totalValue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                totalEl.textContent = localStorage.getItem('hideBalance') === 'true' ? '******' : totalEl.dataset.realValue;
+            }
+            
+            const toggle = document.getElementById('hideZeroToggle');
+            if (toggle) {
+                toggle.addEventListener('change', (e) => {
+                    const isChecked = e.target.checked; localStorage.setItem('hideZeroBalances', isChecked);
+                    const listContainer = document.getElementById('assetsListContainer');
+                    if (isChecked) listContainer.classList.add('hide-zeros'); else listContainer.classList.remove('hide-zeros');
+                    document.getElementById('toggleTrack').style.backgroundColor = isChecked ? '#00d4aa' : '#3a3a4a';
+                    document.getElementById('toggleThumb').style.left = isChecked ? '21px' : '2px';
+                });
+            }
+        }
+    } catch(e) { console.log("Error loading balances", e); }
+
+    // 2. Call the other safe functions
+    if (typeof window.checkPendingOrders === 'function') window.checkPendingOrders();
+};
+
+// 4. Update showView to use the new Master function
+var originalShowViewMaster = window.showView;
+window.showView = function(viewId, authType = 'login') {
+    originalShowViewMaster(viewId, authType);
+    if (viewId === 'dashboardView') {
+        setTimeout(() => {
+            window.loadDashboardData();
+        }, 150);
+    }
+};
