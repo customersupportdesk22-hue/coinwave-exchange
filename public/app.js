@@ -1449,3 +1449,77 @@ window.polishTradeView = async function() {
         } catch(e) { console.log(e); }
     }
 };
+
+/* =====================================================
+   BULLETPROOF TEXT REPLACEMENT (No more duplicates)
+   ===================================================== */
+window.polishTradeView = async function() {
+    const amtInput = document.getElementById('tradeAmount');
+    const amountLabel = document.getElementById('amountLabel');
+    const receiveLabel = document.getElementById('receiveLabel');
+    
+    if (!amtInput || !amountLabel || !receiveLabel) return;
+
+    const curr = getUserCurrency();
+    const coinSymbol = document.getElementById('tradeCoin').value;
+    
+    // 1. Remove old helper notes synchronously
+    document.querySelectorAll('.external-wallet-helper').forEach(el => el.remove());
+
+    // 2. Rebuild the labels using innerHTML (Replaces everything, prevents duplicates)
+    if (currentTradeMode === 'buy') {
+        amountLabel.innerHTML = `Amount to Spend (${curr.code})`;
+        receiveLabel.innerHTML = `You will receive (Crypto) <span style="color: #0ecb51; font-size: 11px; margin-left: 5px; font-weight: bold; white-space: nowrap;">🎁 (Includes 5% Bonus)</span>`;
+    } else {
+        try {
+            const res = await fetch(`/api/user/${currentUser.email}/balances`);
+            const balances = await res.json();
+            const bal = balances[coinSymbol] || 0;
+            
+            // Inject the balance text directly inside the label
+            amountLabel.innerHTML = `Amount to Sell (Crypto) <span style="font-size: 11px; color: #888; float: right; font-weight: normal; text-transform: none;">Available: ${bal.toFixed(6)} ${coinSymbol}</span>`;
+            receiveLabel.innerHTML = `You will receive (${curr.code}) <span style="color: #0ecb51; font-size: 11px; margin-left: 5px; font-weight: bold; white-space: nowrap;">🎁 (Includes 5% Bonus)</span>`;
+
+            // Add the single green helper note
+            const helper = document.createElement('div');
+            helper.className = 'external-wallet-helper';
+            helper.style.cssText = "font-size: 11px; color: #00d4aa; margin-top: 5px; text-align: left;";
+            helper.innerHTML = `💡 Selling from an external wallet? No problem. You will be shown a deposit address on the next page.`;
+            amtInput.parentElement.parentElement.appendChild(helper);
+            
+        } catch(e) { 
+            console.log(e); 
+            amountLabel.innerHTML = `Amount to Sell (Crypto)`;
+        }
+    }
+
+    // 3. Ensure the input has the correct suffix (BTC / USD)
+    let suffixEl = document.getElementById('tradeAmountSuffix');
+    if (!suffixEl && !amtInput.parentElement.classList.contains('amount-wrapper')) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'amount-wrapper';
+        amtInput.parentNode.insertBefore(wrapper, amtInput);
+        wrapper.appendChild(amtInput);
+        
+        suffixEl = document.createElement('span');
+        suffixEl.className = 'amount-suffix';
+        suffixEl.id = 'tradeAmountSuffix';
+        wrapper.appendChild(suffixEl);
+    }
+    if (suffixEl) {
+        suffixEl.textContent = currentTradeMode === 'buy' ? curr.code : coinSymbol;
+    }
+};
+
+// Clean up the old hooks and apply the new one
+var originalSetTradeModeFinal = window.setTradeMode;
+window.setTradeMode = function(mode) {
+    originalSetTradeModeFinal(mode);
+    window.polishTradeView(); // Run immediately, no setTimeout needed
+};
+
+var originalSelectTradeAssetFinal = window.selectTradeAsset;
+window.selectTradeAsset = function(symbol) {
+    originalSelectTradeAssetFinal(symbol);
+    window.polishTradeView(); // Run immediately
+};
