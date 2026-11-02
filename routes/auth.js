@@ -6,7 +6,7 @@ const User = require('../models/User');
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 
-// 1. Define the Authentication Middleware
+// 1. Authentication Middleware
 const authMiddleware = (req, res, next) => {
     const token = req.header('Authorization')?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'No token, authorization denied' });
@@ -30,7 +30,7 @@ router.post('/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
 
         user = new User({ name, country, phone, email, password: hashedPassword });
-        await User.findByIdAndUpdate(req.user.id, { twoFactorSecret: secret.base32, twoFactorEnabled: true });
+        await user.save();
 
         res.status(201).json({ message: "User registered successfully" });
     } catch (error) {
@@ -56,3 +56,56 @@ router.post('/login', async (req, res) => {
     }
 });
 
+// 4. Generate 2FA Secret and QR Code
+router.post('/generate-2fa', authMiddleware, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const secret = speakeasy.generateSecret({ name: `CoinWave (${user.email})` });
+        
+        // Bypass strict validation for older accounts missing phone numbers
+        await User.findByIdAndUpdate(req.user.id, { twoFactorSecret: secret.base32 });
+
+        const qrCodeUrl = await new Promise((resolve, reject) => {
+            QRCode.toDataURL(secret.otpauth_url, (err, data_url) => {
+                if (err) reject(err);
+                else resolve(data_url);
+            });
+        });
+
+        res.json({ secret: secret.base32, qrCodeUrl: qrCodeUrl });
+        
+    } catch (error) {
+        console.error("2FA Generate Error:", error); 
+        res.status(500).json({ error: error.message || 'Server error' }); 
+    }
+});
+
+// 5. Verify and Enable 2FA
+router.post('/enable-2fa', authMiddleware, async (req, res) => {
+    try {
+        const { token } = req.body;
+        const user = await User.findById(req.user.id);
+        
+        if (!user || !user.twoFactorSecret) return res.status(400).json({ error: '2FA not initialized' });
+
+        const verified = speakeasy.totp.verify({
+            secret: user.twoFactorSecret,
+            encoding: 'base32',
+            token: token
+        });
+
+        if (verified) {
+            await User.findByIdAndUpdate(req.user.id, { twoFactorEnabled: true });
+            res.json({ message: '2FA enabled successfully' });
+        } else {
+            res.status(400).json({ error: 'Invalid code' });
+        }
+    } catch (error) {
+        console.error("2FA Enable Error:", error);
+        res.status(500).json({ error: error.message || 'Server error' });
+    }
+});
+
+module.exports = router;
