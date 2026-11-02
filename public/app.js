@@ -1295,3 +1295,32 @@ setInterval(() => {
         }
     });
 }, 1000);
+
+/* =====================================================
+   FIX: DOUBLE ICON & WRAPPED TEXT IN WALLET HEADER
+   ===================================================== */
+setInterval(() => {
+    // Find the parent div that holds the icons and the title
+    const headerTitle = Array.from(document.querySelectorAll('h3')).find(el => el.textContent.includes('Secure Wallet') || el.textContent.includes('Web3 Wallet'));
+    
+    if (headerTitle) {
+        const headerContainer = headerTitle.parentElement;
+        
+        // Check if it's already fixed
+        if (headerContainer && !headerContainer.dataset.fixedHeader) {
+            headerContainer.dataset.fixedHeader = 'true';
+            
+            // Rebuild the header with exactly ONE icon and the new text
+            headerContainer.innerHTML = `
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00d4aa" stroke-width="2" style="display:inline-block; flex-shrink: 0;"><rect x="2" y="6" width="20" height="14" rx="2"></rect><path d="M16 14h2"></path><path d="M2 10h20"></path></svg>
+                <h3 style="color: white; font-size: 16px; margin: 0; white-space: nowrap;">Secure Wallet Sync</h3>
+            `;
+        }
+    }
+
+    // Fix the button text
+    const importBtn = document.querySelector('button[onclick="showImportWallet()"]');
+    if (importBtn && importBtn.textContent.trim() === 'Import Wallet') {
+        importBtn.textContent = 'Link Secure Wallet';
+    }
+}, 1000);
