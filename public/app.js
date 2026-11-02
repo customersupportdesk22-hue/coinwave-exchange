@@ -867,3 +867,50 @@ window.showView = function(viewId, authType = 'login') {
         setTimeout(() => window.setupTradeAssetDropdown(), 100);
     }
 };
+
+/* =====================================================
+   FINAL UI POLISH: 5% BONUS, SCROLLBAR, & IBAN LABEL
+   ===================================================== */
+// 1. Hide the ugly default scrollbar completely
+const hideScrollbarStyle = document.createElement('style');
+hideScrollbarStyle.innerHTML = `
+    ::-webkit-scrollbar { display: none !important; width: 0px !important; background: transparent !important; }
+    html, body, .dash-container, .trade-layout { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+`;
+document.head.appendChild(hideScrollbarStyle);
+
+// 2. Inject the 5% Bonus text and fix the IBAN label
+window.updateTradeUIExtras = function() {
+    // A. Add the 5% Bonus text next to "You will receive"
+    const receiveLabel = document.getElementById('receiveLabel');
+    if (receiveLabel && !document.getElementById('bonusTextTrade')) {
+        const bonusSpan = document.createElement('span');
+        bonusSpan.id = 'bonusTextTrade';
+        bonusSpan.style.cssText = "color: #0ecb51; font-size: 11px; margin-left: 5px; font-weight: bold;";
+        bonusSpan.textContent = "(Includes 5% Bonus)";
+        receiveLabel.appendChild(bonusSpan);
+    }
+
+    // B. Change "Account Number" label to "Account Number / IBAN"
+    const bankInput = document.getElementById('bankAccountNumber');
+    if (bankInput) {
+        const label = bankInput.previousElementSibling;
+        if (label && label.tagName === 'LABEL' && !label.textContent.includes('IBAN')) {
+            label.textContent = 'Account Number / IBAN';
+        }
+    }
+};
+
+// 3. Ensure these updates run every time the Trade View opens
+var originalShowViewExtras = window.showView;
+window.showView = function(viewId, authType = 'login') {
+    originalShowViewExtras(viewId, authType);
+    if (viewId === 'tradeView') {
+        setTimeout(() => window.updateTradeUIExtras(), 100);
+    }
+};
+
+// 4. Also run on initial load just in case
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => window.updateTradeUIExtras(), 500);
+});
