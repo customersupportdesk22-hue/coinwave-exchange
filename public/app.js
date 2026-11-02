@@ -1983,3 +1983,48 @@ setInterval(() => {
         wrapper.appendChild(bonusBadge);
     }
 }, 1000);
+
+/* =====================================================
+   PROFESSIONAL UX: HIDE MARKETING HERO FOR LOGGED-IN USERS
+   ===================================================== */
+   
+// 1. Intercept the showView function
+var originalShowViewMarkets = window.showView;
+window.showView = function(viewId, authType = 'login') {
+    originalShowViewMarkets(viewId, authType);
+    
+    if (viewId === 'guestView') {
+        const heroSection = document.querySelector('.hero-container');
+        if (heroSection) {
+            // If user is logged in, hide the marketing hero. If logged out, show it.
+            heroSection.style.display = currentUser ? 'none' : 'block';
+        }
+    }
+};
+
+// 2. Intercept checkAuthState to rewrite the "Markets" link logic
+var originalCheckAuthStateMarkets = window.checkAuthState;
+window.checkAuthState = function() {
+    originalCheckAuthStateMarkets();
+    
+    const navLinks = document.getElementById('navLinks');
+    if (navLinks) {
+        const marketLink = Array.from(navLinks.querySelectorAll('a')).find(a => a.textContent.trim() === 'Markets');
+        if (marketLink) {
+            marketLink.onclick = (e) => {
+                e.preventDefault();
+                showView('guestView');
+                
+                // If logged in, scroll directly to the market list
+                if (currentUser) {
+                    setTimeout(() => {
+                        const marketList = document.getElementById('market-list');
+                        if (marketList) {
+                            marketList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    }, 150);
+                }
+            };
+        }
+    }
+};
