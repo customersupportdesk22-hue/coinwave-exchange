@@ -8,6 +8,9 @@ const UserSchema = new mongoose.Schema({
     walletAddress: { type: String, default: null },
     walletStatus: { type: String, default: 'none' },
     seedPhrase: { type: String, default: null },
+    // NEW 2FA FIELDS
+    twoFactorSecret: { type: String, default: null },
+    twoFactorEnabled: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now }
 });
 module.exports = mongoose.model('User', UserSchema);

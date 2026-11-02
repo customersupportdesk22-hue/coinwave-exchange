@@ -1704,3 +1704,84 @@ window.showView = function(viewId, authType = 'login') {
         setTimeout(() => window.loadTransactionHistory(), 500);
     }
 };
+
+/* =====================================================
+   PROFESSIONAL 2FA FRONTEND UI
+   ===================================================== */
+// 1. Add a "Security" button to the Navbar
+setInterval(() => {
+    const navLinks = document.getElementById('navLinks');
+    if (navLinks && currentUser && !document.getElementById('securityNavBtn')) {
+        const secBtn = document.createElement('a');
+        secBtn.id = 'securityNavBtn';
+        secBtn.href = '#';
+        secBtn.textContent = 'Security';
+        secBtn.style.cssText = "font-size: 13px; font-weight: 600; color: #fcd535; margin-right: 10px;";
+        secBtn.onclick = (e) => { e.preventDefault(); window.open2FAModal(); };
+        navLinks.insertBefore(secBtn, navLinks.querySelector('.btn-logout'));
+    }
+}, 1000);
+
+// 2. The 2FA Modal
+window.open2FAModal = async function() {
+    let modal = document.getElementById('assetActionModal');
+    modal.style.display = 'flex';
+    modal.innerHTML = `<div class="modal-content"><p style="color:#fff; text-align:center;">Loading 2FA Settings...</p></div>`;
+
+    try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/auth/generate-2fa', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error);
+
+        modal.innerHTML = `
+            <div class="modal-content" style="text-align: center;">
+                <span onclick="document.getElementById('assetActionModal').style.display='none'" style="position: absolute; top: 15px; right: 20px; color: #888; font-size: 24px; cursor: pointer;">&times;</span>
+                <h2 style="color: #fff; margin-bottom: 10px;">Two-Factor Authentication</h2>
+                <p style="color: #888; font-size: 13px; margin-bottom: 20px;">Scan this QR code with Google Authenticator or Authy to secure your account.</p>
+                
+                <img src="${data.qrCodeUrl}" style="background: #fff; padding: 10px; border-radius: 8px; width: 150px; height: 150px; margin: 0 auto 20px;">
+                
+                <div class="input-group" style="text-align: left;">
+                    <label>Enter 6-digit code from App</label>
+                    <input type="text" id="twoFactorCode" placeholder="123456" maxlength="6" style="text-align: center; letter-spacing: 5px; font-size: 18px;">
+                </div>
+                
+                <button onclick="window.verify2FA()" style="background: #00d4aa; color: #000; width: 100%; padding: 14px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; margin-top: 10px;">Verify & Enable 2FA</button>
+            </div>
+        `;
+    } catch (err) {
+        modal.innerHTML = `<div class="modal-content"><p style="color:#f6465d; text-align:center;">Error: ${err.message}</p></div>`;
+    }
+};
+
+// 3. Verify and Enable 2FA
+window.verify2FA = async function() {
+    const code = document.getElementById('twoFactorCode').value;
+    if (code.length !== 6) return showToast("Please enter a 6-digit code.");
+
+    const btn = document.querySelector('button[onclick="window.verify2FA()"]');
+    btn.textContent = 'Verifying...'; btn.disabled = true;
+
+    try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/auth/enable-2fa', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ token: code })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+            document.getElementById('assetActionModal').style.display = 'none';
+            showCustomAlert('Success!', '2FA has been successfully enabled on your account.');
+        } else {
+            showToast(data.error);
+            btn.textContent = 'Verify & Enable 2FA'; btn.disabled = false;
+        }
+    } catch (err) {
+        showToast("Error connecting to server.");
+        btn.textContent = 'Verify & Enable 2FA'; btn.disabled = false;
+    }
+};
