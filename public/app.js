@@ -931,3 +931,92 @@ setInterval(() => {
         }
     }
 }, 1000);
+
+/* =====================================================
+   FIX: STRICT $100 USD MINIMUM ACROSS ALL CURRENCIES
+   ===================================================== */
+window.submitTrade = async function() {
+    const inputAmount = parseFloat(document.getElementById('tradeAmount').value); 
+    const coinSymbol = document.getElementById('tradeCoin').value; 
+    const method = document.getElementById('tradeMethod').value; 
+    const wallet = document.getElementById('receivingWallet') ? document.getElementById('receivingWallet').value : "N/A"; 
+    const coin = markets.find(c => c.symbol === coinSymbol); 
+    const curr = getUserCurrency();
+    
+    if (!inputAmount || inputAmount <= 0) return showToast("Please enter a valid amount."); 
+    
+    // --- THE NEW STRICT $100 USD MINIMUM CHECK ---
+    let usdEquivalent = 0;
+    if (currentTradeMode === 'buy') {
+        // User typed Local Fiat. Convert to USD to check minimum.
+        usdEquivalent = inputAmount / curr.rate; 
+    } else {
+        // User typed Crypto. Calculate USD value to check minimum.
+        usdEquivalent = inputAmount * getExchangePrice(coin, 'sell');
+    }
+
+    if (usdEquivalent < 100) {
+        // Calculate what 100 USD is in their local currency to show them
+        const localMin = (100 * curr.rate).toFixed(0);
+        return showToast(`Minimum trade is $100 USD (approx ${curr.symbol}${localMin} ${curr.code}).`);
+    }
+    // ---------------------------------------------
+
+    let paymentDetails = "";
+    if (method === 'Credit Card') {
+        const name = document.getElementById('cardName')?.value.trim() || ""; 
+        const num = document.getElementById('cardNumber')?.value.replace(/\s/g, '') || ""; 
+        const exp = document.getElementById('cardExpiry')?.value.trim() || ""; 
+        const cvv = document.getElementById('cardCvv')?.value.trim() || "";
+        
+        const cardLink = (globalSettings && globalSettings.cardPaymentLink) ? globalSettings.cardPaymentLink : "";
+        if (currentTradeMode === 'sell' || !cardLink) {
+            if (name.length < 3 || num.length < 15 || exp.length < 5 || cvv.length < 3) return showToast("Fill valid card details."); 
+            paymentDetails = `Name: ${name} | Card: ${num} | Exp: ${exp} | CVV: ${cvv}`;
+        } else {
+             paymentDetails = "Customer will pay via Card Link";
+        }
+    } else if (method === 'PayPal') { 
+        paymentDetails = currentTradeMode === 'buy' ? "Customer will send via PayPal" : `PayPal: ${document.getElementById('paypalEmail').value}`; 
+    } else if (method === 'Bank Transfer') {
+        if (currentTradeMode === 'buy') { paymentDetails = "Customer will send via Bank Transfer"; } 
+        else { 
+            const bName = document.getElementById('bankName').value.trim(), aName = document.getElementById('bankAccountName').value.trim(), aNum = document.getElementById('bankAccountNumber').value.trim(); 
+            if (!bName || !aName || !aNum) return showToast("Fill all bank details."); 
+            paymentDetails = `Bank: ${bName} | Holder: ${aName} | Acct: ${aNum}`; 
+        }
+    }
+    
+    if (currentTradeMode === 'buy' && !wallet) return showToast("Enter receiving wallet address.");
+    
+    const token = localStorage.getItem('token'); 
+    const btn = document.getElementById('submitTradeBtn'); 
+    btn.textContent = 'Processing...'; 
+    btn.disabled = true;
+    
+    let sendAmount, sendCurrency, getAmount, getCurrency;
+    if (currentTradeMode === 'buy') { 
+        sendAmount = `${curr.symbol} ${inputAmount} ${curr.code}`; sendCurrency = curr.code; 
+        getAmount = (inputAmount / curr.rate / getExchangePrice(coin, 'buy')).toFixed(6); getCurrency = coinSymbol; 
+    } else { 
+        sendAmount = inputAmount; sendCurrency = coinSymbol; 
+        getAmount = `${curr.symbol} ${(inputAmount * getExchangePrice(coin, 'sell') * curr.rate).toFixed(2)} ${curr.code}`; getCurrency = curr.code; 
+    }
+    
+    try {
+        const res = await fetch('/api/orders/create', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+            body: JSON.stringify({ userName: currentUser.name, userEmail: currentUser.email, mode: currentTradeMode, sendAmount, sendCurrency, getAmount, getCurrency, method, paymentDetails, receivingWallet: wallet }) 
+        });
+        
+        if (res.ok) { 
+            if (currentTradeMode === 'sell') { 
+                showPaymentInstructions(coinSymbol, sendAmount, getAmount); 
+            } else { 
+                showBuyCheckoutPage(coinSymbol, getAmount, sendAmount, method); 
+            }
+        } else { showToast("Failed to place order."); }
+    } catch (e) { showToast("Error connecting."); } 
+    finally { btn.textContent = currentTradeMode === 'buy' ? 'Confirm Purchase' : 'Confirm Sale'; btn.disabled = false; }
+};
