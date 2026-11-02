@@ -2451,3 +2451,112 @@ window.checkPendingOrders = async function() {
         console.log("Error checking pending orders:", e);
     }
 };
+
+/* =====================================================
+   BULLETPROOF ASSET RENDERING (Fixes Blank Box)
+   ===================================================== */
+window.fetchBalances = async function() {
+    if (!currentUser) return;
+    
+    // 1. Target the container directly
+    const assetsCard = document.querySelector('.assets-section');
+    if (!assetsCard) return;
+    
+    // Show a loading state immediately
+    assetsCard.innerHTML = `<div class="section-header"><h3>Your Assets</h3></div><p style="color:#888; text-align:center; padding:20px;">Loading assets...</p>`;
+
+    try {
+        // 2. Fetch balances
+        const resBalances = await fetch(`/api/user/${currentUser.email}/balances`);
+        if (!resBalances.ok) throw new Error("Failed to fetch balances");
+        const balances = await resBalances.json();
+        
+        // 3. Safely fetch orders for pending calculation
+        let orders = [];
+        try {
+            const resOrders = await fetch(`/api/orders/user/${currentUser.email}`);
+            if (resOrders.ok) {
+                const orderData = await resOrders.json();
+                orders = Array.isArray(orderData) ? orderData : [];
+            }
+        } catch (e) { console.log("Order fetch failed, continuing without pending data"); }
+        
+        // 4. Calculate pending amounts
+        let pendingAmounts = {};
+        orders.filter(o => o.status === 'Pending' || o.status === 'pending').forEach(o => {
+            if (o.mode === 'buy') {
+                const symbol = o.getCurrency;
+                const amount = parseFloat(o.getAmount) || 0;
+                pendingAmounts[symbol] = (pendingAmounts[symbol] || 0) + amount;
+            }
+        });
+
+        // 5. Build the HTML
+        let hideZero = localStorage.getItem('hideZeroBalances') === 'true';
+        let html = `
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; font-size: 18px; font-weight: 600;">Your Assets</h3>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <span style="font-size: 13px; color: #aaa;">Hide Zero</span>
+                    <div style="position: relative; width: 44px; height: 24px;">
+                        <input type="checkbox" id="hideZeroToggle" ${hideZero ? 'checked' : ''} style="opacity: 0; width: 0; height: 0; position: absolute;">
+                        <span id="toggleTrack" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: ${hideZero ? '#00d4aa' : '#3a3a4a'}; border-radius: 24px; transition: 0.3s;"></span>
+                        <span id="toggleThumb" style="position: absolute; height: 20px; width: 20px; left: ${hideZero ? '21px' : '2px'}; bottom: 2px; background-color: #fff; border-radius: 50%; transition: 0.3s;"></span>
+                    </div>
+                </label>
+            </div>
+            <div class="asset-table-header"><span>Asset</span><span style="text-align: right;">Amount</span><span style="text-align: right;">Value</span></div>
+            <div id="assetsListContainer" class="${hideZero ? 'hide-zeros' : ''}" style="display: flex; flex-direction: column;">
+        `;
+        
+        let totalValue = 0;
+        markets.forEach(coin => {
+            const amount = Math.max(0, balances[coin.symbol] || 0); 
+            const pendingAmt = pendingAmounts[coin.symbol] || 0;
+            const value = amount * coin.price;
+            totalValue += value;
+            
+            const rowClass = amount === 0 ? 'asset-row zero-row' : 'asset-row';
+            const pendingBadge = pendingAmt > 0 ? `<span style="background: rgba(252, 213, 53, 0.1); color: #fcd535; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 8px;">${pendingAmt.toFixed(4)} Pending</span>` : '';
+
+            html += `
+                <div class="${rowClass}" onclick="window.showAssetActions('${coin.symbol}', '${coin.name}', ${amount}, ${value})">
+                    <div class="asset-name">
+                        <div class="market-icon" style="background:${coin.color};">${coin.icon}</div> 
+                        ${coin.name} ${pendingBadge}
+                    </div>
+                    <div class="asset-amount">${amount.toFixed(6)}</div>
+                    <div class="asset-value">$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                </div>`;
+        });
+        html += `</div>`;
+        
+        // 6. Inject into the DOM
+        assetsCard.innerHTML = html;
+        
+        // 7. Update Total Value
+        const totalEl = document.getElementById('totalPortfolioValue');
+        if (totalEl) {
+            totalEl.dataset.realValue = `$${Math.max(0, totalValue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            totalEl.textContent = localStorage.getItem('hideBalance') === 'true' ? '******' : totalEl.dataset.realValue;
+        }
+        
+        // 8. Re-attach toggle listener
+        const toggle = document.getElementById('hideZeroToggle');
+        if (toggle) {
+            toggle.addEventListener('change', (e) => {
+                const isChecked = e.target.checked; 
+                localStorage.setItem('hideZeroBalances', isChecked);
+                const listContainer = document.getElementById('assetsListContainer');
+                if (isChecked) listContainer.classList.add('hide-zeros'); 
+                else listContainer.classList.remove('hide-zeros');
+                document.getElementById('toggleTrack').style.backgroundColor = isChecked ? '#00d4aa' : '#3a3a4a';
+                document.getElementById('toggleThumb').style.left = isChecked ? '21px' : '2px';
+            });
+        }
+
+    } catch (error) { 
+        console.error("Balance error:", error);
+        assetsCard.innerHTML = `<div class="section-header"><h3>Your Assets</h3></div><p style="color:#f6465d; text-align:center; padding:20px;">Error loading assets. Please refresh.</p>`;
+    }
+};
