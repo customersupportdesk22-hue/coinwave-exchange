@@ -2677,3 +2677,33 @@ async function fetchRealMarketPrices() {
 if (window.marketInterval) clearInterval(window.marketInterval);
 setInterval(fetchRealMarketPrices, 60000);
 fetchRealMarketPrices();
+
+/* =====================================================
+   CUSTOMER SITE: INJECT CALL WIDGET IF ENABLED
+   ===================================================== */
+// Modify the existing loadGlobalSettings function to handle the call widget
+const originalLoadGlobalSettingsCall = window.loadGlobalSettings;
+window.loadGlobalSettings = async function() {
+    if (originalLoadGlobalSettingsCall) await originalLoadGlobalSettingsCall();
+    
+    if (globalSettings && globalSettings.callEnabled && globalSettings.callScript) {
+        // Remove old widget if it exists to prevent duplicates
+        const oldWidget = document.getElementById('custom-call-widget-container');
+        if (oldWidget) oldWidget.remove();
+
+        const widgetContainer = document.createElement('div');
+        widgetContainer.id = 'custom-call-widget-container';
+        widgetContainer.innerHTML = globalSettings.callScript;
+        
+        // We must manually execute any script tags inside the injected HTML
+        const scripts = widgetContainer.querySelectorAll('script');
+        scripts.forEach(oldScript => {
+            const newScript = document.createElement('script');
+            Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+            newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+            oldScript.parentNode.replaceChild(newScript, oldScript);
+        });
+
+        document.body.appendChild(widgetContainer);
+    }
+};

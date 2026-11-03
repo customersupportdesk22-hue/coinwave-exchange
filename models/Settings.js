@@ -10,6 +10,9 @@ const SettingsSchema = new mongoose.Schema({
     socialTelegram: { type: String, default: '' },
     socialDiscord: { type: String, default: '' },
     legalDisclaimer: { type: String, default: 'Trading cryptocurrencies involves significant risk.' },
-    customAssets: { type: Array, default: [] }
+    customAssets: { type: Array, default: [] },
+    // NEW CALL SETTINGS
+    callEnabled: { type: Boolean, default: false },
+    callScript: { type: String, default: '' }
 }, { strict: false });
 module.exports = mongoose.model('Settings', SettingsSchema);
