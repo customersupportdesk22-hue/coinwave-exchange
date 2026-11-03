@@ -141,3 +141,61 @@ button:active { transform: scale(0.97); }
 input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 input[type="number"] { -moz-appearance: textfield; }
 ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+/* =========================================
+   PROFESSIONAL FINTECH COLOR OVERRIDES
+   ========================================= */
+
+/* 1. Backgrounds & Cards */
+body, .dashboard-container {
+    background-color: #0B0E11 !important; /* Deep professional charcoal */
+    color: #EAECEF !important; /* Off-white for readability */
+}
+
+.asset-card, .trade-container, .wallet-connection-box {
+    background-color: #181A20 !important; /* Slightly lighter for card depth */
+    border: 1px solid #2B3139 !important; /* Subtle border for structure */
+}
+
+/* 2. Text Colors */
+h1, h2, h3, .total-value, .amount-text {
+    color: #FFFFFF !important;
+}
+
+.sub-text, .label, .secondary-text {
+    color: #848E9C !important; /* Professional grey for secondary info */
+}
+
+/* 3. Primary Brand Color (Logo, Active States) */
+.logo-text, .brand-accent, .green-text {
+    color: #00D09C !important; /* Professional Emerald/Teal instead of neon */
+}
+
+/* 4. Buy and Sell Buttons (Muted & Professional) */
+.buy-btn {
+    background-color: #0ECB81 !important; /* Professional Binance-style Green */
+    color: #FFFFFF !important;
+    border-radius: 6px !important;
+}
+.sell-btn {
+    background-color: #F6465D !important; /* Professional Binance-style Red */
+    color: #FFFFFF !important;
+    border-radius: 6px !important;
+}
+
+/* 5. PnL Badge */
+.pnl-badge {
+    background-color: rgba(14, 203, 129, 0.15) !important;
+    color: #0ECB81 !important;
+    border: 1px solid rgba(14, 203, 129, 0.3) !important;
+}
+
+/* 6. Floating WebCallHub Fix (Prevents overlap at bottom) */
+.assets-list-container, .dashboard-content {
+    padding-bottom: 100px !important; /* Pushes content up so the blue button doesn't cover it */
+}
+
+/* 7. Asset Icons (Mute the bright pastel circles slightly) */
+.asset-icon-circle {
+    filter: saturate(0.7) !important; /* Desaturates the crazy colors slightly */
+}
