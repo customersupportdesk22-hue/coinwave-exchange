@@ -155,7 +155,7 @@ function loadMarkets() {
 setInterval(() => {
     const guestView = document.getElementById('guestView');
     if (guestView && guestView.style.display !== 'none') {
-        /* simulateLiveMarket(); -- DISABLED FOR REAL DATA */ loadMarkets();
+        simulateLiveMarket(); loadMarkets();
     }
 }, 2000);
 
@@ -3011,7 +3011,7 @@ window.loadMarkets = function() {
 window.marketInterval = setInterval(() => {
     const guestView = document.getElementById('guestView');
     if (guestView && guestView.style.display !== 'none') {
-        if (typeof simulateLiveMarket === 'function') /* simulateLiveMarket(); -- DISABLED FOR REAL DATA */
+        if (typeof simulateLiveMarket === 'function') simulateLiveMarket();
         window.loadMarkets();
     }
 }, 2000);
