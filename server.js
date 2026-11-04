@@ -8,114 +8,156 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ==========================================
-// REAL-TIME PRICE FETCH (Ultimate Pattern Filter)
-// ==========================================
 let cachedPrices = null;
 let lastFetched = 0;
 const CACHE_DURATION = 60000; // 1 minute
 
+// ==========================================
+// 3-TIER MARKET PRICE FETCHER
+// ==========================================
 app.get('/api/market/prices', async (req, res) => {
     const now = Date.now();
-    if (cachedPrices && (now - lastFetched < CACHE_DURATION)) return res.json(cachedPrices);
+    if (cachedPrices && (now - lastFetched < CACHE_DURATION)) {
+        return res.json(cachedPrices);
+    }
 
+    // --- TIER 1: COINPAPRIKA ---
     try {
         const response = await fetch('https://api.coinpaprika.com/v1/tickers?quotes=USD', {
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
+            headers: { 'User-Agent': 'Mozilla/5.0' }
         });
-        
-        if (!response.ok) throw new Error(`CoinPaprika Error: ${response.status}`);
-        
+        if (!response.ok) throw new Error('CoinPaprika failed');
         const data = await response.json();
 
-        // Sort by Market Cap (Highest first)
-        data.sort((a, b) => (b.quotes.USD.market_cap || 0) - (a.quotes.USD.market_cap || 0));
-
+        const blacklist = ['USELESS', 'TRUMP', 'MEMECORE', 'CAP', 'PYUSD', 'FDUSD', 'TUSD', 'USDD', 'USDS', 'USDE', 'BFUSD', 'USD1', 'USD0', 'OUSD', 'GHO', 'WBT', 'TBTC', 'METH', 'M', 'WBTC', 'WETH', 'STETH', 'CBETH', 'SUSDE', 'SUSDS', 'WSTETH', 'RETH', 'USDF', 'PUMP', 'PENGU', 'SOLVBTC', 'SYRUPUSDC', 'USDG', 'BTT', 'USDTB', 'NFT', 'ICX'];
+        const badNames = ['wrapped', 'staked', 'bridged', 'liquid staked', 'useless', 'meme', 'binance', 'coinbase'];
         const seenSymbols = new Set();
-        
-        // Hardcoded blacklist for specific weird tokens you pointed out
-        const hardBlacklist = [
-            'OHMV2', 'UB', 'DRV', 'GAL', 'VVV', 'TRUMP', 'SPX', 'RAIN', 'STABLE', 'LIT', 'NIGHT', 
-            'BTW', 'PUMP', 'PUDGY', 'MEMECORE', 'VIRTUAL', 'JLP', 'EURC', 'BINANCELIFE', 'WBT'
-        ];
-        
-        // Name-based keywords to destroy
-        const badKeywords = [
-            'wrapped', 'staked', 'bridged', 'falcon', 'usual', 'bitway', 'venice', 'lighter', 
-            'midnight', 'stable', 'virtuals', 'official trump', 'world liberty', 'meme', 'pudgy', 
-            'binance life', 'pump', 'gold', 'ether.fi', 'stader', 'olympus', 'frax', 'ethena', 'susds'
-        ];
 
-        const cleanCoins = [];
-
-        for (const item of data) {
-            if (!item.quotes || !item.quotes.USD) continue;
-            
+        const cleanCoins = data.filter(item => {
             const sym = item.symbol.toUpperCase();
-            const name = item.name || '';
+            const name = (item.name || '');
             const price = item.quotes.USD.price;
-
-            // 1. Must have a valid price and be English
-            if (!price || price <= 0) continue;
-            if (!/^[\x00-\x7F]*$/.test(sym) || !/^[\x00-\x7F]*$/.test(name)) continue;
-
-            // 2. Hard Blacklist
-            if (hardBlacklist.includes(sym)) continue;
-            if (badKeywords.some(kw => name.toLowerCase().includes(kw))) continue;
-
-            // 3. ULTIMATE PATTERN RULES
-            // Block all stablecoins except USDT and USDC
-            if ((sym.includes('USD') || sym.includes('DAI') || sym.includes('EUR')) && sym !== 'USDT' && sym !== 'USDC') continue;
-            
-            // Block all Bitcoin derivatives (e.g. WBTC, TBTC, BTC.B)
-            if (sym.includes('BTC') && sym !== 'BTC') continue;
-            
-            // Block all Ethereum derivatives (e.g. METH, RETH, BETH, ETHX, FRXETH)
-            if (sym.includes('ETH') && sym !== 'ETH') continue;
-
-            // Block any token with a dot or dash (usually bridged)
-            if (sym.includes('.') || sym.includes('-')) continue;
-
-            // 4. Remove Duplicates
-            if (seenSymbols.has(sym)) continue;
+            if (!price || price === 0) return false;
+            if (blacklist.includes(sym)) return false;
+            const lowerName = name.toLowerCase();
+            if (badNames.some(bad => lowerName.includes(bad))) return false;
+            if (!/^[a-zA-Z0-9\s\(\)\-\.]+$/.test(name)) return false;
+            if (seenSymbols.has(sym)) return false;
             seenSymbols.add(sym);
+            return true;
+        });
 
-            cleanCoins.push({
-                name: item.name,
-                symbol: sym,
-                current_price: price,
-                price_change_percentage_24h: item.quotes.USD.percent_change_24h || 0
-            });
+        const topCoins = cleanCoins.slice(0, 100).map(item => ({
+            name: item.name || item.symbol,
+            symbol: item.symbol.toUpperCase(),
+            current_price: item.quotes.USD.price,
+            price_change_percentage_24h: item.quotes.USD.percent_change_24h || 0
+        }));
 
-            // 5. Stop exactly at 100 clean coins
-            if (cleanCoins.length >= 100) break;
-        }
-
-        cachedPrices = cleanCoins; 
-        lastFetched = now;   
-        res.json(cleanCoins);
+        cachedPrices = topCoins;
+        lastFetched = now;
+        console.log('✅ Fetched from CoinPaprika (Primary)');
+        return res.json(topCoins);
 
     } catch (error) {
-        console.error("API Disconnected, using Fallback:", error.message);
-        if (cachedPrices) return res.json(cachedPrices);
-        res.status(500).json({ error: error.message });
+        console.warn('⚠️ CoinPaprika failed. Switching to Binance...', error.message);
+
+        // --- TIER 2: BINANCE ---
+        try {
+            const binanceRes = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+            if (!binanceRes.ok) throw new Error('Binance failed');
+            const binanceData = await binanceRes.json();
+
+            // Filter for USDT pairs only and map to our format
+            const binanceCoins = binanceData
+                .filter(item => item.symbol.endsWith('USDT') && parseFloat(item.lastPrice) > 0)
+                .slice(0, 100)
+                .map(item => {
+                    const cleanSym = item.symbol.replace('USDT', '');
+                    return {
+                        name: cleanSym, // Binance ticker API doesn't provide full name, so we use symbol
+                        symbol: cleanSym,
+                        current_price: parseFloat(item.lastPrice),
+                        price_change_percentage_24h: parseFloat(item.priceChangePercent) || 0
+                    };
+                });
+
+            cachedPrices = binanceCoins;
+            lastFetched = now;
+            console.log('✅ Fetched from Binance (Fallback)');
+            return res.json(binanceCoins);
+
+        } catch (binanceError) {
+            console.error('❌ Binance failed too. Using emergency static list.', binanceError.message);
+
+            // --- TIER 3: EMERGENCY STATIC LIST ---
+            if (cachedPrices) return res.json(cachedPrices); // Serve old cache if we have it
+
+            const safeFallback = [
+                { name: 'Bitcoin', symbol: 'BTC', current_price: 65400.50, price_change_percentage_24h: 1.5 },
+                { name: 'Ethereum', symbol: 'ETH', current_price: 3450.20, price_change_percentage_24h: 2.1 },
+                { name: 'Tether', symbol: 'USDT', current_price: 1.00, price_change_percentage_24h: 0.01 },
+                { name: 'BNB', symbol: 'BNB', current_price: 590.30, price_change_percentage_24h: -0.5 },
+                { name: 'Solana', symbol: 'SOL', current_price: 145.80, price_change_percentage_24h: 5.2 },
+                { name: 'XRP', symbol: 'XRP', current_price: 0.52, price_change_percentage_24h: -1.2 },
+                { name: 'Dogecoin', symbol: 'DOGE', current_price: 0.15, price_change_percentage_24h: 3.4 },
+                { name: 'Cardano', symbol: 'ADA', current_price: 0.45, price_change_percentage_24h: 1.1 },
+                { name: 'Avalanche', symbol: 'AVAX', current_price: 35.20, price_change_percentage_24h: -2.1 },
+                { name: 'Shiba Inu', symbol: 'SHIB', current_price: 0.000024, price_change_percentage_24h: 4.5 },
+                { name: 'Polkadot', symbol: 'DOT', current_price: 6.80, price_change_percentage_24h: 0.5 },
+                { name: 'Chainlink', symbol: 'LINK', current_price: 14.20, price_change_percentage_24h: 2.2 },
+                { name: 'Polygon', symbol: 'MATIC', current_price: 0.68, price_change_percentage_24h: -1.5 },
+                { name: 'Litecoin', symbol: 'LTC', current_price: 80.10, price_change_percentage_24h: 1.0 },
+                { name: 'TRON', symbol: 'TRX', current_price: 0.12, price_change_percentage_24h: 0.8 },
+                { name: 'Uniswap', symbol: 'UNI', current_price: 7.50, price_change_percentage_24h: -0.9 },
+                { name: 'Cosmos', symbol: 'ATOM', current_price: 8.20, price_change_percentage_24h: 2.1 },
+                { name: 'Stellar', symbol: 'XLM', current_price: 0.11, price_change_percentage_24h: -1.5 },
+                { name: 'NEAR Protocol', symbol: 'NEAR', current_price: 5.50, price_change_percentage_24h: 3.4 },
+                { name: 'Aptos', symbol: 'APT', current_price: 8.80, price_change_percentage_24h: -2.3 },
+                { name: 'Arbitrum', symbol: 'ARB', current_price: 1.10, price_change_percentage_24h: 1.8 },
+                { name: 'Optimism', symbol: 'OP', current_price: 2.40, price_change_percentage_24h: 0.4 },
+                { name: 'Filecoin', symbol: 'FIL', current_price: 5.20, price_change_percentage_24h: -1.1 },
+                { name: 'Injective', symbol: 'INJ', current_price: 25.10, price_change_percentage_24h: 7.2 },
+                { name: 'Sui', symbol: 'SUI', current_price: 1.20, price_change_percentage_24h: 4.5 },
+                { name: 'Pepe', symbol: 'PEPE', current_price: 0.000008, price_change_percentage_24h: 12.4 }
+            ];
+            return res.json(safeFallback);
+        }
     }
 });
 
-// Routes
+// ==========================================
+// APP ROUTES
+// ==========================================
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/orders', require('./routes/order'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/wallet', require('./routes/auth')); 
 
+// ==========================================
+// SERVE STATIC FRONTEND
+// ==========================================
 app.use(express.static(path.join(__dirname, 'public')));
-app.get('/*splat', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
+// Catch-all route for Express 5
+app.get('/*splat', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// ==========================================
+// DATABASE & SERVER START
+// ==========================================
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.DATABASE_URL;
 
 if (MONGO_URI) {
-    mongoose.connect(MONGO_URI).then(() => console.log('✅ MongoDB Connected'));
+    mongoose.connect(MONGO_URI)
+        .then(() => console.log('✅ MongoDB Connected'))
+        .catch(err => console.error('❌ MongoDB Connection Error:', err));
+} else {
+    console.log('⚠️ No MongoDB URI found in environment variables.');
 }
 
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+});
