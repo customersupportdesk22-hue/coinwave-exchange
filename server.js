@@ -32,8 +32,17 @@ app.get('/api/market/prices', async (req, res) => {
         data.sort((a, b) => (b.quotes.USD.market_cap || 0) - (a.quotes.USD.market_cap || 0));
 
         const seenSymbols = new Set();
-        const blacklistedSymbols = ['WBTC', 'WETH', 'STETH', 'METH', 'TBTC', 'SOLVBTC', 'SYRUPUSDC', 'BINANCELIFE', 'PUMP', 'PUDGY'];
-        const blacklistedKeywords = ['wrapped', 'staked', 'pudgy', 'pump.fun', 'binancelife'];
+        
+        // EXPANDED BLACKLIST: Blocking specific coins you pointed out
+        const blacklistedSymbols = [
+            'WBTC', 'WETH', 'STETH', 'METH', 'TBTC', 'SOLVBTC', 'SYRUPUSDC', 'BINANCELIFE', 'PUMP', 'PUDGY',
+            'PYUSD', 'USDD', 'TUSD', 'MEMECORE', 'MEME'
+        ];
+        
+        const blacklistedKeywords = [
+            'wrapped', 'staked', 'pudgy', 'pump.fun', 'binancelife', 
+            'paypal usd', 'trueusd', 'memecore'
+        ];
 
         const cleanCoins = [];
 
@@ -47,19 +56,19 @@ app.get('/api/market/prices', async (req, res) => {
             // 1. Must have a valid price
             if (!price || price <= 0) continue;
 
-            // 2. Must be English characters only (removes 币安人生)
+            // 2. Must be English characters only
             if (!/^[\x00-\x7F]*$/.test(sym) || !/^[\x00-\x7F]*$/.test(name)) continue;
 
-            // 3. Remove blacklisted symbols and keywords
+            // 3. Remove explicitly blacklisted symbols and keywords
             if (blacklistedSymbols.includes(sym)) continue;
             if (blacklistedKeywords.some(kw => name.toLowerCase().includes(kw))) continue;
 
             // 4. Remove general wrapped/derivative tokens
-            if (sym.startsWith('W') && sym.length > 4) continue; // WBTC
-            if (sym.startsWith('ST') && sym.length > 4) continue; // STETH
-            if (sym.includes('-') || sym.includes('.')) continue; // USDT-ERC20
+            if (sym.startsWith('W') && sym.length > 4) continue; 
+            if (sym.startsWith('ST') && sym.length > 4) continue; 
+            if (sym.includes('-') || sym.includes('.')) continue; 
 
-            // 5. Remove Duplicates (Fixes Canton Network appearing twice)
+            // 5. Remove Duplicates
             if (seenSymbols.has(sym)) continue;
             seenSymbols.add(sym);
 
