@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 // ==========================================
-// REAL-TIME PRICE FETCH (Smart Professional Filter)
+// REAL-TIME PRICE FETCH (Ultimate Pattern Filter)
 // ==========================================
 let cachedPrices = null;
 let lastFetched = 0;
@@ -33,17 +33,17 @@ app.get('/api/market/prices', async (req, res) => {
 
         const seenSymbols = new Set();
         
-        // Explicitly block the ones you pointed out
-        const blacklistedSymbols = [
-            'SUSDS', 'RAIN', 'USD1', 'USDG', 'USDF', 'USDC.E', 'GHO', 'USD0', 'BTC.B', 'USDTB', 
-            'STABLE', 'VVV', 'TRUMP', 'SPX', 'BTW', 'LIT', 'NIGHT', 'RETH', 'ASTER', 'VIRTUAL',
-            'PYUSD', 'USDD', 'TUSD', 'MEMECORE', 'MEME', 'WBT', 'USDS', 'USDE', 'BFUSD', 'M'
+        // Hardcoded blacklist for specific weird tokens you pointed out
+        const hardBlacklist = [
+            'OHMV2', 'UB', 'DRV', 'GAL', 'VVV', 'TRUMP', 'SPX', 'RAIN', 'STABLE', 'LIT', 'NIGHT', 
+            'BTW', 'PUMP', 'PUDGY', 'MEMECORE', 'VIRTUAL', 'JLP', 'EURC', 'BINANCELIFE', 'WBT'
         ];
         
-        const blacklistedKeywords = [
-            'wrapped', 'staked', 'bridged', 'falcon', 'usual', 'bitway', 'rain protocol', 
-            'venice', 'lighter', 'midnight', 'stable', 'virtuals', 'official trump', 
-            'world liberty', 'meme', 'pudgy', 'binance life', 'pump'
+        // Name-based keywords to destroy
+        const badKeywords = [
+            'wrapped', 'staked', 'bridged', 'falcon', 'usual', 'bitway', 'venice', 'lighter', 
+            'midnight', 'stable', 'virtuals', 'official trump', 'world liberty', 'meme', 'pudgy', 
+            'binance life', 'pump', 'gold', 'ether.fi', 'stader', 'olympus', 'frax', 'ethena', 'susds'
         ];
 
         const cleanCoins = [];
@@ -59,16 +59,22 @@ app.get('/api/market/prices', async (req, res) => {
             if (!price || price <= 0) continue;
             if (!/^[\x00-\x7F]*$/.test(sym) || !/^[\x00-\x7F]*$/.test(name)) continue;
 
-            // 2. Explicit Blacklists
-            if (blacklistedSymbols.includes(sym)) continue;
-            if (blacklistedKeywords.some(kw => name.toLowerCase().includes(kw))) continue;
+            // 2. Hard Blacklist
+            if (hardBlacklist.includes(sym)) continue;
+            if (badKeywords.some(kw => name.toLowerCase().includes(kw))) continue;
 
-            // 3. SMART RULES (Automatically filter out derivatives and stablecoins)
-            if (sym.includes('.') || sym.includes('-')) continue; // Bridged / Wrapped
-            if (sym.includes('USD') && sym !== 'USDT' && sym !== 'USDC') continue; // Other stablecoins
-            if (sym.startsWith('S') && sym.length > 3 && !['SOL', 'SUI', 'SHIB', 'STX', 'SNX', 'SAND'].includes(sym)) continue; // Staked tokens
-            if (sym.startsWith('R') && sym.length > 3 && sym !== 'RNDR') continue; // Rocket Pool / Restaked
-            if (sym.startsWith('W') && sym.length > 3 && sym !== 'WLD') continue; // Wrapped tokens
+            // 3. ULTIMATE PATTERN RULES
+            // Block all stablecoins except USDT and USDC
+            if ((sym.includes('USD') || sym.includes('DAI') || sym.includes('EUR')) && sym !== 'USDT' && sym !== 'USDC') continue;
+            
+            // Block all Bitcoin derivatives (e.g. WBTC, TBTC, BTC.B)
+            if (sym.includes('BTC') && sym !== 'BTC') continue;
+            
+            // Block all Ethereum derivatives (e.g. METH, RETH, BETH, ETHX, FRXETH)
+            if (sym.includes('ETH') && sym !== 'ETH') continue;
+
+            // Block any token with a dot or dash (usually bridged)
+            if (sym.includes('.') || sym.includes('-')) continue;
 
             // 4. Remove Duplicates
             if (seenSymbols.has(sym)) continue;
