@@ -56,7 +56,7 @@ app.get('/api/market/prices', async (req, res) => {
         });
 
         // Map to our frontend format and limit to top 200
-        const topCoins = cleanCoins.slice(0, 200).map(item => ({
+        const topCoins = cleanCoins.slice(0, 100).map(item => ({
             name: item.name || item.symbol,
             symbol: item.symbol.toUpperCase(),
             current_price: item.quotes.USD.price,
