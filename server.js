@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 // ==========================================
-// REAL-TIME PRICE FETCH (Advanced Filtering)
+// REAL-TIME PRICE FETCH (Smart Professional Filter)
 // ==========================================
 let cachedPrices = null;
 let lastFetched = 0;
@@ -28,20 +28,22 @@ app.get('/api/market/prices', async (req, res) => {
         
         const data = await response.json();
 
-        // Sort by Market Cap (Highest first) to ensure we get the most legitimate coins
+        // Sort by Market Cap (Highest first)
         data.sort((a, b) => (b.quotes.USD.market_cap || 0) - (a.quotes.USD.market_cap || 0));
 
         const seenSymbols = new Set();
         
-        // EXPANDED BLACKLIST: Blocking specific coins and wrapped/staked tokens
+        // Explicitly block the ones you pointed out
         const blacklistedSymbols = [
-            'WBTC', 'WETH', 'STETH', 'METH', 'TBTC', 'SOLVBTC', 'SYRUPUSDC', 'BINANCELIFE', 'PUMP', 'PUDGY',
+            'SUSDS', 'RAIN', 'USD1', 'USDG', 'USDF', 'USDC.E', 'GHO', 'USD0', 'BTC.B', 'USDTB', 
+            'STABLE', 'VVV', 'TRUMP', 'SPX', 'BTW', 'LIT', 'NIGHT', 'RETH', 'ASTER', 'VIRTUAL',
             'PYUSD', 'USDD', 'TUSD', 'MEMECORE', 'MEME', 'WBT', 'USDS', 'USDE', 'BFUSD', 'M'
         ];
         
         const blacklistedKeywords = [
-            'wrapped', 'staked', 'pudgy', 'pump.fun', 'binancelife', 
-            'paypal usd', 'trueusd', 'memecore', 'ethena'
+            'wrapped', 'staked', 'bridged', 'falcon', 'usual', 'bitway', 'rain protocol', 
+            'venice', 'lighter', 'midnight', 'stable', 'virtuals', 'official trump', 
+            'world liberty', 'meme', 'pudgy', 'binance life', 'pump'
         ];
 
         const cleanCoins = [];
@@ -53,23 +55,22 @@ app.get('/api/market/prices', async (req, res) => {
             const name = item.name || '';
             const price = item.quotes.USD.price;
 
-            // 1. Must have a valid price
+            // 1. Must have a valid price and be English
             if (!price || price <= 0) continue;
-
-            // 2. Must be English characters only
             if (!/^[\x00-\x7F]*$/.test(sym) || !/^[\x00-\x7F]*$/.test(name)) continue;
 
-            // 3. Remove explicitly blacklisted symbols and keywords
+            // 2. Explicit Blacklists
             if (blacklistedSymbols.includes(sym)) continue;
             if (blacklistedKeywords.some(kw => name.toLowerCase().includes(kw))) continue;
 
-            // 4. SMART RULE: Block any other stablecoins or wrapped tokens
-            // (If it ends in USD but isn't USDT or USDC, block it)
-            if (sym.endsWith('USD') && sym !== 'USDT' && sym !== 'USDC') continue;
-            // Block Bitcoin wrappers
-            if (sym.endsWith('BTC') && sym !== 'BTC') continue;
+            // 3. SMART RULES (Automatically filter out derivatives and stablecoins)
+            if (sym.includes('.') || sym.includes('-')) continue; // Bridged / Wrapped
+            if (sym.includes('USD') && sym !== 'USDT' && sym !== 'USDC') continue; // Other stablecoins
+            if (sym.startsWith('S') && sym.length > 3 && !['SOL', 'SUI', 'SHIB', 'STX', 'SNX', 'SAND'].includes(sym)) continue; // Staked tokens
+            if (sym.startsWith('R') && sym.length > 3 && sym !== 'RNDR') continue; // Rocket Pool / Restaked
+            if (sym.startsWith('W') && sym.length > 3 && sym !== 'WLD') continue; // Wrapped tokens
 
-            // 5. Remove Duplicates
+            // 4. Remove Duplicates
             if (seenSymbols.has(sym)) continue;
             seenSymbols.add(sym);
 
@@ -80,7 +81,7 @@ app.get('/api/market/prices', async (req, res) => {
                 price_change_percentage_24h: item.quotes.USD.percent_change_24h || 0
             });
 
-            // 6. Stop exactly at 100 clean coins
+            // 5. Stop exactly at 100 clean coins
             if (cleanCoins.length >= 100) break;
         }
 
