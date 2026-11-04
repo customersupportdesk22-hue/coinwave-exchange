@@ -2622,7 +2622,7 @@ async function fetchRealMarketPrices() {
 
 // Override the old interval to use the new function
 if (window.marketInterval) clearInterval(window.marketInterval);
-setInterval(fetchRealMarketPrices, 60000);
+/* disabled duplicate fetch */
 fetchRealMarketPrices();
 
 /* =====================================================
@@ -2675,7 +2675,7 @@ async function fetchRealMarketPrices() {
 
 // Force clear old timer and run new one
 if (window.marketInterval) clearInterval(window.marketInterval);
-setInterval(fetchRealMarketPrices, 60000);
+/* disabled duplicate fetch */
 fetchRealMarketPrices();
 
 /* =====================================================
@@ -3130,12 +3130,6 @@ window.loadMarkets = function() {
     }
 };
 
-window.marketInterval = setInterval(() => {
-    const guestView = document.getElementById('guestView');
-    if (guestView && guestView.style.display !== 'none') {
-        if (typeof simulateLiveMarket === 'function') simulateLiveMarket();
-        window.loadMarkets();
-    }
-}, 2000);
+/* disabled duplicate market interval */
 
 window.loadMarkets();
