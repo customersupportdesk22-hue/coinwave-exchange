@@ -29,15 +29,17 @@ app.get('/api/market/prices', async (req, res) => {
         const data = await response.json();
 
         // 1. Filter out bad/wrapped tokens
+        const blacklist = ['USELESS', 'TRUMP', 'MEMECORE', 'CAP', 'PYUSD', 'FDUSD', 'TUSD', 'USDD', 'USDS', 'WBTC', 'WETH', 'STETH', 'CBETH', 'SUSDE', 'SUSDS', 'WSTETH', 'RETH'];
+        const badNames = ['wrapped', 'staked', 'bridged', 'liquid staked', 'useless'];
+        
         const cleanCoins = data.filter(item => {
             const sym = item.symbol.toUpperCase();
+            const name = (item.name || '').toLowerCase();
             const price = item.quotes.USD.price;
-            
-            if (!price || price === 0) return false;
-            if (sym.startsWith('W') && sym.length > 4) return false; // WBTC
-            if (sym.startsWith('ST') && sym.length > 4) return false; // STETH
-            if (sym.includes('-') || sym.includes('.')) return false;
-            
+
+            if (blacklist.includes(sym)) return false;
+            if (badNames.some(bad => name.includes(bad))) return false;
+
             return true;
         });
 
