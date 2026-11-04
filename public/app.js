@@ -2741,3 +2741,27 @@ window.fetchRealMarketPrices = async function() {
     // Force a re-render with the filtered list
     if (typeof window.loadMarkets === 'function') window.loadMarkets();
 };
+
+/* =====================================================
+   FIXED FRONTEND FILTER: MUTATES ARRAY IN PLACE
+   ===================================================== */
+const badSymbols = ['PYUSD', 'USDD', 'TUSD', 'MEMECORE', 'MEME', 'WBTC', 'WETH', 'STETH', 'METH', 'TBTC', 'SOLVBTC', 'SYRUPUSDC', 'BINANCELIFE', 'PUMP', 'PUDGY'];
+const badKeywords = ['paypal usd', 'trueusd', 'memecore', 'wrapped', 'staked', 'pump.fun', 'pudgy', 'binancelife'];
+
+// Override the loadMarkets function
+var originalLoadMarketsCrashFix = window.loadMarkets;
+window.loadMarkets = function() {
+    // Loop backwards through the array and SPLICE out the bad coins
+    // This modifies the array in place without breaking the 'const' rule
+    for (let i = markets.length - 1; i >= 0; i--) {
+        const sym = markets[i].symbol.toUpperCase();
+        const name = (markets[i].name || '').toLowerCase();
+        
+        if (badSymbols.includes(sym) || badKeywords.some(kw => name.includes(kw))) {
+            markets.splice(i, 1); // Remove the bad coin
+        }
+    }
+
+    // Call the original render function
+    if (originalLoadMarketsCrashFix) originalLoadMarketsCrashFix();
+};
