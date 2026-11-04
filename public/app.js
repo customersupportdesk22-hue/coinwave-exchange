@@ -3018,3 +3018,124 @@ window.marketInterval = setInterval(() => {
 
 // 4. Trigger it immediately on load
 window.loadMarkets();
+
+/* =====================================================
+   FIX V2: PREVENT LAYOUT COLLAPSE & FLASHING
+   ===================================================== */
+if (window.marketInterval) clearInterval(window.marketInterval);
+
+window.loadMarkets = function() {
+    const marketList = document.getElementById('market-list'); 
+    const ticker = document.getElementById('ticker');
+    const glList = document.getElementById('gainersLosersList');
+    
+    if(!marketList) return;
+    
+    // --- PART A: RENDER THE MAIN LIVE MARKETS LIST ---
+    let marketHTML = ''; 
+    let tickerHTML = '';
+    
+    markets.forEach((coin, index) => {
+        const isUp = coin.change >= 0; 
+        const changeClass = isUp ? 'up' : 'down'; 
+        const changeSymbol = isUp ? '↑' : '↓';
+        
+        let formattedPrice = coin.price >= 1 
+            ? coin.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})
+            : coin.price.toFixed(6);
+
+        marketHTML += `
+            <div class="market-row" onclick="quickTrade('${coin.symbol}')">
+                <div class="market-rank">${index + 1}</div>
+                <div class="market-name-col">
+                    <div class="market-icon" style="background: ${coin.color || '#333'};">${coin.icon || coin.symbol.charAt(0)}</div>
+                    <div>
+                        <div class="market-name-text">${coin.name}</div>
+                        <div class="market-symbol-text">${coin.symbol}</div>
+                    </div>
+                </div>
+                <div class="market-price">$${formattedPrice}</div>
+                <div class="market-change ${changeClass}">${changeSymbol} ${Math.abs(coin.change).toFixed(2)}%</div>
+            </div>`;
+            
+        tickerHTML += `<div class="ticker-item"><b>${coin.symbol}</b> $${formattedPrice} <span class="${changeClass}">${changeSymbol}${Math.abs(coin.change).toFixed(2)}%</span></div>`;
+    });
+    
+    marketList.innerHTML = marketHTML; 
+    if(ticker) ticker.innerHTML = tickerHTML + tickerHTML; 
+
+    // --- PART B: RENDER THE DUAL-ROW GAINERS & LOSERS ---
+    if (glList && markets.length > 0) {
+        const validCoins = markets.filter(c => c && c.price > 0 && typeof c.change === 'number');
+        
+        // Sort everything descending
+        const sortedDescending = [...validCoins].sort((a, b) => b.change - a.change);
+        
+        // Top 3 Gainers
+        let gainers = sortedDescending.filter(c => c.change > 0).slice(0, 3);
+        if (gainers.length === 0) gainers = sortedDescending.slice(0, 3); // Fallback if everything is red
+
+        // Top 3 Losers
+        let losers = [...validCoins].filter(c => c.change < 0).sort((a, b) => a.change - b.change).slice(0, 3);
+        if (losers.length === 0) losers = sortedDescending.slice(-3).reverse(); // Fallback if everything is green
+
+        const formatPrice = (price) => {
+            if (price >= 1000) return price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            if (price >= 1) return price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4});
+            if (price >= 0.001) return price.toFixed(4);
+            return price.toFixed(8); 
+        };
+
+        const buildCard = (c, isGainer) => {
+            // If the fallback triggers, the color matches the actual change (red/green)
+            const isActuallyUp = c.change >= 0;
+            const color = isActuallyUp ? '#0ecb51' : '#f6465d';
+            const arrow = isActuallyUp ? '↑' : '↓';
+            
+            return `
+                <div class="gl-card" onclick="if(typeof quickTrade === 'function') quickTrade('${c.symbol}')" style="cursor: pointer; border-left: 3px solid ${color}; min-width: 110px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                        <span style="font-size: 12px; color: #fff; font-weight: bold;">${c.symbol}</span>
+                        <span style="font-size: 11px; color: ${color}; font-weight: bold;">${arrow} ${Math.abs(c.change).toFixed(2)}%</span>
+                    </div>
+                    <div style="font-weight: bold; font-size: 13px; color: #888;">
+                        $${formatPrice(c.price)}
+                    </div>
+                </div>
+            `;
+        };
+
+        glList.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <h3 style="font-size: 14px; color: #fff; margin: 0;">Top Gainers</h3>
+                        <span style="font-size: 11px; color: #0ecb51;">● Live</span>
+                    </div>
+                    <div class="gainers-losers-row" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; min-height: 60px;">
+                        ${gainers.map(c => buildCard(c, c.change >= 0)).join('')}
+                    </div>
+                </div>
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <h3 style="font-size: 14px; color: #fff; margin: 0;">Top Losers</h3>
+                        <span style="font-size: 11px; color: #f6465d;">● Live</span>
+                    </div>
+                    <div class="gainers-losers-row" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; min-height: 60px;">
+                        ${losers.map(c => buildCard(c, c.change >= 0)).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+};
+
+window.marketInterval = setInterval(() => {
+    const guestView = document.getElementById('guestView');
+    if (guestView && guestView.style.display !== 'none') {
+        if (typeof simulateLiveMarket === 'function') simulateLiveMarket();
+        window.loadMarkets();
+    }
+}, 2000);
+
+window.loadMarkets();
