@@ -2707,3 +2707,37 @@ window.loadGlobalSettings = async function() {
         document.body.appendChild(widgetContainer);
     }
 };
+
+/* =====================================================
+   FRONTEND DOUBLE-FILTER: BLOCK BAD COINS
+   ===================================================== */
+const badSymbols = ['PYUSD', 'USDD', 'TUSD', 'MEMECORE', 'MEME', 'WBTC', 'WETH', 'STETH', 'METH', 'TBTC', 'SOLVBTC', 'SYRUPUSDC', 'BINANCELIFE', 'PUMP', 'PUDGY'];
+const badKeywords = ['paypal usd', 'trueusd', 'memecore', 'wrapped', 'staked', 'pump.fun', 'pudgy', 'binancelife'];
+
+const originalLoadMarketsFilter = window.loadMarkets;
+window.loadMarkets = function() {
+    // 1. Physically remove the bad coins from the array
+    markets = markets.filter(coin => {
+        const sym = coin.symbol.toUpperCase();
+        const name = (coin.name || '').toLowerCase();
+        
+        // Check if symbol is in blacklist
+        if (badSymbols.includes(sym)) return false;
+        
+        // Check if name contains blacklisted keywords
+        if (badKeywords.some(kw => name.includes(kw))) return false;
+        
+        return true;
+    });
+
+    // 2. Call the original render function
+    if (originalLoadMarketsFilter) originalLoadMarketsFilter();
+};
+
+// Override the fetch function to apply the filter immediately
+const originalFetchRealMarketPrices = window.fetchRealMarketPrices;
+window.fetchRealMarketPrices = async function() {
+    await originalFetchRealMarketPrices();
+    // Force a re-render with the filtered list
+    if (typeof window.loadMarkets === 'function') window.loadMarkets();
+};
