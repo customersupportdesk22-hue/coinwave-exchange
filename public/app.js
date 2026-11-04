@@ -2833,3 +2833,69 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => { if (typeof window.renderGainersLosers === 'function') window.renderGainersLosers(); }, 1000);
 });
 
+
+/* =====================================================
+   ULTIMATE BINANCE-STYLE GAINERS & LOSERS (Frontend Hijack)
+   ===================================================== */
+setInterval(() => {
+    const container = document.getElementById('gainersLosersList');
+    if (!container || typeof markets === 'undefined' || markets.length === 0) return;
+
+    // 1. Separate and Sort the coins perfectly
+    const validCoins = markets.filter(c => c && c.price > 0 && typeof c.change === 'number' && !isNaN(c.change));
+    
+    const gainers = validCoins.filter(c => c.change > 0).sort((a, b) => b.change - a.change).slice(0, 3);
+    const losers = validCoins.filter(c => c.change < 0).sort((a, b) => a.change - b.change).slice(0, 3);
+
+    // 2. Flawless Price Formatter (No more $0.00 for tiny coins)
+    const formatPrice = (price) => {
+        if (price >= 1000) return price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        if (price >= 1) return price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4});
+        if (price >= 0.001) return price.toFixed(4);
+        return price.toFixed(8); // For Pepe, Shib, etc.
+    };
+
+    // 3. Card Builder
+    const buildCard = (c, isGainer) => {
+        const color = isGainer ? '#0ecb51' : '#f6465d';
+        const arrow = isGainer ? '↑' : '↓';
+        return `
+            <div class="gl-card" onclick="if(typeof quickTrade === 'function') quickTrade('${c.symbol}')" style="cursor: pointer; border-left: 3px solid ${color}; min-width: 110px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span style="font-size: 12px; color: #fff; font-weight: bold;">${c.symbol}</span>
+                    <span style="font-size: 11px; color: ${color}; font-weight: bold;">${arrow} ${Math.abs(c.change).toFixed(2)}%</span>
+                </div>
+                <div style="font-weight: bold; font-size: 13px; color: #888;">
+                    $${formatPrice(c.price)}
+                </div>
+            </div>
+        `;
+    };
+
+    // 4. Inject the fully structured UI
+    container.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
+            <!-- GAINERS ROW -->
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h3 style="font-size: 14px; color: #fff; margin: 0;">Top Gainers</h3>
+                    <span style="font-size: 11px; color: #0ecb51;">● Live</span>
+                </div>
+                <div class="gainers-losers-row" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none;">
+                    ${gainers.map(c => buildCard(c, true)).join('')}
+                </div>
+            </div>
+
+            <!-- LOSERS ROW -->
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h3 style="font-size: 14px; color: #fff; margin: 0;">Top Losers</h3>
+                    <span style="font-size: 11px; color: #f6465d;">● Live</span>
+                </div>
+                <div class="gainers-losers-row" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none;">
+                    ${losers.map(c => buildCard(c, false)).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+}, 2000); // Runs every 2 seconds to stay perfectly synced
