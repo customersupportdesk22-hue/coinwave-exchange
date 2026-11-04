@@ -2844,8 +2844,8 @@ setInterval(() => {
     // 1. Separate and Sort the coins perfectly
     const validCoins = markets.filter(c => c && c.price > 0 && typeof c.change === 'number' && !isNaN(c.change));
     
-    const gainers = validCoins.filter(c => c.change > 0).sort((a, b) => b.change - a.change).slice(0, 3);
-    const losers = validCoins.filter(c => c.change < 0).sort((a, b) => a.change - b.change).slice(0, 3);
+    let gainers = validCoins.filter(c => c.change > 0).sort((a, b) => b.change - a.change).slice(0, 3); if (gainers.length === 0) { gainers = [...validCoins].sort((a, b) => b.change - a.change).slice(0, 3); }
+    let losers = validCoins.filter(c => c.change < 0).sort((a, b) => a.change - b.change).slice(0, 3); if (losers.length === 0) { losers = [...validCoins].sort((a, b) => a.change - b.change).slice(0, 3); }
 
     // 2. Flawless Price Formatter (No more $0.00 for tiny coins)
     const formatPrice = (price) => {
@@ -2954,10 +2954,10 @@ window.loadMarkets = function() {
         const validCoins = markets.filter(c => c && c.price > 0 && typeof c.change === 'number');
         
         // Top 3 Gainers (Sort descending)
-        const gainers = [...validCoins].filter(c => c.change > 0).sort((a, b) => b.change - a.change).slice(0, 3);
+        let gainers = [...validCoins].filter(c => c.change > 0).sort((a, b) => b.change - a.change).slice(0, 3); if (gainers.length === 0) { gainers = [...validCoins].sort((a, b) => b.change - a.change).slice(0, 3); }
         
         // Top 3 Losers (Sort ascending)
-        const losers = [...validCoins].filter(c => c.change < 0).sort((a, b) => a.change - b.change).slice(0, 3);
+        let losers = [...validCoins].filter(c => c.change < 0).sort((a, b) => a.change - b.change).slice(0, 3); if (losers.length === 0) { losers = [...validCoins].sort((a, b) => a.change - b.change).slice(0, 3); }
 
         const formatPrice = (price) => {
             if (price >= 1000) return price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
