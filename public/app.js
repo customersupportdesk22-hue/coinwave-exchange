@@ -2708,3 +2708,60 @@ window.loadGlobalSettings = async function() {
     }
 };
 
+
+/* =====================================================
+   REAL TOP GAINERS & LOSERS ENGINE
+   ===================================================== */
+window.renderGainersLosers = function() {
+    const glList = document.getElementById('gainersLosersList');
+    if (!glList || typeof markets === 'undefined') return;
+
+    // 1. Filter out any coins that don't have a valid change percentage
+    const validMarkets = markets.filter(c => typeof c.change === 'number' && !isNaN(c.change));
+
+    // 2. Sort a copy of the array from highest change to lowest
+    const sortedByChange = [...validMarkets].sort((a, b) => b.change - a.change);
+
+    // 3. Grab the Top 3 Gainers and Top 3 Losers
+    const topGainers = sortedByChange.slice(0, 3);
+    const topLosers = sortedByChange.slice(-3).reverse(); // Reverse so the biggest loser is first
+
+    // 4. Combine them into one list for the UI
+    const displayCoins = [...topGainers, ...topLosers];
+
+    // 5. Render the beautiful cards
+    glList.innerHTML = displayCoins.map(c => {
+        const isUp = c.change >= 0;
+        const colorClass = isUp ? 'up' : 'down';
+        const symbolColor = isUp ? '↑' : '↓';
+        
+        // Make sure the price format is clean
+        const formattedPrice = c.price < 0.01 
+            ? c.price.toFixed(6) 
+            : c.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4});
+
+        return `
+            <div class="gl-card" onclick="quickTrade('${c.symbol}')" style="cursor: pointer;">
+                <div style="font-size:11px; color:#888; display: flex; justify-content: space-between;">
+                    <span>${c.symbol}</span>
+                    <span class="${colorClass}">${symbolColor} ${Math.abs(c.change).toFixed(2)}%</span>
+                </div>
+                <div style="font-weight:bold; margin: 5px 0; font-size:13px; color: #fff;">
+                    $${formattedPrice}
+                </div>
+            </div>
+        `;
+    }).join('');
+};
+
+// Automatically trigger the render every time the live prices are fetched
+var originalFetchForGainers = window.fetchRealMarketPrices;
+window.fetchRealMarketPrices = async function() {
+    if (originalFetchForGainers) await originalFetchForGainers();
+    window.renderGainersLosers(); // Update the cards immediately after fetching
+};
+
+// Ensure it renders on page load
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => window.renderGainersLosers(), 1000);
+});
