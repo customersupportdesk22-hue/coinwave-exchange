@@ -2765,3 +2765,51 @@ window.fetchRealMarketPrices = async function() {
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => window.renderGainersLosers(), 1000);
 });
+
+/* =====================================================
+   BULLETPROOF TOP GAINERS & LOSERS (Standalone Timer)
+   ===================================================== */
+setInterval(() => {
+    const glList = document.getElementById('gainersLosersList');
+    // 1. Ensure the container exists and the markets array is populated
+    if (!glList || typeof markets === 'undefined' || markets.length === 0) return;
+
+    // 2. Filter valid coins with price and change data
+    const validCoins = markets.filter(c => c && c.price > 0 && typeof c.change === 'number');
+
+    if (validCoins.length < 6) return; // Not enough data to show top 3 gainers and 3 losers
+
+    // 3. Sort by 24h Change (Highest to Lowest)
+    const sorted = [...validCoins].sort((a, b) => b.change - a.change);
+
+    // 4. Get Top 3 Gainers and Top 3 Losers
+    const gainers = sorted.slice(0, 3);
+    const losers = sorted.slice(-3).reverse(); // Reverse so the worst loser is first
+
+    // 5. Combine them for the display
+    const displayList = [...gainers, ...losers];
+
+    // 6. Render the cards directly
+    glList.innerHTML = displayList.map(c => {
+        const isUp = c.change >= 0;
+        const colorClass = isUp ? 'up' : 'down';
+        const arrow = isUp ? '↑' : '↓';
+        
+        // Format the price nicely based on how small it is
+        let formattedPrice = c.price < 0.01 
+            ? c.price.toFixed(6) 
+            : c.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4});
+
+        return `
+            <div class="gl-card" onclick="if(typeof quickTrade === 'function') { quickTrade('${c.symbol}'); } else { console.error('quickTrade missing'); }" style="cursor: pointer;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span style="font-size: 11px; color: #888; font-weight: bold;">${c.symbol}</span>
+                    <span class="${colorClass}" style="font-size: 11px; font-weight: bold;">${arrow} ${Math.abs(c.change).toFixed(2)}%</span>
+                </div>
+                <div style="font-weight: bold; font-size: 13px; color: #fff;">
+                    $${formattedPrice}
+                </div>
+            </div>
+        `;
+    }).join('');
+}, 3000); // Check every 3 seconds to ensure it stays updated
