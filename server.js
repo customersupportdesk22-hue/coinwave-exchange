@@ -33,15 +33,15 @@ app.get('/api/market/prices', async (req, res) => {
 
         const seenSymbols = new Set();
         
-        // EXPANDED BLACKLIST: Blocking specific coins you pointed out
+        // EXPANDED BLACKLIST: Blocking specific coins and wrapped/staked tokens
         const blacklistedSymbols = [
             'WBTC', 'WETH', 'STETH', 'METH', 'TBTC', 'SOLVBTC', 'SYRUPUSDC', 'BINANCELIFE', 'PUMP', 'PUDGY',
-            'PYUSD', 'USDD', 'TUSD', 'MEMECORE', 'MEME'
+            'PYUSD', 'USDD', 'TUSD', 'MEMECORE', 'MEME', 'WBT', 'USDS', 'USDE', 'BFUSD', 'M'
         ];
         
         const blacklistedKeywords = [
             'wrapped', 'staked', 'pudgy', 'pump.fun', 'binancelife', 
-            'paypal usd', 'trueusd', 'memecore'
+            'paypal usd', 'trueusd', 'memecore', 'ethena'
         ];
 
         const cleanCoins = [];
@@ -63,10 +63,11 @@ app.get('/api/market/prices', async (req, res) => {
             if (blacklistedSymbols.includes(sym)) continue;
             if (blacklistedKeywords.some(kw => name.toLowerCase().includes(kw))) continue;
 
-            // 4. Remove general wrapped/derivative tokens
-            if (sym.startsWith('W') && sym.length > 4) continue; 
-            if (sym.startsWith('ST') && sym.length > 4) continue; 
-            if (sym.includes('-') || sym.includes('.')) continue; 
+            // 4. SMART RULE: Block any other stablecoins or wrapped tokens
+            // (If it ends in USD but isn't USDT or USDC, block it)
+            if (sym.endsWith('USD') && sym !== 'USDT' && sym !== 'USDC') continue;
+            // Block Bitcoin wrappers
+            if (sym.endsWith('BTC') && sym !== 'BTC') continue;
 
             // 5. Remove Duplicates
             if (seenSymbols.has(sym)) continue;
