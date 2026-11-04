@@ -2712,47 +2712,7 @@ window.loadGlobalSettings = async function() {
 /* =====================================================
    REAL TOP GAINERS & LOSERS ENGINE
    ===================================================== */
-window.renderGainersLosers = function() {
-    const glList = document.getElementById('gainersLosersList');
-    if (!glList || typeof markets === 'undefined') return;
-
-    // 1. Filter out any coins that don't have a valid change percentage
-    const validMarkets = markets.filter(c => typeof c.change === 'number' && !isNaN(c.change));
-
-    // 2. Sort a copy of the array from highest change to lowest
-    const sortedByChange = [...validMarkets].sort((a, b) => b.change - a.change);
-
-    // 3. Grab the Top 3 Gainers and Top 3 Losers
-    const topGainers = sortedByChange.slice(0, 3);
-    const topLosers = sortedByChange.slice(-3).reverse(); // Reverse so the biggest loser is first
-
-    // 4. Combine them into one list for the UI
-    const displayCoins = [...topGainers, ...topLosers];
-
-    // 5. Render the beautiful cards
-    glList.innerHTML = displayCoins.map(c => {
-        const isUp = c.change >= 0;
-        const colorClass = isUp ? 'up' : 'down';
-        const symbolColor = isUp ? '↑' : '↓';
-        
-        // Make sure the price format is clean
-        const formattedPrice = c.price < 0.01 
-            ? c.price.toFixed(6) 
-            : c.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4});
-
-        return `
-            <div class="gl-card" onclick="quickTrade('${c.symbol}')" style="cursor: pointer;">
-                <div style="font-size:11px; color:#888; display: flex; justify-content: space-between;">
-                    <span>${c.symbol}</span>
-                    <span class="${colorClass}">${symbolColor} ${Math.abs(c.change).toFixed(2)}%</span>
-                </div>
-                <div style="font-weight:bold; margin: 5px 0; font-size:13px; color: #fff;">
-                    $${formattedPrice}
-                </div>
-            </div>
-        `;
-    }).join('');
-};
+;
 
 // Automatically trigger the render every time the live prices are fetched
 var originalFetchForGainers = window.fetchRealMarketPrices;
@@ -2813,3 +2773,63 @@ setInterval(() => {
         `;
     }).join('');
 }, 3000); // Check every 3 seconds to ensure it stays updated
+
+
+/* =====================================================
+   PROFESSIONAL TOP GAINERS & LOSERS (Sorted & Formatted)
+   ===================================================== */
+window.renderGainersLosers = function() {
+    const glList = document.getElementById('gainersLosersList');
+    if (!glList || typeof markets === 'undefined' || markets.length === 0) return;
+
+    // 1. Filter out invalid coins (price must be > 0, change must be a valid number)
+    const validCoins = markets.filter(c => c && c.price > 0 && typeof c.change === 'number' && !isNaN(c.change));
+
+    // 2. Separate into Gainers (positive change) and Losers (negative change)
+    let gainers = validCoins.filter(c => c.change > 0).sort((a, b) => b.change - a.change);
+    let losers = validCoins.filter(c => c.change < 0).sort((a, b) => a.change - b.change);
+
+    // 3. Grab the top 3 of each. If there aren't enough, pad with the next best available.
+    gainers = gainers.slice(0, 3);
+    losers = losers.slice(0, 3);
+
+    // 4. Combine them (3 Green, 3 Red)
+    const displayList = [...gainers, ...losers];
+
+    // 5. Format the price so it never looks like $0.00 if it has value
+    const formatPrice = (price) => {
+        if (price === 0) return '0.00';
+        if (price < 0.00001) return price.toFixed(8); // For super tiny coins like PEPE
+        if (price < 1) return price.toFixed(4);
+        return price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    };
+
+    // 6. Render the cards
+    glList.innerHTML = displayList.map(c => {
+        const isUp = c.change > 0;
+        const colorClass = isUp ? 'up' : 'down';
+        const arrow = isUp ? '↑' : '↓';
+        
+        // Determine background color hint for the card
+        const cardBorder = isUp ? 'border-left: 3px solid #0ecb51;' : 'border-left: 3px solid #f6465d;';
+
+        return `
+            <div class="gl-card" onclick="if(typeof quickTrade === 'function') quickTrade('${c.symbol}')" style="cursor: pointer; ${cardBorder}">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span style="font-size: 12px; color: #fff; font-weight: bold;">${c.symbol}</span>
+                    <span class="${colorClass}" style="font-size: 11px; font-weight: bold;">${arrow} ${Math.abs(c.change).toFixed(2)}%</span>
+                </div>
+                <div style="font-weight: bold; font-size: 13px; color: #888;">
+                    $${formatPrice(c.price)}
+                </div>
+            </div>
+        `;
+    }).join('');
+};
+
+// Automatically trigger the render whenever the real prices are fetched or on load
+setInterval(() => { if (typeof window.renderGainersLosers === 'function') window.renderGainersLosers(); }, 3000);
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => { if (typeof window.renderGainersLosers === 'function') window.renderGainersLosers(); }, 1000);
+});
+
