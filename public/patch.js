@@ -6,11 +6,11 @@ if (!document.getElementById('kill-ghost-box')) {
     document.head.appendChild(style);
 }
 
-// 2. Initialize Sparkline Data (20 points)
+// 2. Initialize Sparkline Data
 if (!window.sparklinePoints) {
     window.sparklinePoints = [];
     for (let i = 0; i < 20; i++) {
-        window.sparklinePoints.push({ x: i * 10, y: 40 + (Math.random() * 10 - 5) });
+        window.sparklinePoints.push({ x: i * 10, y: 40 + (Math.random() * 20 - 10) });
     }
 }
 
@@ -53,20 +53,20 @@ setInterval(() => {
             changeEl.style.color = color;
         }
 
-        // Move the sparkline
+        // Move the sparkline dynamically
         if (svgContainer) {
-            // Shift old points and add a new one
             window.sparklinePoints.shift();
             const lastY = window.sparklinePoints[window.sparklinePoints.length - 1].y;
-            // Add random movement, but bias it in the direction of the trend
-            const bias = isUp ? -1.5 : 1.5; 
-            let newY = lastY + (Math.random() * 10 - 5) + bias;
             
-            // Keep within SVG bounds (0 to 80)
+            // Increased noise (Math.random() * 24 - 12) for sharper peaks
+            const bias = isUp ? -2 : 2; // Slight upward/downward trend
+            let newY = lastY + (Math.random() * 24 - 12) + bias;
+            
+            // Keep within SVG bounds (5 to 75)
             newY = Math.max(5, Math.min(75, newY)); 
             window.sparklinePoints.push({ x: 200, y: newY });
 
-            // Recalculate X coordinates to keep them evenly spaced
+            // Recalculate X coordinates
             window.sparklinePoints.forEach((p, i) => p.x = i * 10);
 
             // Build the SVG path string
