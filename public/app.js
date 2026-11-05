@@ -3086,3 +3086,14 @@ window.loadMarkets = function() {
 /* disabled duplicate market interval */
 
 window.loadMarkets();
+
+/* =====================================================
+   KILL SWITCH: NEUTRALIZE THE ROGUE RENDERER
+   ===================================================== */
+// This overwrites the rogue function so it does absolutely nothing
+window.renderGainersLosers = function() { return; };
+
+// Ensure our main function runs
+if (typeof window.loadMarkets === 'function') {
+    window.loadMarkets();
+}

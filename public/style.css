@@ -231,3 +231,31 @@ h1, h2, h3, .total-value, .amount-text {
     flex-shrink: 0 !important;
     margin-bottom: 0 !important;
 }
+
+/* =========================================
+   FORCE COMPACT CARDS (OVERRIDE EVERYTHING)
+   ========================================= */
+#gainersLosersList {
+    min-height: 0 !important;
+    height: auto !important;
+    display: block !important;
+}
+
+.gainers-losers-row {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    height: auto !important;
+}
+
+.gl-card {
+    height: 75px !important;
+    min-height: 75px !important;
+    max-height: 75px !important;
+    flex: 0 0 110px !important; /* Locks the width */
+    padding: 10px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+}
