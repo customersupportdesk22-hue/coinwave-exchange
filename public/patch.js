@@ -114,3 +114,31 @@ setInterval(() => {
         }
     });
 }, 2000); // Updates every 2 seconds
+
+// ==========================================
+// PRECISE HERO CARD SYNC (Using HTML IDs)
+// ==========================================
+setInterval(() => {
+    // Check if markets data is loaded
+    if (typeof markets === 'undefined' || markets.length === 0) return;
+
+    // Find Bitcoin in the live data
+    const btc = markets.find(c => c.symbol === 'BTC');
+    if (!btc) return;
+
+    // Target the exact IDs from your index.html
+    const priceEl = document.getElementById('heroChartPrice');
+    const changeEl = document.getElementById('heroChartChange');
+
+    // Update the Price
+    if (priceEl) {
+        priceEl.innerText = '$' + btc.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    // Update the Percentage and Color
+    if (changeEl) {
+        const isUp = btc.change >= 0;
+        changeEl.innerText = (isUp ? '+' : '') + btc.change.toFixed(2) + '%';
+        changeEl.style.color = isUp ? '#0ecb51' : '#f6465d'; // Green if up, Red if down
+    }
+}, 1000); // Run every 1 second
