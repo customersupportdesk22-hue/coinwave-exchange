@@ -2830,7 +2830,7 @@ window.renderGainersLosers = function() {
 // Automatically trigger the render whenever the real prices are fetched or on load
 setInterval(() => { if (typeof window.renderGainersLosers === 'function') window.renderGainersLosers(); }, 3000);
 document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => { if (typeof window.renderGainersLosers === 'function') window.renderGainersLosers(); }, 1000);
+    /* ROGUE 1S TIMEOUT DISABLED */
 });
 
 

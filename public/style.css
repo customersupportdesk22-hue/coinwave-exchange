@@ -199,3 +199,14 @@ h1, h2, h3, .total-value, .amount-text {
 .asset-icon-circle {
     filter: saturate(0.7) !important; /* Desaturates the crazy colors slightly */
 }
+
+/* LOCK THE GAINERS/LOSERS HEIGHT TO STOP JUMPING */
+#gainersLosersList, .gainers-losers-row {
+    min-height: 150px !important; 
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.gainers-losers-row > div {
+    min-height: 70px !important; /* Locks the card height */
+}
