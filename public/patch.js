@@ -1,11 +1,28 @@
+// ==========================================
+// 1. INJECT CSS TO KILL THE GHOST BOX
+// ==========================================
+if (!document.getElementById('kill-ghost-box')) {
+    const style = document.createElement('style');
+    style.id = 'kill-ghost-box';
+    style.innerHTML = `
+        #gainersLosersList {
+            display: none !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// ==========================================
+// 2. RENDER THE NEW PERFECT UI
+// ==========================================
 setInterval(() => {
     const oldBox = document.getElementById('gainersLosersList');
     if (!oldBox) return;
 
-    // 1. HIDE the old broken box permanently
-    oldBox.style.display = 'none';
-
-    // 2. Create our new container if it doesn't exist yet
+    // Create our new container if it doesn't exist yet
     let newBox = document.getElementById('pro-gainers-losers');
     if (!newBox) {
         newBox = document.createElement('div');
@@ -16,7 +33,6 @@ setInterval(() => {
 
     if (typeof markets === 'undefined' || markets.length === 0) return;
 
-    // 3. Render into OUR new box with inline CSS
     const validCoins = markets.filter(c => c && c.price > 0 && typeof c.change === 'number');
     const sortedDesc = [...validCoins].sort((a, b) => b.change - a.change);
     
@@ -63,4 +79,4 @@ setInterval(() => {
                 </div>
             </div>
         </div>`;
-}, 1000); // Fires every 1 second to ensure it stays on top
+}, 1000);
