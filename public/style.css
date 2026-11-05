@@ -301,3 +301,14 @@ h1, h2, h3, .total-value, .amount-text {
 #gainersLosersList > div {
     margin-bottom: 0 !important;
 }
+
+/* =========================================
+   FIX FLOATING BUTTON OVERLAP
+   ========================================= */
+body {
+    padding-bottom: 90px !important; /* Pushes the bottom of the page up */
+}
+
+#market-list {
+    padding-bottom: 90px !important; /* Ensures the last coin is not covered */
+}
