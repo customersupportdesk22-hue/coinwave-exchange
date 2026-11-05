@@ -80,3 +80,37 @@ setInterval(() => {
             </div>
         </div>`;
 }, 1000);
+
+// ==========================================
+// SYNC HERO CARD BTC PRICE
+// ==========================================
+setInterval(() => {
+    if (typeof markets === 'undefined' || markets.length === 0) return;
+    
+    const btcCoin = markets.find(c => c.symbol === 'BTC');
+    if (!btcCoin) return;
+
+    // Format the live price
+    const livePrice = btcCoin.price >= 1 ? btcCoin.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : btcCoin.price.toFixed(2);
+    const liveChange = btcCoin.change >= 0 ? `+${btcCoin.change.toFixed(2)}%` : `${btcCoin.change.toFixed(2)}%`;
+    
+    // Find the hero card text and update it
+    // We look for the container that has "BTC / USDT" inside it
+    const allElements = document.querySelectorAll('div, span, h1, h2, h3');
+    allElements.forEach(el => {
+        if (el.innerText && el.innerText.includes('BTC / USDT') && el.children.length === 0) {
+            // Found the "BTC / USDT" text. Now let's find the price and change elements next to it.
+            const parent = el.parentElement;
+            if (parent) {
+                const priceEl = parent.querySelector('h1, h2, .hero-price');
+                const changeEl = parent.querySelector('.hero-change, span');
+                
+                if (priceEl) priceEl.innerText = `$${livePrice}`;
+                if (changeEl && changeEl !== el) {
+                    changeEl.innerText = liveChange;
+                    changeEl.style.color = btcCoin.change >= 0 ? '#0ecb51' : '#f6465d';
+                }
+            }
+        }
+    });
+}, 2000); // Updates every 2 seconds
