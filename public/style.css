@@ -210,3 +210,24 @@ h1, h2, h3, .total-value, .amount-text {
 .gainers-losers-row > div {
     min-height: 70px !important; /* Locks the card height */
 }
+
+/* RESTORE HORIZONTAL SCROLLING AND STABLE HEIGHT */
+#gainersLosersList {
+    min-height: 200px !important; 
+    display: flex !important;
+    flex-direction: row !important; /* Force side-by-side */
+    gap: 15px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+}
+
+.gainers-losers-row {
+    display: flex !important;
+    flex-direction: row !important;
+}
+
+.gl-card {
+    min-width: 140px !important;
+    flex-shrink: 0 !important;
+    margin-bottom: 0 !important;
+}
