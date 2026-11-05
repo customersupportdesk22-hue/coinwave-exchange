@@ -2723,7 +2723,6 @@ window.fetchRealMarketPrices = async function() {
 
 // Ensure it renders on page load
 document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => window.renderGainersLosers(), 1000);
 });
 
 /* =====================================================
@@ -2781,7 +2780,6 @@ setInterval(() => {
 /* ROGUE RENDER FUNCTION DELETED */
 
 // Automatically trigger the render whenever the real prices are fetched or on load
-setInterval(() => { if (typeof window.renderGainersLosers === 'function') window.renderGainersLosers(); }, 3000);
 document.addEventListener('DOMContentLoaded', () => {
     /* ROGUE 1S TIMEOUT DISABLED */
 });
