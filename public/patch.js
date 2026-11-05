@@ -29,16 +29,36 @@ setInterval(() => {
         ticker.innerHTML = tickerHTML + tickerHTML;
     }
 
-    // --- B. HERO CARD SYNC ---
+    // --- B. HERO CARD & SPARKLINE SYNC ---
     const btc = markets.find(c => c.symbol === 'BTC');
     if (btc) {
         const priceEl = document.getElementById('heroChartPrice');
         const changeEl = document.getElementById('heroChartChange');
+        const svgContainer = document.getElementById('heroSvgContainer');
+        
+        const isUp = btc.change >= 0;
+        const color = isUp ? '#0ecb51' : '#f6465d';
+
         if (priceEl) priceEl.innerText = '$' + btc.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
         if (changeEl) {
-            const isUp = btc.change >= 0;
             changeEl.innerText = (isUp ? '+' : '') + btc.change.toFixed(2) + '%';
-            changeEl.style.color = isUp ? '#0ecb51' : '#f6465d';
+            changeEl.style.color = color;
+        }
+
+        // Draw the sparkline
+        if (svgContainer) {
+            const path = isUp 
+                ? "M 0 70 L 20 60 L 40 65 L 60 40 L 80 45 L 100 20 L 120 30 L 140 10 L 160 15 L 180 5 L 200 0"
+                : "M 0 10 L 20 20 L 40 15 L 60 40 L 80 35 L 100 60 L 120 50 L 140 70 L 160 65 L 180 75 L 200 80";
+            
+            svgContainer.innerHTML = '<svg width="100%" height="100%" viewBox="0 0 200 80" preserveAspectRatio="none">' +
+                '<defs><linearGradient id="gradient" x1="0" x2="0" y1="0" y2="1">' +
+                '<stop offset="0%" stop-color="' + color + '" stop-opacity="0.3"/>' +
+                '<stop offset="100%" stop-color="' + color + '" stop-opacity="0"/>' +
+                '</linearGradient></defs>' +
+                '<path d="' + path + '" fill="none" stroke="' + color + '" stroke-width="2"/>' +
+                '<path d="' + path + ' L 200 80 L 0 80 Z" fill="url(#gradient)" stroke="none"/>' +
+                '</svg>';
         }
     }
 
@@ -63,15 +83,15 @@ setInterval(() => {
         if (losers.length === 0) losers = sortedDesc.slice(-3).reverse();
 
         const buildCard = (c) => {
-            const isUp = c.change >= 0;
-            const color = isUp ? '#0ecb51' : '#f6465d';
-            const arrow = isUp ? '↑' : '↓';
+            const cardIsUp = c.change >= 0;
+            const cardColor = cardIsUp ? '#0ecb51' : '#f6465d';
+            const arrow = cardIsUp ? '↑' : '↓';
             const fPrice = c.price >= 1 ? c.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : (c.price >= 0.001 ? c.price.toFixed(4) : c.price.toFixed(8));
             
-            return '<div onclick="if(typeof quickTrade === \'function\') quickTrade(\'' + c.symbol + '\')" style="cursor: pointer; flex: 0 0 115px; background: #181A20; border-radius: 8px; padding: 12px; border-left: 3px solid ' + color + '; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; height: 75px; margin-right: 10px;">' +
+            return '<div onclick="if(typeof quickTrade === \'function\') quickTrade(\'' + c.symbol + '\')" style="cursor: pointer; flex: 0 0 115px; background: #181A20; border-radius: 8px; padding: 12px; border-left: 3px solid ' + cardColor + '; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; height: 75px; margin-right: 10px;">' +
                 '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">' +
                     '<span style="font-size: 12px; color: #fff; font-weight: bold;">' + c.symbol + '</span>' +
-                    '<span style="font-size: 11px; color: ' + color + '; font-weight: bold;">' + arrow + ' ' + Math.abs(c.change).toFixed(2) + '%</span>' +
+                    '<span style="font-size: 11px; color: ' + cardColor + '; font-weight: bold;">' + arrow + ' ' + Math.abs(c.change).toFixed(2) + '%</span>' +
                 '</div>' +
                 '<div style="font-weight: bold; font-size: 13px; color: #848E9C;">$' + fPrice + '</div>' +
             '</div>';
