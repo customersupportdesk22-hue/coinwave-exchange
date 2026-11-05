@@ -1,4 +1,27 @@
-// 1. Ghost Box CSS
+// ==========================================
+// 1. TAWK.TO LIVE CHAT INJECTION
+// ==========================================
+window.Tawk_API = window.Tawk_API || {};
+window.Tawk_API.customStyle = {
+    visibility: {
+        desktop: { position: 'br', xOffset: 20, yOffset: 90 }, // Pushes Tawk.to UP by 90px
+        mobile: { position: 'br', xOffset: 20, yOffset: 90 }
+    }
+};
+
+if (!document.getElementById('tawk-script')) {
+    var s1 = document.createElement("script");
+    s1.id = 'tawk-script';
+    s1.async = true;
+    s1.src = 'https://embed.tawk.to/6acacd23a18e8334c37e911e/default';
+    s1.charset = 'UTF-8';
+    s1.setAttribute('crossorigin', '*');
+    document.head.appendChild(s1);
+}
+
+// ==========================================
+// 2. GHOST BOX CSS (FROM PREVIOUS FIX)
+// ==========================================
 if (!document.getElementById('kill-ghost-box')) {
     const style = document.createElement('style');
     style.id = 'kill-ghost-box';
@@ -6,7 +29,9 @@ if (!document.getElementById('kill-ghost-box')) {
     document.head.appendChild(style);
 }
 
-// 2. Initialize Sparkline Data
+// ==========================================
+// 3. INITIALIZE SPARKLINE DATA
+// ==========================================
 if (!window.sparklinePoints) {
     window.sparklinePoints = [];
     for (let i = 0; i < 20; i++) {
@@ -14,7 +39,9 @@ if (!window.sparklinePoints) {
     }
 }
 
-// 3. Master Sync Loop
+// ==========================================
+// 4. MASTER SYNC LOOP (Ticker, Chart, Cards)
+// ==========================================
 setInterval(() => {
     if (typeof markets === 'undefined' || markets.length === 0) return;
 
@@ -78,7 +105,7 @@ setInterval(() => {
         }
     }
 
-    // --- C. GAINERS/LOSERS UI (NOW SHOWING TOP 5) ---
+    // --- C. GAINERS/LOSERS UI ---
     const oldBox = document.getElementById('gainersLosersList');
     if (oldBox) {
         let newBox = document.getElementById('pro-gainers-losers');
@@ -92,11 +119,9 @@ setInterval(() => {
         const validCoins = markets.filter(c => c && c.price > 0 && typeof c.change === 'number');
         const sortedDesc = [...validCoins].sort((a, b) => b.change - a.change);
         
-        // CHANGED: slice(0, 5) to show the Top 5 instead of 3
         let gainers = sortedDesc.filter(c => c.change > 0).slice(0, 5);
         if (gainers.length === 0) gainers = sortedDesc.slice(0, 5);
 
-        // CHANGED: slice(0, 5) to show the Top 5 instead of 3
         let losers = [...validCoins].filter(c => c.change < 0).sort((a, b) => a.change - b.change).slice(0, 5);
         if (losers.length === 0) losers = sortedDesc.slice(-5).reverse();
 
