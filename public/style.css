@@ -259,3 +259,45 @@ h1, h2, h3, .total-value, .amount-text {
     flex-direction: column !important;
     justify-content: center !important;
 }
+
+/* =========================================
+   THE FINAL CSS LOCK (DO NOT TOUCH APP.JS)
+   ========================================= */
+#gainersLosersList {
+    display: block !important;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.gainers-losers-row {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    overflow-x: auto !important;
+    margin: 0 0 15px 0 !important;
+    padding: 0 !important;
+    height: 80px !important; /* Strict height */
+}
+
+/* Force the cards to be compact and horizontal */
+.gl-card, .gainers-losers-row > div {
+    flex: 0 0 32% !important;
+    min-width: 100px !important;
+    max-width: 130px !important;
+    height: 80px !important;
+    padding: 10px !important;
+    background: #181A20 !important;
+    border-radius: 8px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+}
+
+/* Remove any giant gaps between the sections */
+#gainersLosersList > div {
+    margin-bottom: 0 !important;
+}
