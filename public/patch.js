@@ -6,7 +6,15 @@ if (!document.getElementById('kill-ghost-box')) {
     document.head.appendChild(style);
 }
 
-// 2. Master Sync Loop
+// 2. Initialize Sparkline Data (20 points)
+if (!window.sparklinePoints) {
+    window.sparklinePoints = [];
+    for (let i = 0; i < 20; i++) {
+        window.sparklinePoints.push({ x: i * 10, y: 40 + (Math.random() * 10 - 5) });
+    }
+}
+
+// 3. Master Sync Loop
 setInterval(() => {
     if (typeof markets === 'undefined' || markets.length === 0) return;
 
@@ -29,7 +37,7 @@ setInterval(() => {
         ticker.innerHTML = tickerHTML + tickerHTML;
     }
 
-    // --- B. HERO CARD & SPARKLINE SYNC ---
+    // --- B. HERO CARD & LIVE SPARKLINE ---
     const btc = markets.find(c => c.symbol === 'BTC');
     if (btc) {
         const priceEl = document.getElementById('heroChartPrice');
@@ -45,19 +53,35 @@ setInterval(() => {
             changeEl.style.color = color;
         }
 
-        // Draw the sparkline
+        // Move the sparkline
         if (svgContainer) {
-            const path = isUp 
-                ? "M 0 70 L 20 60 L 40 65 L 60 40 L 80 45 L 100 20 L 120 30 L 140 10 L 160 15 L 180 5 L 200 0"
-                : "M 0 10 L 20 20 L 40 15 L 60 40 L 80 35 L 100 60 L 120 50 L 140 70 L 160 65 L 180 75 L 200 80";
+            // Shift old points and add a new one
+            window.sparklinePoints.shift();
+            const lastY = window.sparklinePoints[window.sparklinePoints.length - 1].y;
+            // Add random movement, but bias it in the direction of the trend
+            const bias = isUp ? -1.5 : 1.5; 
+            let newY = lastY + (Math.random() * 10 - 5) + bias;
             
+            // Keep within SVG bounds (0 to 80)
+            newY = Math.max(5, Math.min(75, newY)); 
+            window.sparklinePoints.push({ x: 200, y: newY });
+
+            // Recalculate X coordinates to keep them evenly spaced
+            window.sparklinePoints.forEach((p, i) => p.x = i * 10);
+
+            // Build the SVG path string
+            let pathStr = "M " + window.sparklinePoints[0].x + " " + window.sparklinePoints[0].y;
+            for (let i = 1; i < window.sparklinePoints.length; i++) {
+                pathStr += " L " + window.sparklinePoints[i].x + " " + window.sparklinePoints[i].y;
+            }
+
             svgContainer.innerHTML = '<svg width="100%" height="100%" viewBox="0 0 200 80" preserveAspectRatio="none">' +
                 '<defs><linearGradient id="gradient" x1="0" x2="0" y1="0" y2="1">' +
                 '<stop offset="0%" stop-color="' + color + '" stop-opacity="0.3"/>' +
                 '<stop offset="100%" stop-color="' + color + '" stop-opacity="0"/>' +
                 '</linearGradient></defs>' +
-                '<path d="' + path + '" fill="none" stroke="' + color + '" stroke-width="2"/>' +
-                '<path d="' + path + ' L 200 80 L 0 80 Z" fill="url(#gradient)" stroke="none"/>' +
+                '<path d="' + pathStr + '" fill="none" stroke="' + color + '" stroke-width="2"/>' +
+                '<path d="' + pathStr + ' L 200 80 L 0 80 Z" fill="url(#gradient)" stroke="none"/>' +
                 '</svg>';
         }
     }
