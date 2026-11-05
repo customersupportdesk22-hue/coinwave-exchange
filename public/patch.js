@@ -53,23 +53,15 @@ setInterval(() => {
             changeEl.style.color = color;
         }
 
-        // Move the sparkline dynamically
         if (svgContainer) {
             window.sparklinePoints.shift();
             const lastY = window.sparklinePoints[window.sparklinePoints.length - 1].y;
-            
-            // Increased noise (Math.random() * 24 - 12) for sharper peaks
-            const bias = isUp ? -2 : 2; // Slight upward/downward trend
+            const bias = isUp ? -2 : 2;
             let newY = lastY + (Math.random() * 24 - 12) + bias;
-            
-            // Keep within SVG bounds (5 to 75)
             newY = Math.max(5, Math.min(75, newY)); 
             window.sparklinePoints.push({ x: 200, y: newY });
-
-            // Recalculate X coordinates
             window.sparklinePoints.forEach((p, i) => p.x = i * 10);
 
-            // Build the SVG path string
             let pathStr = "M " + window.sparklinePoints[0].x + " " + window.sparklinePoints[0].y;
             for (let i = 1; i < window.sparklinePoints.length; i++) {
                 pathStr += " L " + window.sparklinePoints[i].x + " " + window.sparklinePoints[i].y;
@@ -86,7 +78,7 @@ setInterval(() => {
         }
     }
 
-    // --- C. GAINERS/LOSERS UI ---
+    // --- C. GAINERS/LOSERS UI (NOW SHOWING TOP 5) ---
     const oldBox = document.getElementById('gainersLosersList');
     if (oldBox) {
         let newBox = document.getElementById('pro-gainers-losers');
@@ -100,11 +92,13 @@ setInterval(() => {
         const validCoins = markets.filter(c => c && c.price > 0 && typeof c.change === 'number');
         const sortedDesc = [...validCoins].sort((a, b) => b.change - a.change);
         
-        let gainers = sortedDesc.filter(c => c.change > 0).slice(0, 3);
-        if (gainers.length === 0) gainers = sortedDesc.slice(0, 3);
+        // CHANGED: slice(0, 5) to show the Top 5 instead of 3
+        let gainers = sortedDesc.filter(c => c.change > 0).slice(0, 5);
+        if (gainers.length === 0) gainers = sortedDesc.slice(0, 5);
 
-        let losers = [...validCoins].filter(c => c.change < 0).sort((a, b) => a.change - b.change).slice(0, 3);
-        if (losers.length === 0) losers = sortedDesc.slice(-3).reverse();
+        // CHANGED: slice(0, 5) to show the Top 5 instead of 3
+        let losers = [...validCoins].filter(c => c.change < 0).sort((a, b) => a.change - b.change).slice(0, 5);
+        if (losers.length === 0) losers = sortedDesc.slice(-5).reverse();
 
         const buildCard = (c) => {
             const cardIsUp = c.change >= 0;
