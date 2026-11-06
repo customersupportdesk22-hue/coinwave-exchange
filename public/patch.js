@@ -198,32 +198,7 @@ function runInstant2() {
 runInstant2();
 setInterval(runInstant2, 1000);
 
-// ==========================================
-// LIVE PRICE SIMULATOR (NO API NEEDED)
-// ==========================================
-setInterval(() => {
-    // Check if markets array exists
-    if (typeof markets === 'undefined' || markets.length === 0) return;
 
-    // Loop through all 100 assets and slightly wiggle the prices
-    markets.forEach(coin => {
-        // Generate a tiny random fluctuation (-0.1% to +0.1%)
-        const fluctuation = (Math.random() - 0.5) * 0.002;
-        
-        // Update the price
-        coin.price = coin.price * (1 + fluctuation);
-        
-        // Slightly adjust the 24h change to make it look alive
-        coin.change += (Math.random() - 0.5) * 0.05;
-        
-        // Make sure change doesn't go below -99% or above 99% just in case
-        if (coin.change > 99) coin.change = 99;
-        if (coin.change < -99) coin.change = -99;
-    });
-
-    // Note: The existing `setInterval` loops in patch.js that we fixed earlier 
-    // will automatically see these updated prices and redraw the screen smoothly!
-}, 2000); // Updates every 2 seconds
 
 // ==========================================
 // FORCE LIVE MARKETS TABLE TO UPDATE
