@@ -276,3 +276,25 @@ closeGapStyle.innerHTML = `
     }
 `;
 document.head.appendChild(closeGapStyle);
+
+// ==========================================
+// AUTO-SYNC WALLET STATUS
+// ==========================================
+setInterval(async () => {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) return;
+    const user = JSON.parse(userStr);
+    if (!user || !user.email) return;
+    
+    try {
+        const res = await fetch('/api/auth/user/' + user.email);
+        if (res.ok) {
+            const freshUser = await res.json();
+            // If the admin just approved the wallet, update storage and reload
+            if (freshUser.walletStatus === 'approved' && user.walletStatus !== 'approved') {
+                localStorage.setItem('user', JSON.stringify(freshUser));
+                window.location.reload(); 
+            }
+        }
+    } catch (e) { }
+}, 5000);
