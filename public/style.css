@@ -192,7 +192,7 @@ h1, h2, h3, .total-value, .amount-text {
 
 /* 6. Floating WebCallHub Fix (Prevents overlap at bottom) */
 .assets-list-container, .dashboard-content {
-    padding-bottom: 100px !important; /* Pushes content up so the blue button doesn't cover it */
+    padding-bottom: 0px !important; /* Pushes content up so the blue button doesn't cover it */
 }
 
 /* 7. Asset Icons (Mute the bright pastel circles slightly) */
@@ -213,7 +213,7 @@ h1, h2, h3, .total-value, .amount-text {
 
 /* RESTORE HORIZONTAL SCROLLING AND STABLE HEIGHT */
 #gainersLosersList {
-    min-height: 200px !important; 
+    min-height: auto !important; 
     display: flex !important;
     flex-direction: row !important; /* Force side-by-side */
     gap: 15px !important;
@@ -306,9 +306,9 @@ h1, h2, h3, .total-value, .amount-text {
    FIX FLOATING BUTTON OVERLAP
    ========================================= */
 body {
-    padding-bottom: 90px !important; /* Pushes the bottom of the page up */
+    padding-bottom: 0px !important; /* Pushes the bottom of the page up */
 }
 
 #market-list {
-    padding-bottom: 90px !important; /* Ensures the last coin is not covered */
+    padding-bottom: 0px !important; /* Ensures the last coin is not covered */
 }

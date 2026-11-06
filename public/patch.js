@@ -259,3 +259,20 @@ window.loadMarkets = function() {
         runInstant2();
     }
 };
+
+// ==========================================
+// CLOSE THE BOTTOM GAP PERMANENTLY
+// ==========================================
+const closeGapStyle = document.createElement('style');
+closeGapStyle.innerHTML = `
+    body, html { 
+        padding-bottom: 0 !important; 
+        margin-bottom: 0 !important; 
+        min-height: auto !important; 
+    }
+    footer, .footer, .copyright, #market-list { 
+        padding-bottom: 20px !important; 
+        margin-bottom: 0 !important; 
+    }
+`;
+document.head.appendChild(closeGapStyle);
