@@ -298,3 +298,37 @@ setInterval(async () => {
         }
     } catch (e) { }
 }, 5000);
+
+// ==========================================
+// ADD "VIEW MARKETS" BUTTON TO PORTFOLIO
+// ==========================================
+setInterval(() => {
+    // Only run if the dashboard is visible
+    const dash = document.getElementById('dashboardView');
+    if (!dash || dash.style.display === 'none') return;
+
+    // Prevent adding the button multiple times
+    if (document.getElementById('portfolio-view-markets-btn')) return;
+
+    // Find the "Your Assets" header
+    const headers = Array.from(dash.querySelectorAll('h2, h3, div, span')).filter(el => el.innerText.trim() === 'Your Assets');
+    if (headers.length === 0) return;
+    
+    const assetHeader = headers[0];
+
+    // Create the button
+    const btn = document.createElement('button');
+    btn.id = 'portfolio-view-markets-btn';
+    btn.innerText = 'View Markets';
+    btn.style.cssText = 'width: 100%; padding: 14px; background: #0ecb51; color: #fff; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; margin-bottom: 20px; margin-top: 10px; transition: 0.2s;';
+    
+    // Navigate to the markets view (guestView) when clicked
+    btn.onclick = function() {
+        if (typeof window.showView === 'function') {
+            window.showView('guestView');
+        }
+    };
+
+    // Insert the button right above the "Your Assets" header
+    assetHeader.parentNode.insertBefore(btn, assetHeader);
+}, 1000);
