@@ -346,3 +346,46 @@ const observer = new MutationObserver(() => {
     injectMarketsButton();
 });
 observer.observe(document.body, { childList: true, subtree: true });
+
+// ==========================================
+// PROFESSIONAL EMPTY STATE FOR "YOUR ASSETS"
+// ==========================================
+setInterval(() => {
+    const container = document.getElementById('assetsListContainer');
+    if (!container) return;
+
+    // Check if there are any non-zero asset rows
+    const rows = container.querySelectorAll('.asset-row');
+    let hasVisibleAssets = false;
+    
+    rows.forEach(row => {
+        if (!row.classList.contains('zero-row')) {
+            hasVisibleAssets = true;
+        }
+    });
+
+    const emptyState = document.getElementById('pro-empty-state');
+
+    if (!hasVisibleAssets) {
+        // If no visible assets and empty state doesn't exist, create it
+        if (!emptyState) {
+            const emptyDiv = document.createElement('div');
+            emptyDiv.id = 'pro-empty-state';
+            emptyDiv.style.cssText = 'text-align: center; padding: 30px 20px; background: #13161A; border-radius: 8px; margin: 15px 0; border: 1px dashed #2B3139;';
+            emptyDiv.innerHTML = `
+                <div style="font-size: 32px; margin-bottom: 15px; opacity: 0.5;">💼</div>
+                <h3 style="color: #fff; margin: 0 0 8px 0; font-size: 16px; font-weight: 600;">No assets yet</h3>
+                <p style="color: #848E9C; font-size: 13px; margin: 0 0 20px 0;">You don't own any crypto yet. Buy your first asset to get started.</p>
+                <button onclick="if(typeof window.showView === 'function') window.showView('guestView');" style="background: #0ecb51; color: #fff; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer;">
+                    View Markets
+                </button>
+            `;
+            container.appendChild(emptyDiv);
+        }
+    } else {
+        // If there are visible assets, remove the empty state
+        if (emptyState) {
+            emptyState.remove();
+        }
+    }
+}, 1000);
