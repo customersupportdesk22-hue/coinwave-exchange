@@ -310,25 +310,3 @@ setInterval(() => {
 }, 1000);
 
 // ==========================================
-// AUTO-SLIDE (CAROUSEL) FOR GAINERS & LOSERS
-// ==========================================
-setInterval(() => {
-    // Find all the "Top Gainers" and "Top Losers" headings
-    document.querySelectorAll('h3').forEach(h3 => {
-        if (h3.innerText.includes('Top Gainers') || h3.innerText.includes('Top Losers')) {
-            // The scrolling row is the next element after the heading's parent
-            const row = h3.parentElement.nextElementSibling;
-            
-            if (row && row.tagName === 'DIV') {
-                // Check if we are at the end of the scroll
-                if (row.scrollLeft + row.clientWidth >= row.scrollWidth - 10) {
-                    // Snap back to the start smoothly
-                    row.scrollTo({ left: 0, behavior: 'smooth' });
-                } else {
-                    // Slide right to the next card smoothly
-                    row.scrollBy({ left: 120, behavior: 'smooth' });
-                }
-            }
-        }
-    });
-}, 3000); // 3000ms = 3 seconds per slide
