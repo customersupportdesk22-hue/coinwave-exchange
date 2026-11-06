@@ -141,6 +141,23 @@ app.get('/api/market/prices', async (req, res) => {
 // ==========================================
 // APP ROUTES
 // ==========================================
+
+// ==========================================
+// TEMPORARY ROUTE TO FIX OLD ORDERS
+// ==========================================
+app.get('/api/fix-old-orders', async (req, res) => {
+    try {
+        const Order = require('./models/Order');
+        const result = await Order.updateMany(
+            { status: "Approved" },
+            { $set: { status: "approved" } }
+        );
+        res.json({ message: `Successfully fixed ${result.modifiedCount} old orders!` });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/user', require('./routes/auth'));
 app.use('/api/orders', require('./routes/order'));
