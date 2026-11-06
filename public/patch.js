@@ -190,42 +190,6 @@ const iconMap = {
     'OP': 'O', 'FIL': 'F', 'INJ': 'I', 'SUI': 'S', 'PEPE': '🐸'
 };
 
-setInterval(() => {
-    const marketList = document.getElementById('market-list');
-    if (!marketList) return;
-
-    // If we have more than 50 rows, the live API data has arrived
-    const rows = marketList.querySelectorAll('.market-row');
-    
-    if (rows.length > 50) {
-        // Unhide the table
-        marketList.style.visibility = 'visible';
-        
-        // Apply correct colors and icons
-        rows.forEach(row => {
-            const symEl = row.querySelector('.market-symbol-text');
-            const iconEl = row.querySelector('.market-icon');
-            
-            if (symEl && iconEl) {
-                const sym = symEl.innerText.trim().toUpperCase();
-                
-                if (brandColors[sym]) {
-                    iconEl.style.setProperty('background', brandColors[sym], 'important');
-                    iconEl.style.setProperty('color', '#fff', 'important');
-                } else {
-                    iconEl.style.setProperty('background', '#2B3139', 'important');
-                    iconEl.style.setProperty('color', '#fff', 'important');
-                }
-
-                if (iconMap[sym]) {
-                    iconEl.innerText = iconMap[sym];
-                }
-            }
-        });
-    }
-}, 1000);
-
-// ==========================================
 // FETCH INTERCEPTOR (STOPS COLOR FLASHING)
 // ==========================================
 const originalFetch = window.fetch;
