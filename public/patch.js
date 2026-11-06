@@ -302,26 +302,28 @@ setInterval(async () => {
 // Old button script removed
 
 
+// Old button timer removed
+
+
 // ==========================================
-// ADD "VIEW MARKETS" BUTTON TO PORTFOLIO (FIXED)
+// INSTANT INJECTION FOR "VIEW MARKETS" BUTTON
 // ==========================================
-setInterval(() => {
+function injectMarketsButton() {
     const dash = document.getElementById('dashboardView');
+    // Only run if dashboard is visible
     if (!dash || dash.style.display === 'none') return;
 
+    // If button is already there, do nothing (prevents infinite loop)
     if (document.getElementById('portfolio-view-markets-btn')) return;
 
-    // Find the "View Transaction History" element
     const elements = Array.from(dash.querySelectorAll('a, div, span, button')).filter(el => el.innerText.trim() === 'View Transaction History');
     if (elements.length === 0) return;
     
     const historyBtn = elements[0];
 
-    // Create the button
     const btn = document.createElement('button');
     btn.id = 'portfolio-view-markets-btn';
     btn.innerText = 'View Markets';
-    // Professional outline style
     btn.style.cssText = 'width: 100%; padding: 12px; background: transparent; color: #0ecb51; border: 1px solid #0ecb51; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; margin-top: 15px; margin-bottom: 5px; transition: 0.2s;';
     
     btn.onmouseover = () => btn.style.background = 'rgba(14, 203, 81, 0.1)';
@@ -333,6 +335,14 @@ setInterval(() => {
         }
     };
 
-    // Insert it right AFTER the transaction history button
     historyBtn.parentNode.insertBefore(btn, historyBtn.nextSibling);
-}, 1000);
+}
+
+// Run once on load
+setTimeout(injectMarketsButton, 100);
+
+// Watch the page for changes and inject instantly when app.js redraws
+const observer = new MutationObserver(() => {
+    injectMarketsButton();
+});
+observer.observe(document.body, { childList: true, subtree: true });
