@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Order = require('../models/Order');
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 
@@ -159,6 +160,43 @@ router.get('/user/:email', async (req, res) => {
         if (!user) return res.status(404).json({ error: 'User not found' });
         res.json(user);
     } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+
+// ==========================================
+// GET USER BALANCES (For Dashboard Total Value)
+// ==========================================
+router.get('/user/:email/balances', async (req, res) => {
+    try {
+        const email = req.params.email;
+        const orders = await Order.find({ userEmail: email });
+        let balances = {};
+
+        orders.forEach(order => {
+            // Add to balance if Approved OR (Pending AND Buy order)
+            if (order.status === 'approved' || (order.status === 'pending' && order.mode === 'buy')) {
+                if (order.mode === 'buy') {
+                    const sym = (order.getCurrency || '').toUpperCase();
+                    const amt = parseFloat(order.getAmount) || 0;
+                    if (sym) {
+                        balances[sym] = (balances[sym] || 0) + amt;
+                    }
+                } else if (order.mode === 'sell' && order.status === 'approved') {
+                    const sym = (order.sendCurrency || '').toUpperCase();
+                    const amt = parseFloat(order.sendAmount) || 0;
+                    if (sym) {
+                        balances[sym] = (balances[sym] || 0) - amt;
+                        if (balances[sym] < 0) balances[sym] = 0;
+                    }
+                }
+            }
+        });
+
+        res.json(balances);
+    } catch (error) {
+        console.error('Balance error:', error);
         res.status(500).json({ error: 'Server error' });
     }
 });

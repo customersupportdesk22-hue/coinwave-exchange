@@ -142,6 +142,7 @@ app.get('/api/market/prices', async (req, res) => {
 // APP ROUTES
 // ==========================================
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/user', require('./routes/auth'));
 app.use('/api/orders', require('./routes/order'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/wallet', require('./routes/auth')); 
