@@ -133,7 +133,7 @@ app.get('/api/market/prices', async (req, res) => {
             // --- TIER 3: EMERGENCY STATIC LIST ---
             if (cachedPrices) return res.json(cachedPrices);
 
-            return res.json(safeFallback);
+            return res.json([]);
         }
     }
 });
