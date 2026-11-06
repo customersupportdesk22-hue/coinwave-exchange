@@ -224,3 +224,61 @@ setInterval(() => {
         });
     }
 }, 1000);
+
+// ==========================================
+// FETCH INTERCEPTOR (STOPS COLOR FLASHING)
+// ==========================================
+const originalFetch = window.fetch;
+window.fetch = async (...args) => {
+    const response = await originalFetch(...args);
+    const url = args[0];
+    
+    // Intercept only the market prices API call
+    if (typeof url === 'string' && url.includes('/api/market/prices')) {
+        try {
+            const clone = response.clone();
+            const data = await clone.json();
+            
+            const colorMap = {
+                'BTC': '#F7931A', 'ETH': '#627EEA', 'USDT': '#26A17B', 'BNB': '#F3BA2F',
+                'SOL': '#14F195', 'USDC': '#2775CA', 'XRP': '#23292F', 'DOGE': '#C2A633',
+                'ADA': '#0033AD', 'TRX': '#FF060A', 'AVAX': '#E84142', 'LINK': '#2A5ADA',
+                'DOT': '#E6007A', 'MATIC': '#8247E5', 'POL': '#8247E5', 'SHIB': '#FFA409',
+                'LTC': '#345D9D', 'BCH': '#8DC351', 'UNI': '#FF007A', 'XLM': '#7D00FF',
+                'ATOM': '#2E3148', 'NEAR': '#00EC97', 'APT': '#000000', 'ARB': '#12AAFF',
+                'OP': '#FF0420', 'FIL': '#0090FF', 'INJ': '#00D2FF', 'SUI': '#6FBCF0',
+                'PEPE': '#D3AF30', 'RUNE': '#33FF99', 'WLD': '#000000', 'ETC': '#328332'
+            };
+
+            const iconMap = {
+                'BTC': '₿', 'ETH': 'Ξ', 'USDT': '₮', 'BNB': 'B', 'SOL': 'S',
+                'USDC': 'U', 'XRP': 'X', 'DOGE': 'Ð', 'ADA': '₳', 'TRX': 'T',
+                'AVAX': 'A', 'LINK': '⬡', 'DOT': '•', 'MATIC': 'M', 'POL': 'P',
+                'SHIB': 'S', 'LTC': 'Ł', 'BCH': 'B', 'UNI': 'U', 'XLM': 'X',
+                'ATOM': '⚛', 'NEAR': 'N', 'APT': 'A', 'ARB': 'A', 'OP': 'O',
+                'FIL': 'F', 'INJ': 'I', 'SUI': 'S', 'PEPE': '🐸'
+            };
+
+            // Inject colors and icons into the data BEFORE app.js sees it
+            const mappedData = data.map(coin => {
+                const sym = coin.symbol.toUpperCase();
+                return {
+                    ...coin,
+                    color: colorMap[sym] || '#2B3139',
+                    icon: iconMap[sym] || sym.charAt(0).toUpperCase()
+                };
+            });
+
+            // Return the modified data to app.js
+            return new Response(JSON.stringify(mappedData), {
+                status: response.status,
+                statusText: response.statusText,
+                headers: response.headers
+            });
+        } catch (e) {
+            console.error("Fetch interceptor error:", e);
+            return response; 
+        }
+    }
+    return response;
+};
