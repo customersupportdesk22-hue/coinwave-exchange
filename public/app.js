@@ -743,7 +743,7 @@ window.loadDashboardData = async function() {
         markets.forEach(coin => {
             const amount = Math.max(0, balances[coin.symbol] || 0); 
             const pendingAmt = pendingAmounts[coin.symbol] || 0;
-            const value = amount * coin.price;
+            const value = (amount + pendingAmt) * coin.price;
             totalValue += value;
             const rowClass = amount === 0 ? 'asset-row zero-row' : 'asset-row';
             const pendingBadge = pendingAmt > 0 ? `<div style="background: rgba(252, 213, 53, 0.1); color: #fcd535; font-size: 9px; padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block; width: max-content;">${pendingAmt.toFixed(4)} Pending</div>` : '';
