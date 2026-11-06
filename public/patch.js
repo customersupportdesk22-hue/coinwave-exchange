@@ -447,3 +447,10 @@ stopFlashStyle.innerHTML = `
     }
 `;
 document.head.appendChild(stopFlashStyle);
+
+// ==========================================
+// STOP WHITE FLASH ON DASHBOARD BUTTONS
+// ==========================================
+const stopFlashStyle = document.createElement('style');
+stopFlashStyle.innerHTML = '#dashboardView, .dash-container { background-color: #0B0E11 !important; } #dashboardView button { background-color: #1E2329 !important; color: #fff !important; border: 1px solid #2B3139 !important; transition: none !important; }';
+document.head.appendChild(stopFlashStyle);
