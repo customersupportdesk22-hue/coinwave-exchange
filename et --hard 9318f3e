@@ -1,0 +1,20 @@
+[33m7f066a1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m fix: deleted fallback loop that was injecting junk assets
+[33ma84eb93[m fix: complete server rewrite to fix syntax error, add market cap filter, and guarantee zero duplicates
+[33m1b9473e[m fix: injected duplicate killer and 100M market cap filter
+[33m2c7040f[m fix: added strict duplicate check and 100M market cap filter to whitelist
+[33m26e1713[m fix: added ultimate stupid-asset killer and locked top assets
+[33mdaa2c50[m fix: added XAUT, BNSOL, and A to the final blacklist
+[33m1e301d6[m fix: strict regex to block all USD stablecoins and added XUSD, PAXG, XAUT to blacklist
+[33md148f4f[m fix: rebuilt server.js with ironclad whitelist and map to kill all duplicates and scams
+[33ma6e1231[m fix: forced uppercase/trim on symbols to kill duplicates, blocked WBETH and WLFI
+[33m0fcbbba[m fix: absolute final filter for fiats, chinese scam tokens, and duplicates
+[33meb1d9a0[m refactor: implemented whitelist architecture to permanently block stocks, fiats, and fake tokens
+[33m6d52535[m fix: added exhaustive blacklist to Binance to remove ALL tokenized stocks, fiats, and junk
+[33m53b9b23[m fix: added ultimate strict blacklists to Binance to remove all stocks, fake stablecoins, and memes
+[33m9d54a83[m fix: applied strict blacklist to Binance API to remove fiats, stocks, and junk tokens
+[33maa65f8a[m fix: applied ironclad filter to Binance feed to remove stocks and fake coins
+[33m487a841[m refactor: swapped Binance to primary API, 10s cache, removed price simulation
+[33m9318f3e[m feat: added 0.50% price simulation to backend for live feel
+[33m6bbc637[m feat: added skeleton loader to eliminate 1-second black screen
+[33mf0e2f05[m fix: permanently restored brand colors to 100+ assets
+[33m53d7321[m style: applied professional compact typography overrides

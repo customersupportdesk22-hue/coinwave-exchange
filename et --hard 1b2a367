@@ -1,0 +1,15 @@
+[33m4adf84e[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m fix: removed bottom gap and re-enabled tawk.to click-to-chat
+[33m8d23200[m fix: force hide tawk widget via API and remove gap above support banner
+[33m4decf70[m fix: removed webcallhub script, hid tawk.to, and restored support banner
+[33m0102120[m feat: added static volume column to hardcoded 100 assets and hid floating buttons
+[33m1b2a367[m fix: changed gainers and losers from 5 to 3 in patch.js
+[33mc6c939f[m style: force side-by-side scrolling for gainers and losers cards
+[33m86b7e76[m fix: deleted compact typography and everything after it to stop flashing
+[33m9a6efad[m fix: completely deleted auto-slide script to stop gainers/losers flashing
+[33madcfb80[m feat: added auto-slide carousel to gainers and losers cards
+[33me5dc848[m fix: forced horizontal scrolling on gainers and losers cards
+[33m1f86e80[m style: applied compact typography for professional look
+[33m81e1fe1[m fix: added exactly 100 assets and restored the original 85k prices
+[33m3df05fe[m feat: locked website to 100 professional assets with zero API dependence
+[33mde3027b[m fix: completely removed random color generator from app.js
+[33md2874c7[m fix: forced app.js to use brand colors and icons from the fetch interceptor

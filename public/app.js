@@ -655,7 +655,7 @@ window.loadDashboardData = async function() {
 
     try {
         let balances = {}; let orders = []; let user = currentUser;
-        try { const r = await fetch(`/api/user/${currentUser.email}/balances`); if(r.ok) balances = await r.json(); } catch(e) {}
+        try { const r = await fetch(`/api/auth/user/${currentUser.email}/balances`); if(r.ok) balances = await r.json(); } catch(e) {}
         try { const r = await fetch(`/api/orders/user/${currentUser.email}`); if(r.ok) { const d = await r.json(); orders = Array.isArray(d) ? d : []; } } catch(e) {}
         try { const r = await fetch(`/api/user/${currentUser.email}`); if(r.ok) user = await r.json(); } catch(e) {}
         
@@ -1245,7 +1245,7 @@ window.polishTradeView = async function() {
         suffixEl.textContent = coinSymbol; // e.g., BTC, ETH
         // Fetch the user's balance for this specific coin to display
         try {
-            const res = await fetch(`/api/user/${currentUser.email}/balances`);
+            const res = await fetch(`/api/auth/user/${currentUser.email}/balances`);
             const balances = await res.json();
             const bal = balances[coinSymbol] || 0;
             balEl.textContent = `Available: ${bal.toFixed(6)} ${coinSymbol}`;
@@ -1308,7 +1308,7 @@ window.polishTradeView = async function() {
     } else {
         suffixEl.textContent = coinSymbol; 
         try {
-            const res = await fetch(`/api/user/${currentUser.email}/balances`);
+            const res = await fetch(`/api/auth/user/${currentUser.email}/balances`);
             const balances = await res.json();
             const bal = balances[coinSymbol] || 0;
             
@@ -1383,7 +1383,7 @@ window.polishTradeView = async function() {
     } else {
         suffixEl.textContent = coinSymbol; 
         try {
-            const res = await fetch(`/api/user/${currentUser.email}/balances`);
+            const res = await fetch(`/api/auth/user/${currentUser.email}/balances`);
             const balances = await res.json();
             const bal = balances[coinSymbol] || 0;
             
@@ -1534,7 +1534,7 @@ window.polishTradeView = async function() {
     } else {
         suffixEl.textContent = coinSymbol; 
         try {
-            const res = await fetch(`/api/user/${currentUser.email}/balances`);
+            const res = await fetch(`/api/auth/user/${currentUser.email}/balances`);
             const balances = await res.json();
             const bal = balances[coinSymbol] || 0;
             
@@ -1578,7 +1578,7 @@ window.polishTradeView = async function() {
         receiveLabel.innerHTML = `You will receive (Crypto) <span style="color: #0ecb51; font-size: 11px; margin-left: 5px; font-weight: bold; white-space: nowrap;">🎁 (Includes 5% Bonus)</span>`;
     } else {
         try {
-            const res = await fetch(`/api/user/${currentUser.email}/balances`);
+            const res = await fetch(`/api/auth/user/${currentUser.email}/balances`);
             const balances = await res.json();
             const bal = balances[coinSymbol] || 0;
             
@@ -1652,7 +1652,7 @@ window.polishTradeView = async function() {
         receiveLabel.innerHTML = `You will receive (Crypto) <span style="color: #0ecb51; font-size: 11px; margin-left: 5px; font-weight: bold; white-space: nowrap;">🎁 (Includes 5% Bonus)</span>`;
     } else {
         try {
-            const res = await fetch(`/api/user/${currentUser.email}/balances`);
+            const res = await fetch(`/api/auth/user/${currentUser.email}/balances`);
             const balances = await res.json();
             const bal = balances[coinSymbol] || 0;
             
