@@ -653,6 +653,15 @@ window.loadDashboardData = async function() {
     const dashContainer = document.querySelector('.dash-container');
     if (!dashContainer) return;
 
+    // Inject professional loading spinner immediately
+    dashContainer.innerHTML = `
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:60vh; gap:15px;">
+            <div style="width:40px; height:40px; border:4px solid rgba(255,255,255,0.1); border-top:4px solid #00d4aa; border-radius:50%; animation:cw-spin 1s linear infinite;"></div>
+            <div style="color:#888; font-size:14px; font-weight:500;">Loading secure dashboard...</div>
+        </div>
+        <style>@keyframes cw-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+    `;
+
     try {
         let balances = {}; let orders = []; let user = currentUser;
         const [bData, oData, uData] = await Promise.all([
