@@ -247,3 +247,28 @@ window.fetch = async (...args) => {
 };
 
 // ==========================================
+
+// ==========================================
+// FIX GAINERS/LOSERS CARD OVERLAP & SCROLL
+// ==========================================
+const fixCardsStyle = document.createElement('style');
+fixCardsStyle.innerHTML = `
+    /* Target the rows inside the pro-gainers-losers container */
+    #pro-gainers-losers > div > div > div {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important; /* Prevents wrapping */
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important; /* Smooth mobile scroll */
+        scrollbar-width: none !important;
+        padding-bottom: 5px !important;
+        width: 100% !important;
+    }
+    
+    /* Target the individual cards */
+    #pro-gainers-losers > div > div > div > div {
+        flex: 0 0 120px !important; /* Force a fixed width so they don't shrink */
+        margin-right: 10px !important; /* Space between cards */
+    }
+`;
+document.head.appendChild(fixCardsStyle);
