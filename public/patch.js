@@ -167,7 +167,6 @@ setInterval(() => {
 // HIDE 26 ASSETS & FORCE COLORS ON LIVE DATA
 // ==========================================
 const hideTableStyle = document.createElement('style');
-hideTableStyle.innerHTML = `#market-list { visibility: hidden; }`;
 document.head.appendChild(hideTableStyle);
 
 const brandColors = {
