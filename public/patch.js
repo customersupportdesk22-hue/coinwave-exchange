@@ -58,7 +58,7 @@ window.loadTawkAndChat = function(e) {
 // ==========================================
 // 3. INJECT SUPPORT CENTER UI
 // ==========================================
-setInterval(() => {
+function runInstant1() {
     if (!document.getElementById('support-page-overlay')) {
         let overlay = document.createElement('div');
         overlay.id = 'support-page-overlay';
@@ -101,7 +101,9 @@ setInterval(() => {
             footer.parentNode.insertBefore(banner, footer);
         }
     }
-}, 1000);
+}
+runInstant1();
+setInterval(runInstant1, 1000);
 
 // ==========================================
 // RESTORE HERO CARD, TICKER & GAINERS/LOSERS
@@ -111,7 +113,7 @@ if (!window.sparklinePoints) {
     for (let i = 0; i < 20; i++) window.sparklinePoints.push({ x: i * 10, y: 40 + (Math.random() * 20 - 10) });
 }
 
-setInterval(() => {
+function runInstant2() {
     if (typeof markets === 'undefined' || !markets.length) return;
 
     // --- A. UPDATE TICKER ---
@@ -192,4 +194,6 @@ setInterval(() => {
 
         newBox.innerHTML = `<div style="display: flex; flex-direction: column; gap: 15px; width: 100%;"><div><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><h3 style="font-size: 14px; color: #fff; margin: 0; font-weight: 600;">Top Gainers</h3><span style="font-size: 11px; color: #0ecb51;">● Live</span></div><div style="display: flex; flex-direction: row; justify-content: space-between; padding-bottom: 5px;">${gainers.map(c => buildCard(c)).join('')}</div></div><div><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><h3 style="font-size: 14px; color: #fff; margin: 0; font-weight: 600;">Top Losers</h3><span style="font-size: 11px; color: #f6465d;">● Live</span></div><div style="display: flex; flex-direction: row; justify-content: space-between; padding-bottom: 5px;">${losers.map(c => buildCard(c)).join('')}</div></div></div>`;
     }
-}, 2000);
+}
+runInstant2();
+setInterval(runInstant2, 1000);
