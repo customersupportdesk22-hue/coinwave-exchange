@@ -162,3 +162,65 @@ setInterval(() => {
         '</div>';
     }
 }, 1000);
+
+// ==========================================
+// HIDE 26 ASSETS & FORCE COLORS ON LIVE DATA
+// ==========================================
+const hideTableStyle = document.createElement('style');
+hideTableStyle.innerHTML = `#market-list { visibility: hidden; }`;
+document.head.appendChild(hideTableStyle);
+
+const brandColors = {
+    'BTC': '#F7931A', 'ETH': '#627EEA', 'USDT': '#26A17B', 'BNB': '#F3BA2F',
+    'SOL': '#14F195', 'USDC': '#2775CA', 'XRP': '#23292F', 'DOGE': '#C2A633',
+    'ADA': '#0033AD', 'TRX': '#FF060A', 'AVAX': '#E84142', 'LINK': '#2A5ADA',
+    'DOT': '#E6007A', 'MATIC': '#8247E5', 'POL': '#8247E5', 'SHIB': '#FFA409',
+    'LTC': '#345D9D', 'BCH': '#8DC351', 'UNI': '#FF007A', 'XLM': '#7D00FF',
+    'ATOM': '#2E3148', 'NEAR': '#00EC97', 'APT': '#000000', 'ARB': '#12AAFF',
+    'OP': '#FF0420', 'FIL': '#0090FF', 'INJ': '#00D2FF', 'SUI': '#6FBCF0',
+    'PEPE': '#D3AF30', 'RUNE': '#33FF99', 'WLD': '#000000', 'ETC': '#328332',
+    'HBAR': '#222222', 'VET': '#15BDFF', 'ICP': '#29ABE2', 'RENDER': '#000000'
+};
+
+const iconMap = {
+    'BTC': '₿', 'ETH': 'Ξ', 'USDT': '₮', 'BNB': 'B', 'SOL': 'S', 'USDC': 'U',
+    'XRP': 'X', 'DOGE': 'Ð', 'ADA': '₳', 'TRX': 'T', 'AVAX': 'A', 'LINK': '⬡',
+    'DOT': '•', 'MATIC': 'M', 'POL': 'P', 'SHIB': 'S', 'LTC': 'Ł', 'BCH': 'B',
+    'UNI': 'U', 'XLM': 'X', 'ATOM': '⚛', 'NEAR': 'N', 'APT': 'A', 'ARB': 'A',
+    'OP': 'O', 'FIL': 'F', 'INJ': 'I', 'SUI': 'S', 'PEPE': '🐸'
+};
+
+setInterval(() => {
+    const marketList = document.getElementById('market-list');
+    if (!marketList) return;
+
+    // If we have more than 50 rows, the live API data has arrived
+    const rows = marketList.querySelectorAll('.market-row');
+    
+    if (rows.length > 50) {
+        // Unhide the table
+        marketList.style.visibility = 'visible';
+        
+        // Apply correct colors and icons
+        rows.forEach(row => {
+            const symEl = row.querySelector('.market-symbol-text');
+            const iconEl = row.querySelector('.market-icon');
+            
+            if (symEl && iconEl) {
+                const sym = symEl.innerText.trim().toUpperCase();
+                
+                if (brandColors[sym]) {
+                    iconEl.style.setProperty('background', brandColors[sym], 'important');
+                    iconEl.style.setProperty('color', '#fff', 'important');
+                } else {
+                    iconEl.style.setProperty('background', '#2B3139', 'important');
+                    iconEl.style.setProperty('color', '#fff', 'important');
+                }
+
+                if (iconMap[sym]) {
+                    iconEl.innerText = iconMap[sym];
+                }
+            }
+        });
+    }
+}, 1000);
