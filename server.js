@@ -133,34 +133,6 @@ app.get('/api/market/prices', async (req, res) => {
             // --- TIER 3: EMERGENCY STATIC LIST ---
             if (cachedPrices) return res.json(cachedPrices);
 
-            const safeFallback = [
-                { name: 'Bitcoin', symbol: 'BTC', current_price: 65400.50, price_change_percentage_24h: 1.5 },
-                { name: 'Ethereum', symbol: 'ETH', current_price: 3450.20, price_change_percentage_24h: 2.1 },
-                { name: 'Tether', symbol: 'USDT', current_price: 1.00, price_change_percentage_24h: 0.01 },
-                { name: 'BNB', symbol: 'BNB', current_price: 590.30, price_change_percentage_24h: -0.5 },
-                { name: 'Solana', symbol: 'SOL', current_price: 145.80, price_change_percentage_24h: 5.2 },
-                { name: 'XRP', symbol: 'XRP', current_price: 0.52, price_change_percentage_24h: -1.2 },
-                { name: 'Dogecoin', symbol: 'DOGE', current_price: 0.15, price_change_percentage_24h: 3.4 },
-                { name: 'Cardano', symbol: 'ADA', current_price: 0.45, price_change_percentage_24h: 1.1 },
-                { name: 'Avalanche', symbol: 'AVAX', current_price: 35.20, price_change_percentage_24h: -2.1 },
-                { name: 'Shiba Inu', symbol: 'SHIB', current_price: 0.000024, price_change_percentage_24h: 4.5 },
-                { name: 'Polkadot', symbol: 'DOT', current_price: 6.80, price_change_percentage_24h: 0.5 },
-                { name: 'Chainlink', symbol: 'LINK', current_price: 14.20, price_change_percentage_24h: 2.2 },
-                { name: 'Polygon', symbol: 'MATIC', current_price: 0.68, price_change_percentage_24h: -1.5 },
-                { name: 'Litecoin', symbol: 'LTC', current_price: 80.10, price_change_percentage_24h: 1.0 },
-                { name: 'TRON', symbol: 'TRX', current_price: 0.12, price_change_percentage_24h: 0.8 },
-                { name: 'Uniswap', symbol: 'UNI', current_price: 7.50, price_change_percentage_24h: -0.9 },
-                { name: 'Cosmos', symbol: 'ATOM', current_price: 8.20, price_change_percentage_24h: 2.1 },
-                { name: 'Stellar', symbol: 'XLM', current_price: 0.11, price_change_percentage_24h: -1.5 },
-                { name: 'NEAR Protocol', symbol: 'NEAR', current_price: 5.50, price_change_percentage_24h: 3.4 },
-                { name: 'Aptos', symbol: 'APT', current_price: 8.80, price_change_percentage_24h: -2.3 },
-                { name: 'Arbitrum', symbol: 'ARB', current_price: 1.10, price_change_percentage_24h: 1.8 },
-                { name: 'Optimism', symbol: 'OP', current_price: 2.40, price_change_percentage_24h: 0.4 },
-                { name: 'Filecoin', symbol: 'FIL', current_price: 5.20, price_change_percentage_24h: -1.1 },
-                { name: 'Injective', symbol: 'INJ', current_price: 25.10, price_change_percentage_24h: 7.2 },
-                { name: 'Sui', symbol: 'SUI', current_price: 1.20, price_change_percentage_24h: 4.5 },
-                { name: 'Pepe', symbol: 'PEPE', current_price: 0.000008, price_change_percentage_24h: 12.4 }
-            ];
             return res.json(safeFallback);
         }
     }
