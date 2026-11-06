@@ -2503,7 +2503,7 @@ async function fetchRealMarketPrices() {
                     symbol: apiCoin.symbol.toUpperCase(),
                     price: apiCoin.current_price,
                     change: apiCoin.price_change_percentage_24h || 0,
-                    icon: apiCoin.symbol.charAt(0).toUpperCase(),
+                    icon: apiCoin.icon || apiCoin.symbol.charAt(0).toUpperCase(),
                     color: '#333333'
                 });
             }
@@ -2604,7 +2604,7 @@ async function fetchRealMarketPrices() {
                     symbol: apiCoin.symbol.toUpperCase(),
                     price: apiCoin.current_price,
                     change: apiCoin.price_change_percentage_24h || 0,
-                    icon: apiCoin.symbol.charAt(0).toUpperCase(), // Use first letter as icon
+                    icon: apiCoin.icon || apiCoin.symbol.charAt(0).toUpperCase(), // Use first letter as icon
                     color: randomColor
                 });
             }
@@ -2660,7 +2660,7 @@ async function fetchRealMarketPrices() {
                     symbol: apiCoin.symbol.toUpperCase(),
                     price: apiCoin.current_price,
                     change: apiCoin.price_change_percentage_24h || 0,
-                    icon: apiCoin.symbol.charAt(0).toUpperCase(),
+                    icon: apiCoin.icon || apiCoin.symbol.charAt(0).toUpperCase(),
                     color: randomColor
                 });
             }
