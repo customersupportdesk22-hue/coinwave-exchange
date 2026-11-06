@@ -1,4 +1,104 @@
-const markets = [];
+const markets = [
+    { name: 'Bitcoin', symbol: 'BTC', price: 76000, change: 2.5, icon: '₿', color: '#F7931A' },
+{ name: 'Ethereum', symbol: 'ETH', price: 2240, change: 1.1, icon: 'Ξ', color: '#627EEA' },
+{ name: 'Tether', symbol: 'USDT', price: 1, change: 0.01, icon: '₮', color: '#26A17B' },
+{ name: 'BNB', symbol: 'BNB', price: 690, change: -0.5, icon: 'B', color: '#F3BA2F' },
+{ name: 'Solana', symbol: 'SOL', price: 90, change: 5.2, icon: 'S', color: '#14F195' },
+{ name: 'USDC', symbol: 'USDC', price: 1, change: 0, icon: 'U', color: '#2775CA' },
+{ name: 'XRP', symbol: 'XRP', price: 1.2, change: -1.2, icon: 'X', color: '#23292F' },
+{ name: 'Dogecoin', symbol: 'DOGE', price: 0.07, change: 3.4, icon: 'Ð', color: '#C2A633' },
+{ name: 'Cardano', symbol: 'ADA', price: 0.18, change: 1.1, icon: '₳', color: '#0033AD' },
+{ name: 'TRON', symbol: 'TRX', price: 0.31, change: 0.8, icon: 'T', color: '#FF060A' },
+{ name: 'Avalanche', symbol: 'AVAX', price: 8.3, change: -2.1, icon: 'A', color: '#E84142' },
+{ name: 'Chainlink', symbol: 'LINK', price: 10.9, change: 2.2, icon: '⬡', color: '#2A5ADA' },
+{ name: 'Polkadot', symbol: 'DOT', price: 0.95, change: 0.5, icon: '•', color: '#E6007A' },
+{ name: 'Polygon', symbol: 'POL', price: 0.09, change: -1.5, icon: 'P', color: '#8247E5' },
+{ name: 'Shiba Inu', symbol: 'SHIB', price: 0.000006, change: 4.5, icon: 'S', color: '#FFA409' },
+{ name: 'Litecoin', symbol: 'LTC', price: 52, change: 1, icon: 'Ł', color: '#345D9D' },
+{ name: 'Bitcoin Cash', symbol: 'BCH', price: 268, change: 1.5, icon: 'B', color: '#8DC351' },
+{ name: 'Uniswap', symbol: 'UNI', price: 7, change: -0.9, icon: 'U', color: '#FF007A' },
+{ name: 'Stellar', symbol: 'XLM', price: 0.15, change: -1.5, icon: 'X', color: '#7D00FF' },
+{ name: 'Cosmos', symbol: 'ATOM', price: 1.41, change: 2.1, icon: '⚛', color: '#2E3148' },
+{ name: 'NEAR Protocol', symbol: 'NEAR', price: 3.7, change: 3.4, icon: 'N', color: '#00EC97' },
+{ name: 'Aptos', symbol: 'APT', price: 0.6, change: -2.3, icon: 'A', color: '#000000' },
+{ name: 'Arbitrum', symbol: 'ARB', price: 0.16, change: 1.8, icon: 'A', color: '#12AAFF' },
+{ name: 'Optimism', symbol: 'OP', price: 0.1, change: 0.4, icon: 'O', color: '#FF0420' },
+{ name: 'Filecoin', symbol: 'FIL', price: 0.8, change: -1.1, icon: 'F', color: '#0090FF' },
+{ name: 'Injective', symbol: 'INJ', price: 8.2, change: 7.2, icon: 'I', color: '#00D2FF' },
+{ name: 'Sui', symbol: 'SUI', price: 0.86, change: 4.5, icon: 'S', color: '#6FBCF0' },
+{ name: 'Pepe', symbol: 'PEPE', price: 0.000005, change: 12.4, icon: '🐸', color: '#D3AF30' },
+{ name: 'THORChain', symbol: 'RUNE', price: 0.61, change: 7.2, icon: 'R', color: '#33FF99' },
+{ name: 'Worldcoin', symbol: 'WLD', price: 0.34, change: 3.4, icon: 'W', color: '#000000' },
+{ name: 'Ethereum Classic', symbol: 'ETC', price: 7.04, change: -1.1, icon: 'E', color: '#328332' },
+{ name: 'Hedera', symbol: 'HBAR', price: 0.06, change: -1.1, icon: 'H', color: '#222222' },
+{ name: 'VeChain', symbol: 'VET', price: 0.005, change: 4.5, icon: 'V', color: '#15BDFF' },
+{ name: 'Internet Computer', symbol: 'ICP', price: 2.44, change: -2.3, icon: 'I', color: '#29ABE2' },
+{ name: 'Render', symbol: 'RENDER', price: 1.54, change: 1.8, icon: 'R', color: '#000000' },
+{ name: 'Immutable', symbol: 'IMX', price: 0.45, change: -1.5, icon: 'I', color: '#0B0E11' },
+{ name: 'The Graph', symbol: 'GRT', price: 0.06, change: 2.2, icon: 'G', color: '#6F4CFF' },
+{ name: 'Maker', symbol: 'MKR', price: 600, change: 1, icon: 'M', color: '#1AAB9B' },
+{ name: 'Aave', symbol: 'AAVE', price: 130, change: 7.2, icon: 'A', color: '#B6509E' },
+{ name: 'Theta Network', symbol: 'THETA', price: 1, change: 2.1, icon: 'T', color: '#2AB8E6' },
+{ name: 'Fantom', symbol: 'FTM', price: 0.69, change: -0.5, icon: 'F', color: '#1969FF' },
+{ name: 'Algorand', symbol: 'ALGO', price: 0.09, change: 1.1, icon: 'A', color: '#000000' },
+{ name: 'MultiversX', symbol: 'EGLD', price: 20, change: 0.5, icon: 'E', color: '#000000' },
+{ name: 'Flow', symbol: 'FLOW', price: 0.4, change: -1.5, icon: 'F', color: '#00EF8B' },
+{ name: 'The Sandbox', symbol: 'SAND', price: 0.2, change: 1, icon: 'S', color: '#00ADEF' },
+{ name: 'Decentraland', symbol: 'MANA', price: 0.25, change: -0.9, icon: 'M', color: '#FF2D55' },
+{ name: 'Axie Infinity', symbol: 'AXS', price: 3, change: 2.1, icon: 'A', color: '#0055D5' },
+{ name: 'KuCoin', symbol: 'KCS', price: 7, change: 0.8, icon: 'K', color: '#24DB5D' },
+{ name: 'OKB', symbol: 'OKB', price: 40, change: -1.5, icon: 'O', color: '#000000' },
+{ name: 'Cronos', symbol: 'CRO', price: 0.06, change: 1.1, icon: 'C', color: '#002D74' },
+{ name: 'Zcash', symbol: 'ZEC', price: 25, change: 2.1, icon: 'Z', color: '#ECB22E' },
+{ name: 'Hyperliquid', symbol: 'HYPE', price: 78, change: -1.1, icon: 'H', color: '#50C878' },
+{ name: 'Monero', symbol: 'XMR', price: 160, change: -2.1, icon: 'X', color: '#FF6600' },
+{ name: 'LEO Token', symbol: 'LEO', price: 9.3, change: 0.4, icon: 'L', color: '#1E2025' },
+{ name: 'Stacks', symbol: 'STX', price: 0.33, change: -1.1, icon: 'S', color: '#5546FF' },
+{ name: 'Celestia', symbol: 'TIA', price: 4, change: 0.5, icon: 'T', color: '#7B2BF9' },
+{ name: 'Sei', symbol: 'SEI', price: 0.2, change: -2.1, icon: 'S', color: '#9E1F19' },
+{ name: 'Jupiter', symbol: 'JUP', price: 0.24, change: 1.8, icon: 'J', color: '#24AE8F' },
+{ name: 'Pyth Network', symbol: 'PYTH', price: 0.3, change: -1.5, icon: 'P', color: '#E6DAFE' },
+{ name: 'dogwifhat', symbol: 'WIF', price: 1.1, change: 7.2, icon: 'W', color: '#C8A37D' },
+{ name: 'Bonk', symbol: 'BONK', price: 0.00002, change: 4.5, icon: 'B', color: '#F3BA2F' },
+{ name: 'Floki', symbol: 'FLOKI', price: 0.0001, change: -1.1, icon: 'F', color: '#F5A623' },
+{ name: 'Jito', symbol: 'JTO', price: 2, change: 1.1, icon: 'J', color: '#211F42' },
+{ name: 'ORDI', symbol: 'ORDI', price: 20, change: 2.1, icon: 'O', color: '#000000' },
+{ name: 'Mantle', symbol: 'MNT', price: 0.45, change: -0.9, icon: 'M', color: '#000000' },
+{ name: 'Kaspa', symbol: 'KAS', price: 0.03, change: 4.5, icon: 'K', color: '#70C7BA' },
+{ name: 'Bittensor', symbol: 'TAO', price: 220, change: 1.8, icon: 'T', color: '#000000' },
+{ name: 'Fetch.ai', symbol: 'FET', price: 1.5, change: -1.5, icon: 'F', color: '#1C1C1C' },
+{ name: 'Arweave', symbol: 'AR', price: 3, change: 2.2, icon: 'A', color: '#222222' },
+{ name: 'Lido DAO', symbol: 'LDO', price: 0.33, change: 0.8, icon: 'L', color: '#F7F7F7' },
+{ name: 'Synthetix', symbol: 'SNX', price: 0.7, change: -1.1, icon: 'S', color: '#00D1FF' },
+{ name: 'Curve DAO', symbol: 'CRV', price: 0.25, change: 1.5, icon: 'C', color: '#40649F' },
+{ name: 'Compound', symbol: 'COMP', price: 20, change: 2.1, icon: 'C', color: '#00D395' },
+{ name: 'SushiSwap', symbol: 'SUSHI', price: 0.6, change: -2.1, icon: 'S', color: '#FA52A0' },
+{ name: 'yearn.finance', symbol: 'YFI', price: 5000, change: 1.1, icon: 'Y', color: '#006AE3' },
+{ name: '0x', symbol: 'ZRX', price: 0.2, change: 0.5, icon: 'Z', color: '#302C2C' },
+{ name: 'Basic Attention', symbol: 'BAT', price: 0.13, change: -0.9, icon: 'B', color: '#FF5000' },
+{ name: 'Enjin Coin', symbol: 'ENJ', price: 0.1, change: 1.8, icon: 'E', color: '#7866D5' },
+{ name: 'Chiliz', symbol: 'CHZ', price: 0.01, change: 2.2, icon: 'C', color: '#CD0124' },
+{ name: 'Gala', symbol: 'GALA', price: 0.01, change: -1.5, icon: 'G', color: '#000000' },
+{ name: 'ApeCoin', symbol: 'APE', price: 0.4, change: 1, icon: 'A', color: '#0054F9' },
+{ name: 'STEPN', symbol: 'GMT', price: 0.06, change: 3.4, icon: 'G', color: '#F8D12F' },
+{ name: 'PancakeSwap', symbol: 'CAKE', price: 1.9, change: 2.1, icon: 'C', color: '#D1884F' },
+{ name: 'dYdX', symbol: 'DYDX', price: 0.6, change: -1.1, icon: 'D', color: '#6966FF' },
+{ name: 'GMX', symbol: 'GMX', price: 18, change: 1.5, icon: 'G', color: '#2D42FC' },
+{ name: 'Pendle', symbol: 'PENDLE', price: 1.6, change: 4.5, icon: 'P', color: '#000000' },
+{ name: 'Ethereum Name Service', symbol: 'ENS', price: 4.6, change: -0.5, icon: 'E', color: '#6094FF' },
+{ name: '1inch', symbol: '1INCH', price: 0.18, change: 0.8, icon: '1', color: '#D82122' },
+{ name: 'Dash', symbol: 'DASH', price: 45, change: -1.1, icon: 'D', color: '#008CE7' },
+{ name: 'Decred', symbol: 'DCR', price: 12, change: 1.1, icon: 'D', color: '#2ED6A1' },
+{ name: 'Ravencoin', symbol: 'RVN', price: 0.01, change: 2.1, icon: 'R', color: '#384182' },
+{ name: 'Zilliqa', symbol: 'ZIL', price: 0.01, change: -1.5, icon: 'Z', color: '#29BDD3' },
+{ name: 'IOTA', symbol: 'IOTA', price: 0.03, change: 1, icon: 'I', color: '#131F37' },
+{ name: 'NEO', symbol: 'NEO', price: 5, change: 0.5, icon: 'N', color: '#58BF00' },
+{ name: 'Qtum', symbol: 'QTUM', price: 2, change: -2.1, icon: 'Q', color: '#4979FA' },
+{ name: 'Kava', symbol: 'KAVA', price: 0.3, change: 1.1, icon: 'K', color: '#FF564F' },
+{ name: 'Oasis Network', symbol: 'ROSE', price: 0.04, change: -0.9, icon: 'R', color: '#000000' },
+{ name: 'Horizen', symbol: 'ZEN', price: 7, change: 1.8, icon: 'Z', color: '#1B2430' },
+{ name: 'IoTeX', symbol: 'IOTX', price: 0.01, change: 2.2, icon: 'I', color: '#00D4D5' }
+];
 const countries = [ { name: "United States", flag: "🇺🇸" }, { name: "United Kingdom", flag: "🇬🇧" }, { name: "Canada", flag: "🇨🇦" }, { name: "Australia", flag: "🇦🇺" }, { name: "Nigeria", flag: "🇳🇬" }, { name: "Kenya", flag: "🇰🇪" }, { name: "South Africa", flag: "🇿🇦" }, { name: "Ghana", flag: "🇬🇭" }, { name: "India", flag: "🇮🇳" }, { name: "Germany", flag: "🇩🇪" }, { name: "France", flag: "🇫🇷" }, { name: "Japan", flag: "🇯🇵" }, { name: "UAE", flag: "🇦🇪" }, { name: "Brazil", flag: "🇧🇷" } ];
 const currencyMap = { "🇺🇸 United States": { code: "USD", symbol: "$", rate: 1 }, "🇬🇧 United Kingdom": { code: "GBP", symbol: "£", rate: 0.79 }, "🇨🇦 Canada": { code: "CAD", symbol: "C$", rate: 1.36 }, "🇦🇺 Australia": { code: "AUD", symbol: "A$", rate: 1.52 }, "🇳🇬 Nigeria": { code: "NGN", symbol: "₦", rate: 1500 }, "🇰🇪 Kenya": { code: "KES", symbol: "KSh", rate: 130 }, "🇿🇦 South Africa": { code: "ZAR", symbol: "R", rate: 18.5 }, "🇬🇭 Ghana": { code: "GHS", symbol: "₵", rate: 14.5 }, "🇮🇳 India": { code: "INR", symbol: "₹", rate: 83.5 }, "🇩🇪 Germany": { code: "EUR", symbol: "€", rate: 0.92 }, "🇫🇷 France": { code: "EUR", symbol: "€", rate: 0.92 }, "🇯🇵 Japan": { code: "JPY", symbol: "¥", rate: 150 }, "🇦🇪 UAE": { code: "AED", symbol: "د.إ", rate: 3.67 }, "🇧🇷 Brazil": { code: "BRL", symbol: "R$", rate: 5.0 } };
 const BONUS_RATE = 0.05;
@@ -2486,7 +2586,8 @@ document.head.appendChild(badgeFixStyle);
    REAL MARKET DATA & 5% BONUS MATH
    ===================================================== */
 // 1. Fetch real prices from YOUR server
-async function fetchRealMarketPrices() {
+async function fetchRealMarketPrices() { return; // API DISABLED
+
     try {
         const res = await fetch('/api/market/prices');
         if (!res.ok) throw new Error("Server error");
@@ -2516,8 +2617,8 @@ async function fetchRealMarketPrices() {
     }
 }
 
-fetchRealMarketPrices();
-setInterval(fetchRealMarketPrices, 60000);
+// fetch DISABLED
+// setInterval DISABLED
 
 // 2. Update the Trade Math to show the 5% bonus
 window.calcTrade = function() {
@@ -2623,7 +2724,7 @@ async function fetchRealMarketPrices() {
 // Override the old interval to use the new function
 if (window.marketInterval) clearInterval(window.marketInterval);
 /* disabled duplicate fetch */
-fetchRealMarketPrices();
+// fetch DISABLED
 
 /* =====================================================
    REBUILD MARKET LIST WITH 200 COINS
@@ -2676,7 +2777,7 @@ async function fetchRealMarketPrices() {
 // Force clear old timer and run new one
 if (window.marketInterval) clearInterval(window.marketInterval);
 /* disabled duplicate fetch */
-fetchRealMarketPrices();
+// fetch DISABLED
 
 /* =====================================================
    CUSTOMER SITE: INJECT CALL WIDGET IF ENABLED
