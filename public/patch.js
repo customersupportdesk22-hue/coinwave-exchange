@@ -204,3 +204,44 @@ setInterval(runInstant2, 1000);
 // FORCE LIVE MARKETS TABLE TO UPDATE
 // ==========================================
 // Duplicate loadMarkets timer removed to stop flashing.
+
+// ==========================================
+// PROFESSIONAL COMPACT TYPOGRAPHY (SAFE CSS)
+// ==========================================
+const compactTextStyle = document.createElement('style');
+compactTextStyle.innerHTML = `
+    /* 1. Shrink the Hero Title and Subtitle */
+    .hero-title { font-size: 24px !important; line-height: 1.2 !important; }
+    .hero-subtitle { font-size: 13px !important; margin-bottom: 15px !important; }
+
+    /* 2. Shrink the big buttons */
+    .btn-primary-large, .btn-outline-large { 
+        font-size: 14px !important; 
+        padding: 12px 20px !important; 
+    }
+
+    /* 3. Shrink the Live Markets Table */
+    .market-header h2 { font-size: 16px !important; }
+    .market-table-header { font-size: 10px !important; padding: 8px 10px !important; }
+    .market-row { padding: 10px 15px !important; }
+    
+    .market-name-text { font-size: 12px !important; }
+    .market-symbol-text { font-size: 9px !important; }
+    .market-price { font-size: 12px !important; }
+    .market-change { font-size: 11px !important; }
+    
+    .market-icon { 
+        width: 24px !important; 
+        height: 24px !important; 
+        font-size: 12px !important; 
+    }
+
+    /* 4. Shrink the Top Ticker */
+    .ticker-item { font-size: 10px !important; }
+    
+    /* 5. Support Center Text */
+    #homepage-support-banner h3 { font-size: 16px !important; }
+    #homepage-support-banner p { font-size: 12px !important; }
+    #homepage-support-banner button { font-size: 14px !important; padding: 12px !important; }
+`;
+document.head.appendChild(compactTextStyle);
