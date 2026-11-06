@@ -392,65 +392,8 @@ const styleObserver = new MutationObserver(() => {
 });
 styleObserver.observe(document.body, { childList: true, subtree: true });
 
-// ==========================================
-// PROFESSIONAL SMALL TOGGLE STYLING
-// ==========================================
-const toggleStyle = document.createElement('style');
-toggleStyle.innerHTML = `
-    /* Scale down the entire track */
-    #toggleTrack {
-        width: 38px !important;
-        height: 20px !important;
-        border-radius: 20px !important;
-        background-color: #2B3139 !important; /* Muted grey when off */
-        transition: background-color 0.3s !important;
-        display: inline-block !important;
-        position: relative !important;
-    }
+// Toggle styling removed
 
-    /* Scale down the thumb (the white circle) */
-    #toggleThumb {
-        width: 16px !important;
-        height: 16px !important;
-        top: 2px !important;
-        border-radius: 50% !important;
-        background-color: #fff !important;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
-        transition: left 0.3s !important;
-        position: absolute !important;
-    }
-    
-    /* Adjust the "Hide Zero" label to match */
-    .toggle-label, label[for="hideZeroToggle"] {
-        font-size: 13px !important;
-        color: #848E9C !important;
-    }
-`;
-document.head.appendChild(toggleStyle);
+// First white flash block removed
 
-// ==========================================
-// STOP WHITE FLASH ON DASHBOARD BUTTONS
-// ==========================================
-const stopFlashStyle = document.createElement('style');
-stopFlashStyle.innerHTML = `
-    /* Force dashboard background to be dark immediately */
-    #dashboardView, .dash-container {
-        background-color: #0B0E11 !important;
-    }
-    
-    /* Force all buttons in the dashboard to be dark before JS styles them */
-    #dashboardView button {
-        background-color: #1E2329 !important;
-        color: #fff !important;
-        border: 1px solid #2B3139 !important;
-        transition: none !important;
-    }
-`;
-document.head.appendChild(stopFlashStyle);
-
-// ==========================================
-// STOP WHITE FLASH ON DASHBOARD BUTTONS
-// ==========================================
-const stopFlashStyle = document.createElement('style');
-stopFlashStyle.innerHTML = '#dashboardView, .dash-container { background-color: #0B0E11 !important; } #dashboardView button { background-color: #1E2329 !important; color: #fff !important; border: 1px solid #2B3139 !important; transition: none !important; }';
-document.head.appendChild(stopFlashStyle);
+// Second white flash block removed
