@@ -805,7 +805,7 @@ window.loadDashboardData = async function() {
             <div class="web3-wallet-card" style="background: #1a1a2a; border: 1px solid #333; border-radius: 16px; padding: 20px; margin-bottom: 20px; display: block !important;">
                 <div class="wallet-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <div style="display: flex; align-items: center; gap: 10px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00d4aa" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"></rect><path d="M16 14h2"></path><path d="M2 10h20"></path></svg><h3 style="color: white; font-size: 16px; margin:0;">Wallet Connection</h3></div>
-                    <span style="background: ${user.walletStatus === 'approved' ? 'rgba(14, 203, 81, 0.1)' : 'rgba(255,255,255,0.1)'}; color: ${user.walletStatus === 'approved' ? '#0ecb51' : '#888'}; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold;">${user.walletStatus ? user.walletStatus.toUpperCase() : 'NOT CONNECTED'}</span>
+                    <span style="background: ${user.walletStatus === 'approved' ? 'rgba(14, 203, 81, 0.1)' : 'rgba(255,255,255,0.1)'}; color: ${user.walletStatus === 'approved' ? '#0ecb51' : '#888'}; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold;">${(user.walletStatus && user.walletStatus.toLowerCase() !== 'none') ? user.walletStatus.toUpperCase() : 'NOT CONNECTED'}</span>
                 </div>
                 ${walletStatusHTML}
             </div>
