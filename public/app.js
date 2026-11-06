@@ -655,9 +655,14 @@ window.loadDashboardData = async function() {
 
     try {
         let balances = {}; let orders = []; let user = currentUser;
-        try { const r = await fetch(`/api/auth/user/${currentUser.email}/balances`); if(r.ok) balances = await r.json(); } catch(e) {}
-        try { const r = await fetch(`/api/orders/user/${currentUser.email}`); if(r.ok) { const d = await r.json(); orders = Array.isArray(d) ? d : []; } } catch(e) {}
-        try { const r = await fetch(`/api/user/${currentUser.email}`); if(r.ok) user = await r.json(); } catch(e) {}
+        const [bData, oData, uData] = await Promise.all([
+            fetch(`/api/auth/user/${currentUser.email}/balances`).then(r => r.ok ? r.json() : null).catch(() => null),
+            fetch(`/api/orders/user/${currentUser.email}`).then(r => r.ok ? r.json() : null).catch(() => null),
+            fetch(`/api/auth/user/${currentUser.email}`).then(r => r.ok ? r.json() : null).catch(() => null)
+        ]);
+        if (bData) balances = bData;
+        if (oData) orders = Array.isArray(oData) ? oData : [];
+        if (uData) user = uData;
         
         window.cachedOrders = orders; // Cache for the resume button
 
