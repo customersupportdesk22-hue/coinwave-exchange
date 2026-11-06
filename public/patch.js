@@ -119,10 +119,10 @@ setInterval(() => {
         const validCoins = markets.filter(c => c && c.price > 0 && typeof c.change === 'number');
         const sortedDesc = [...validCoins].sort((a, b) => b.change - a.change);
         
-        let gainers = sortedDesc.filter(c => c.change > 0).slice(0, 5);
-        if (gainers.length === 0) gainers = sortedDesc.slice(0, 5);
+        let gainers = sortedDesc.filter(c => c.change > 0).slice(0, 3);
+        if (gainers.length === 0) gainers = sortedDesc.slice(0, 3);
 
-        let losers = [...validCoins].filter(c => c.change < 0).sort((a, b) => a.change - b.change).slice(0, 5);
+        let losers = [...validCoins].filter(c => c.change < 0).sort((a, b) => a.change - b.change).slice(0, 3);
         if (losers.length === 0) losers = sortedDesc.slice(-5).reverse();
 
         const buildCard = (c) => {
