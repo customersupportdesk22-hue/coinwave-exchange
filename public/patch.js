@@ -364,33 +364,7 @@ emptyStateObserver.observe(document.body, { childList: true, subtree: true });
 // ==========================================
 // STYLE "VIEW TRANSACTION HISTORY" AS A BUTTON
 // ==========================================
-function styleHistoryBtn() {
-    const dash = document.getElementById('dashboardView');
-    if (!dash || dash.style.display === 'none') return;
-
-    const elements = Array.from(dash.querySelectorAll('a, div, span, button')).filter(el => el.innerText.trim() === 'View Transaction History');
-    if (elements.length === 0) return;
-    
-    const historyBtn = elements[0];
-    
-    // Check if it's already styled to prevent re-rendering loops
-    if (historyBtn.dataset.styled === 'true') return;
-    historyBtn.dataset.styled = 'true';
-
-    // Apply professional button styles
-    historyBtn.style.cssText = 'display: block; width: 100%; padding: 14px; background: #1E2329; color: #fff; border: 1px solid #2B3139; border-radius: 8px; text-align: center; font-weight: bold; font-size: 14px; cursor: pointer; margin-top: 15px; transition: 0.2s; text-decoration: none; box-sizing: border-box;';
-    
-    // Add hover effect
-    historyBtn.onmouseover = () => historyBtn.style.background = '#2B3139';
-    historyBtn.onmouseout = () => historyBtn.style.background = '#1E2329';
-}
-
-// Run once and observe
-setTimeout(styleHistoryBtn, 100);
-const styleObserver = new MutationObserver(() => {
-    styleHistoryBtn();
-});
-styleObserver.observe(document.body, { childList: true, subtree: true });
+// Removed buggy button styling block that caused white flash
 
 // Toggle styling removed
 
