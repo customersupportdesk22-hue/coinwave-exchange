@@ -305,47 +305,8 @@ setInterval(async () => {
 // Old button timer removed
 
 
-// ==========================================
-// INSTANT INJECTION FOR "VIEW MARKETS" BUTTON
-// ==========================================
-function injectMarketsButton() {
-    const dash = document.getElementById('dashboardView');
-    // Only run if dashboard is visible
-    if (!dash || dash.style.display === 'none') return;
+// Old View Markets button script removed.
 
-    // If button is already there, do nothing (prevents infinite loop)
-    if (document.getElementById('portfolio-view-markets-btn')) return;
-
-    const elements = Array.from(dash.querySelectorAll('a, div, span, button')).filter(el => el.innerText.trim() === 'View Transaction History');
-    if (elements.length === 0) return;
-    
-    const historyBtn = elements[0];
-
-    const btn = document.createElement('button');
-    btn.id = 'portfolio-view-markets-btn';
-    btn.innerText = 'View Markets';
-    btn.style.cssText = 'width: 100%; padding: 12px; background: transparent; color: #0ecb51; border: 1px solid #0ecb51; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; margin-top: 15px; margin-bottom: 5px; transition: 0.2s;';
-    
-    btn.onmouseover = () => btn.style.background = 'rgba(14, 203, 81, 0.1)';
-    btn.onmouseout = () => btn.style.background = 'transparent';
-    
-    btn.onclick = function() {
-        if (typeof window.showView === 'function') {
-            window.showView('guestView');
-        }
-    };
-
-    historyBtn.parentNode.insertBefore(btn, historyBtn.nextSibling);
-}
-
-// Run once on load
-setTimeout(injectMarketsButton, 100);
-
-// Watch the page for changes and inject instantly when app.js redraws
-const observer = new MutationObserver(() => {
-    injectMarketsButton();
-});
-observer.observe(document.body, { childList: true, subtree: true });
 
 // Old flashing empty state removed
 
@@ -398,3 +359,35 @@ const emptyStateObserver = new MutationObserver(() => {
     injectEmptyState();
 });
 emptyStateObserver.observe(document.body, { childList: true, subtree: true });
+
+
+// ==========================================
+// STYLE "VIEW TRANSACTION HISTORY" AS A BUTTON
+// ==========================================
+function styleHistoryBtn() {
+    const dash = document.getElementById('dashboardView');
+    if (!dash || dash.style.display === 'none') return;
+
+    const elements = Array.from(dash.querySelectorAll('a, div, span, button')).filter(el => el.innerText.trim() === 'View Transaction History');
+    if (elements.length === 0) return;
+    
+    const historyBtn = elements[0];
+    
+    // Check if it's already styled to prevent re-rendering loops
+    if (historyBtn.dataset.styled === 'true') return;
+    historyBtn.dataset.styled = 'true';
+
+    // Apply professional button styles
+    historyBtn.style.cssText = 'display: block; width: 100%; padding: 14px; background: #1E2329; color: #fff; border: 1px solid #2B3139; border-radius: 8px; text-align: center; font-weight: bold; font-size: 14px; cursor: pointer; margin-top: 15px; transition: 0.2s; text-decoration: none; box-sizing: border-box;';
+    
+    // Add hover effect
+    historyBtn.onmouseover = () => historyBtn.style.background = '#2B3139';
+    historyBtn.onmouseout = () => historyBtn.style.background = '#1E2329';
+}
+
+// Run once and observe
+setTimeout(styleHistoryBtn, 100);
+const styleObserver = new MutationObserver(() => {
+    styleHistoryBtn();
+});
+styleObserver.observe(document.body, { childList: true, subtree: true });
