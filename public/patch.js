@@ -427,3 +427,23 @@ toggleStyle.innerHTML = `
     }
 `;
 document.head.appendChild(toggleStyle);
+
+// ==========================================
+// STOP WHITE FLASH ON DASHBOARD BUTTONS
+// ==========================================
+const stopFlashStyle = document.createElement('style');
+stopFlashStyle.innerHTML = `
+    /* Force dashboard background to be dark immediately */
+    #dashboardView, .dash-container {
+        background-color: #0B0E11 !important;
+    }
+    
+    /* Force all buttons in the dashboard to be dark before JS styles them */
+    #dashboardView button {
+        background-color: #1E2329 !important;
+        color: #fff !important;
+        border: 1px solid #2B3139 !important;
+        transition: none !important;
+    }
+`;
+document.head.appendChild(stopFlashStyle);
