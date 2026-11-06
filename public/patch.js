@@ -299,36 +299,40 @@ setInterval(async () => {
     } catch (e) { }
 }, 5000);
 
+// Old button script removed
+
+
 // ==========================================
-// ADD "VIEW MARKETS" BUTTON TO PORTFOLIO
+// ADD "VIEW MARKETS" BUTTON TO PORTFOLIO (FIXED)
 // ==========================================
 setInterval(() => {
-    // Only run if the dashboard is visible
     const dash = document.getElementById('dashboardView');
     if (!dash || dash.style.display === 'none') return;
 
-    // Prevent adding the button multiple times
     if (document.getElementById('portfolio-view-markets-btn')) return;
 
-    // Find the "Your Assets" header
-    const headers = Array.from(dash.querySelectorAll('h2, h3, div, span')).filter(el => el.innerText.trim() === 'Your Assets');
-    if (headers.length === 0) return;
+    // Find the "View Transaction History" element
+    const elements = Array.from(dash.querySelectorAll('a, div, span, button')).filter(el => el.innerText.trim() === 'View Transaction History');
+    if (elements.length === 0) return;
     
-    const assetHeader = headers[0];
+    const historyBtn = elements[0];
 
     // Create the button
     const btn = document.createElement('button');
     btn.id = 'portfolio-view-markets-btn';
     btn.innerText = 'View Markets';
-    btn.style.cssText = 'width: 100%; padding: 14px; background: #0ecb51; color: #fff; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; margin-bottom: 20px; margin-top: 10px; transition: 0.2s;';
+    // Professional outline style
+    btn.style.cssText = 'width: 100%; padding: 12px; background: transparent; color: #0ecb51; border: 1px solid #0ecb51; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; margin-top: 15px; margin-bottom: 5px; transition: 0.2s;';
     
-    // Navigate to the markets view (guestView) when clicked
+    btn.onmouseover = () => btn.style.background = 'rgba(14, 203, 81, 0.1)';
+    btn.onmouseout = () => btn.style.background = 'transparent';
+    
     btn.onclick = function() {
         if (typeof window.showView === 'function') {
             window.showView('guestView');
         }
     };
 
-    // Insert the button right above the "Your Assets" header
-    assetHeader.parentNode.insertBefore(btn, assetHeader);
+    // Insert it right AFTER the transaction history button
+    historyBtn.parentNode.insertBefore(btn, historyBtn.nextSibling);
 }, 1000);
