@@ -245,3 +245,33 @@ window.fetch = async (...args) => {
     }
     return response;
 };
+
+// ==========================================
+// PROFESSIONAL COMPACT TYPOGRAPHY OVERRIDE
+// ==========================================
+const compactStyle = document.createElement('style');
+compactStyle.innerHTML = `
+    /* Shrink Hero Title & Subtitle */
+    .hero-title { font-size: 22px !important; line-height: 1.2 !important; }
+    .hero-subtitle { font-size: 12px !important; margin-bottom: 15px !important; }
+
+    /* Shrink Main Buttons */
+    .btn-primary-large, .btn-outline-large { font-size: 14px !important; padding: 12px 20px !important; }
+
+    /* Shrink Live Market Table */
+    .market-header h2 { font-size: 16px !important; }
+    .market-table-header { font-size: 10px !important; padding: 8px 10px !important; }
+    
+    .market-row { padding: 10px 15px !important; } 
+    .market-name-text { font-size: 12px !important; }
+    .market-symbol-text { font-size: 9px !important; }
+    .market-price { font-size: 12px !important; }
+    .market-change { font-size: 11px !important; }
+    
+    /* Shrink Icons */
+    .market-icon { width: 24px !important; height: 24px !important; font-size: 12px !important; }
+
+    /* Shrink Top Ticker */
+    .ticker-item { font-size: 10px !important; }
+`;
+document.head.appendChild(compactStyle);
