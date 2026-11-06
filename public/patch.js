@@ -196,7 +196,7 @@ function runInstant2() {
     }
 }
 runInstant2();
-setInterval(runInstant2, 1000);
+
 
 
 
@@ -245,3 +245,17 @@ compactTextStyle.innerHTML = `
     #homepage-support-banner button { font-size: 14px !important; padding: 12px !important; }
 `;
 document.head.appendChild(compactTextStyle);
+
+// ==========================================
+// SYNC GAINERS/LOSERS WITH LIVE MARKETS TABLE
+// ==========================================
+const originalLoadMarketsSync = window.loadMarkets;
+window.loadMarkets = function() {
+    // 1. Let app.js draw the table first
+    originalLoadMarketsSync();
+    
+    // 2. Immediately draw the cards with the exact same data
+    if (typeof runInstant2 === 'function') {
+        runInstant2();
+    }
+};
