@@ -228,9 +228,4 @@ setInterval(() => {
 // ==========================================
 // FORCE LIVE MARKETS TABLE TO UPDATE
 // ==========================================
-setInterval(() => {
-    // Force app.js to redraw the Live Markets table with new simulated prices
-    if (typeof window.loadMarkets === 'function') {
-        window.loadMarkets();
-    }
-}, 2000);
+// Duplicate loadMarkets timer removed to stop flashing.
