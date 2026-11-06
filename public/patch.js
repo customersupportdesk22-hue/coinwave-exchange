@@ -275,3 +275,36 @@ compactStyle.innerHTML = `
     .ticker-item { font-size: 10px !important; }
 `;
 document.head.appendChild(compactStyle);
+
+// ==========================================
+// FORCE HORIZONTAL SCROLL ON GAINERS/LOSERS
+// ==========================================
+const scrollStyle = document.createElement('style');
+scrollStyle.innerHTML = `
+    .forced-scroll-row {
+        display: flex !important;
+        flex-direction: row !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important; /* Smooth mobile scrolling */
+        touch-action: pan-x !important; /* Allows horizontal swipe */
+        scrollbar-width: none !important;
+        padding-bottom: 10px !important;
+    }
+    .forced-scroll-row > div {
+        flex: 0 0 auto !important; /* Prevents the cards from shrinking */
+    }
+`;
+document.head.appendChild(scrollStyle);
+
+setInterval(() => {
+    // Find the "Top Gainers" and "Top Losers" headings
+    document.querySelectorAll('h3').forEach(h3 => {
+        if (h3.innerText.includes('Top Gainers') || h3.innerText.includes('Top Losers')) {
+            // The scrolling div is the next sibling of the h3's parent
+            const row = h3.parentElement.nextElementSibling;
+            if (row && row.tagName === 'DIV') {
+                row.classList.add('forced-scroll-row');
+            }
+        }
+    });
+}, 1000);
