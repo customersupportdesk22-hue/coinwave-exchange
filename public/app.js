@@ -762,7 +762,7 @@ window.loadDashboardData = async function() {
         assetsHTML += `
             </div>
             <div style="margin-top: 20px; border-top: 1px solid #2a2a3a; padding-top: 15px;">
-                <button onclick="window.openTransactionHistoryPage()" style="background: transparent; border: none; color: #00d4aa; padding: 10px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; font-size: 14px;">View Transaction History</button>
+                <button onclick="window.openTransactionHistoryPage()" style="background: #14141d; border: none; color: #00d4aa; padding: 10px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; font-size: 14px;">View Transaction History</button>
             </div>
             <div style="margin-top: 15px; border-top: 1px solid #2a2a3a; padding-top: 20px; text-align: center; color: #888;">
                 <div style="display: flex; justify-content: space-around; margin-bottom: 15px;">
