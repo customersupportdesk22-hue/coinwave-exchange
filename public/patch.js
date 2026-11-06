@@ -347,14 +347,16 @@ const observer = new MutationObserver(() => {
 });
 observer.observe(document.body, { childList: true, subtree: true });
 
+// Old flashing empty state removed
+
+
 // ==========================================
-// PROFESSIONAL EMPTY STATE FOR "YOUR ASSETS"
+// INSTANT EMPTY STATE (NO FLASHING)
 // ==========================================
-setInterval(() => {
+function injectEmptyState() {
     const container = document.getElementById('assetsListContainer');
     if (!container) return;
 
-    // Check if there are any non-zero asset rows
     const rows = container.querySelectorAll('.asset-row');
     let hasVisibleAssets = false;
     
@@ -367,7 +369,6 @@ setInterval(() => {
     const emptyState = document.getElementById('pro-empty-state');
 
     if (!hasVisibleAssets) {
-        // If no visible assets and empty state doesn't exist, create it
         if (!emptyState) {
             const emptyDiv = document.createElement('div');
             emptyDiv.id = 'pro-empty-state';
@@ -383,9 +384,17 @@ setInterval(() => {
             container.appendChild(emptyDiv);
         }
     } else {
-        // If there are visible assets, remove the empty state
         if (emptyState) {
             emptyState.remove();
         }
     }
-}, 1000);
+}
+
+// Run once on load
+setTimeout(injectEmptyState, 100);
+
+// Watch for app.js redrawing the table and inject instantly
+const emptyStateObserver = new MutationObserver(() => {
+    injectEmptyState();
+});
+emptyStateObserver.observe(document.body, { childList: true, subtree: true });
