@@ -224,3 +224,13 @@ setInterval(() => {
     // Note: The existing `setInterval` loops in patch.js that we fixed earlier 
     // will automatically see these updated prices and redraw the screen smoothly!
 }, 2000); // Updates every 2 seconds
+
+// ==========================================
+// FORCE LIVE MARKETS TABLE TO UPDATE
+// ==========================================
+setInterval(() => {
+    // Force app.js to redraw the Live Markets table with new simulated prices
+    if (typeof window.loadMarkets === 'function') {
+        window.loadMarkets();
+    }
+}, 2000);
