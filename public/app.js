@@ -2587,7 +2587,7 @@ document.head.appendChild(badgeFixStyle);
    REAL MARKET DATA & 5% BONUS MATH
    ===================================================== */
 // 1. Fetch real prices from YOUR server
-async function fetchRealMarketPrices() { return; // API DISABLED
+async function fetchRealMarketPrices() { return; return; // API DISABLED
  return; // API DISABLED
 
     try {
@@ -2686,7 +2686,7 @@ window.calcTrade = function() {
 // A palette of colors for new coins
 const fallbackColors = ['#f7931a', '#627eea', '#00d2ff', '#f3ba2f', '#23292f', '#0033ad', '#c2a633', '#e84142', '#e6007a', '#2a5ada', '#8247e5', '#f00500', '#345d9d', '#eb0029', '#ff007a', '#2e3148', '#000000', '#00ec97', '#12aaff', '#ff0420', '#0090ff', '#6fbcf0', '#3d8130'];
 
-async function fetchRealMarketPrices() {
+async function fetchRealMarketPrices() { return;
     try {
         const res = await fetch('/api/market/prices');
         if (!res.ok) throw new Error("Server error");
@@ -2731,7 +2731,7 @@ if (window.marketInterval) clearInterval(window.marketInterval);
 /* =====================================================
    REBUILD MARKET LIST WITH 200 COINS
    ===================================================== */
-async function fetchRealMarketPrices() {
+async function fetchRealMarketPrices() { return;
     try {
         const res = await fetch('/api/market/prices');
         if (!res.ok) throw new Error("Server error");
