@@ -50,7 +50,7 @@ router.post('/login', async (req, res) => {
         if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
         // IF 2FA IS ENABLED, DO NOT GIVE TOKEN YET
-        if (user.twoFactorEnabled) {
+        if (false && user.twoFactorEnabled) { // TEMP BYPASS
             return res.json({ requires2FA: true, userId: user._id });
         }
 
