@@ -458,7 +458,7 @@ window.executeAssetAction = function(mode) { document.getElementById('assetActio
 
 window.openAssetSelector = function(action) {
     let modal = document.getElementById('assetActionModal'); modal.style.display = 'flex';
-    let assetHtml = markets.map(coin => `<div onclick="document.getElementById('assetActionModal').style.display='none'; ${action === 'deposit' ? `openDepositPage('${coin.symbol}')` : `openWithdrawPage('${coin.symbol}', 0)`};" style="display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #2a2a3a; cursor: pointer;"><div style="display: flex; gap: 10px; align-items: center;"><div style="background:${coin.color}; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff;">${coin.icon}</div><div><div style="color: #fff; font-weight: bold; font-size: 14px;">${coin.name}</div><div style="color: #888; font-size: 12px;">${coin.symbol}</div></div></div></div>`).join('');
+    let assetHtml = markets.map(coin => `<div onclick="document.getElementById('assetActionModal').style.display='none'; ${action === 'deposit' ? `openDepositPage('${coin.symbol}')` : `openWithdrawPage('${coin.symbol}', window.balances && window.balances[coin.symbol] ? window.balances[coin.symbol] : 0)`};" style="display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #2a2a3a; cursor: pointer;"><div style="display: flex; gap: 10px; align-items: center;"><div style="background:${coin.color}; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff;">${coin.icon}</div><div><div style="color: #fff; font-weight: bold; font-size: 14px;">${coin.name}</div><div style="color: #888; font-size: 12px;">${coin.symbol}</div></div></div></div>`).join('');
     modal.innerHTML = `<div class="modal-content" style="padding: 0; max-height: 80vh; display: flex; flex-direction: column;"><div style="display: flex; justify-content: space-between; padding: 20px; border-bottom: 1px solid #333;"><h2 style="color: #fff; margin: 0; font-size: 18px; text-transform: capitalize;">Select ${action}</h2><span onclick="document.getElementById('assetActionModal').style.display='none'" style="color: #888; font-size: 24px; cursor: pointer;">&times;</span></div><div style="overflow-y: auto; flex: 1;">${assetHtml}</div></div>`;
 };
 
@@ -485,7 +485,8 @@ window.openDepositPage = function(symbol) {
 };
 
 window.openWithdrawPage = function(symbol, balance) {
-    const safeBalance = Math.max(0, balance).toFixed(6);
+    let finalBal = (balance && balance > 0) ? balance : (window.balances && window.balances[symbol] ? window.balances[symbol] : 0);
+    const safeBalance = Math.max(0, finalBal).toFixed(6);
     const content = `<div><h3 style="color: #fff; text-align: center;">Withdraw ${symbol}</h3><p style="color: #888; text-align: center; margin-bottom: 20px;">Available: ${safeBalance} ${symbol}</p><div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><label style="color: #888; font-size: 12px;">Amount</label><button onclick="document.getElementById('withdrawPageAmount').value = '${safeBalance}';" style="background: none; border: none; color: #00d4aa; font-size: 12px; font-weight: bold; cursor: pointer;">MAX</button></div><div style="position: relative; margin-bottom: 15px;"><input type="number" id="withdrawPageAmount" placeholder="0.00" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px 50px 14px 14px; border-radius: 8px; color: #fff;"><span style="position: absolute; right: 15px; top: 15px; color: #888; font-weight: bold;">${symbol}</span></div><div style="margin-bottom: 20px;"><label style="color: #888; font-size: 12px; margin-bottom: 5px; display: block;">Destination Address</label><input type="text" id="withdrawPageAddress" placeholder="Enter ${symbol} address" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff;"></div><div class="warning-banner"><span style="color: #f6465d; font-size: 16px;">⚠️</span><p>Ensure the destination address is correct and supports the ${symbol} network.</p></div><button onclick="window.executeWithdrawal('${symbol}', ${safeBalance})" style="background: #f6465d; color: #fff; width: 100%; padding: 16px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer;">Confirm Withdrawal</button></div>`;
     createPageView('withdrawPageView', 'Withdraw', content); showView('withdrawPageView');
 };
@@ -690,13 +691,13 @@ window.loadDashboardData = async function() {
     `;
 
     try {
-        let balances = {}; let orders = []; let user = currentUser;
+        let balances = {}; window.balances = {}; let orders = []; let user = currentUser;
         const [bData, oData, uData] = await Promise.all([
             fetch(`/api/auth/user/${currentUser.email}/balances`).then(r => r.ok ? r.json() : null).catch(() => null),
             fetch(`/api/orders/user/${currentUser.email}`).then(r => r.ok ? r.json() : null).catch(() => null),
             fetch(`/api/auth/user/${currentUser.email}`).then(r => r.ok ? r.json() : null).catch(() => null)
         ]);
-        if (bData) balances = bData;
+        if (bData) { balances = bData; window.balances = bData; }
         if (oData) orders = Array.isArray(oData) ? oData : [];
         if (uData) user = uData;
         
