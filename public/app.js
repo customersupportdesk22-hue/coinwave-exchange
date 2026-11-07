@@ -1893,7 +1893,16 @@ window.setTradeMode = function(mode) {
         ${existingTabs}
         
         <div style="background: #0f0f15; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 10px;">
-            <p style="color: #888; font-size: 12px; margin-bottom: 8px;">${isBuy ? 'You spend' : 'You sell'}</p>
+            <div style="margin-bottom: 12px;">
+                <p style="color: #888; font-size: 12px; margin-bottom: 8px;">${isBuy ? "You spend" : "You sell"}</p>
+                ${!isBuy ? `
+                    <div style="display: flex; background: #0f0f15; border-radius: 8px; padding: 4px; border: 1px solid #333; margin-bottom: 8px;">
+                        <button id="btnSellInternal" onclick="window.setSellType('internal')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: #1a1a2a; color: #00d4aa; transition: all 0.2s;">CoinWave Balance</button>
+                        <button id="btnSellExternal" onclick="window.setSellType('external')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: transparent; color: #888; transition: all 0.2s;">External Wallet</button>
+                    </div>
+                    <p id="sellTypeHelper" style="color: #888; font-size: 11px; line-height: 1.4; margin-bottom: 12px;">Sell crypto you already hold in your CoinWave account.</p>
+                ` : ''}
+            </div>
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <input type="number" id="tradeAmount" placeholder="0.00" oninput="calcTrade()" style="background: transparent; border: none; color: #fff; font-size: 24px; font-weight: bold; outline: none; width: 60%;">
                 <div id="tradeMethodDisplay" onclick="window.openMethodModal()" style="display: flex; align-items: center; gap: 8px; background: #1a1a2a; padding: 8px 12px; border-radius: 20px; cursor: pointer; border: 1px solid #333;">
@@ -1957,7 +1966,7 @@ window.openMethodModal = function() {
     // Build the provider list
     let providers = [
         { id: 'Bank Transfer', name: 'Bank Transfer', icon: '🏦', desc: isBuy ? 'Pay via your local bank' : 'Get paid to your bank account', recommended: true },
-        { id: 'PayPal', name: 'PayPal', icon: '🅿️', desc: 'Pay with your PayPal balance' },
+        { id: 'PayPal', name: 'PayPal', icon: '🅿️', desc: isBuy ? 'Pay with your PayPal balance' : 'Receive payout to your PayPal account' },
         { id: 'Credit Card', name: 'Credit / Debit Card', icon: '💳', desc: 'Visa, Mastercard, Amex', extra: 'VISA MC' }
     ];
 
@@ -2121,7 +2130,7 @@ window.openMethodModal = function() {
     const providers = [
         { id: 'Bank Transfer', name: 'Bank Transfer', icon: '🏦', desc: isBuy ? 'Pay via your local bank' : 'Get paid to your bank account', recommended: true },
         { id: 'MPESA', name: 'M-PESA', icon: '📱', desc: 'Fast & secure mobile money', recommended: true },
-        { id: 'PayPal', name: 'PayPal', icon: '🅿️', desc: 'Pay with your PayPal balance' },
+        { id: 'PayPal', name: 'PayPal', icon: '🅿️', desc: isBuy ? 'Pay with your PayPal balance' : 'Receive payout to your PayPal account' },
         { id: 'Credit Card', name: 'Credit / Debit Card', icon: '💳', desc: 'Visa, Mastercard, Amex', extra: 'VISA MC' }
     ];
 
@@ -2415,7 +2424,7 @@ window.openMethodModal = function() {
     
     let providers = [
         { id: 'Bank Transfer', name: 'Bank Transfer', icon: '🏦', desc: isBuy ? 'Pay via your local bank' : 'Get paid to your bank account', recommended: true },
-        { id: 'PayPal', name: 'PayPal', icon: '🅿️', desc: 'Pay with your PayPal balance', recommended: true },
+        { id: 'PayPal', name: 'PayPal', icon: '🅿️', desc: isBuy ? 'Pay with your PayPal balance' : 'Receive payout to your PayPal account' },
         { id: 'Credit Card', name: 'Credit / Debit Card', icon: '💳', desc: 'Visa, Mastercard, Amex', recommended: true }
     ];
 
