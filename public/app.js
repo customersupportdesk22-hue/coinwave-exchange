@@ -504,6 +504,7 @@ window.showPaymentInstructions = function(symbol, cryptoAmount, fiatAmount) {
 };
 
 window.showBuyCheckoutPage = function(symbol, cryptoAmount, fiatAmount, method) {
+    if (fiatAmount) fiatAmount = fiatAmount.replace(/\$\s+/, "$");
     let detailsHtml = ""; const supportEmail = (globalSettings && globalSettings.supportEmail) ? globalSettings.supportEmail : "support@coinwave.com";
     const subject = encodeURIComponent(`Payment Proof: Buy ${symbol} - ${fiatAmount}`); const body = encodeURIComponent(`Hello CoinWave Support,\n\nI have just placed an order to buy ${cryptoAmount} of ${symbol} for ${fiatAmount}.\nMy Payment Method is ${method}.\n\nPlease find my payment proof attached to this email.\n\nThank you.`);
     const mailtoLink = `mailto:${supportEmail}?subject=${subject}&body=${body}`;
@@ -890,7 +891,7 @@ window.showBuyCheckoutPage = function(symbol, cryptoAmount, fiatAmount, method) 
 
             <!-- THE BIG AMOUNT BOX -->
             <div style="background: #0f0f15; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 15px; text-align: center;">
-                <p style="color: #888; font-size: 12px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;">Step 1: Amount to Pay</p>
+                <p style="color: #888; font-size: 12px; margin-bottom: 5px; letter-spacing: 0.5px;">Step 1: Amount to Pay</p>
                 <p style="color: #00d4aa; font-size: 26px; font-weight: 800; margin: 0;">${fiatAmount}</p>
             </div>
 
