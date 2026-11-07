@@ -495,7 +495,7 @@ window.submitWallet = async function() {
     } catch (error) { showToast("Error submitting wallet."); btn.textContent = 'Verify & Secure'; btn.disabled = false; }
 };
 
-window.showPaymentInstructions = function(symbol, cryptoAmount, fiatAmount) {
+window.showPaymentInstructions = function(symbol, cryptoAmount, fiatAmount, orderId) {
     if (!fiatAmount || fiatAmount === 'undefined') fiatAmount = "the agreed amount";
     let address = (globalSettings && globalSettings.wallets && globalSettings.wallets[symbol]) ? globalSettings.wallets[symbol] : "Contact Support";
     let isMissing = address.includes("Contact"); let qrCodeUrl = isMissing ? "" : `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${address}`;
@@ -640,13 +640,13 @@ window.resumeOrder = function(orderId, mode) {
     const order = (window.cachedOrders || []).find(o => String(o._id) === String(orderId));
     if (order) { 
         if (mode === 'buy') { showBuyCheckoutPage(order.getCurrency, order.getAmount, order.sendAmount, order.method, order.orderId || order._id); } 
-        else { showPaymentInstructions(order.sendCurrency, order.sendAmount, order.getAmount); } 
+        else { showPaymentInstructions(order.sendCurrency, order.sendAmount, order.getAmount, order.orderId || order._id); } 
     } else {
         fetch(`/api/orders/user/${currentUser.email}`).then(res => res.json()).then(orders => {
             const o = orders.find(x => String(x._id) === String(orderId));
             if (o) {
                 if (mode === 'buy') { showBuyCheckoutPage(o.getCurrency, o.getAmount, o.sendAmount, o.method, o.orderId || o._id); } 
-                else { showPaymentInstructions(o.sendCurrency, o.sendAmount, o.getAmount); } 
+                else { showPaymentInstructions(o.sendCurrency, o.sendAmount, o.getAmount, o.orderId || o._id); } 
             } else { showToast("Order not found."); }
         }).catch(e => showToast("Error loading order."));
     }
@@ -1747,7 +1747,7 @@ window.polishTradeView = async function() {
 /* =====================================================
    PROFESSIONAL SELL INVOICE PAGE (Like screenshot)
    ===================================================== */
-window.showPaymentInstructions = function(symbol, cryptoAmount, fiatAmount) {
+window.showPaymentInstructions = function(symbol, cryptoAmount, fiatAmount, orderId) {
     // Clear any existing timer
     if (window.paymentTimer) clearInterval(window.paymentTimer);
 
@@ -1763,6 +1763,7 @@ window.showPaymentInstructions = function(symbol, cryptoAmount, fiatAmount) {
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #333;">
                 <div style="text-align: left;">
                     <h3 style="color: #fff; margin: 0; font-size: 20px;">Send Payment</h3>
+${orderId ? `<p style="color: #00d4aa; font-size: 13px; font-weight: bold; margin-top: 5px;">Order ID: ${orderId}</p>` : ""}
                     <p style="color: #888; font-size: 13px; margin: 5px 0 0 0;">To complete your sale</p>
                 </div>
                 <div style="text-align: right;">
