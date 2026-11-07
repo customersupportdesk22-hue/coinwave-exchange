@@ -892,7 +892,7 @@ window.showBuyCheckoutPage = function(symbol, cryptoAmount, fiatAmount, method) 
             <!-- THE BIG AMOUNT BOX -->
             <div style="background: #0f0f15; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 15px; text-align: center;">
                 <p style="color: #888; font-size: 12px; margin-bottom: 5px; letter-spacing: 0.5px;">Step 1: Amount to Pay</p>
-                <p style="color: #00d4aa; font-size: 26px; font-weight: 800; margin: 0;">${fiatAmount}</p>
+                <p style="color: #00d4aa; font-size: 26px; font-weight: 800; margin: 0;">${String(fiatAmount).replace(/\$\s+/, "$")}</p>
             </div>
 
             ${detailsHtml}
