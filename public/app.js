@@ -414,7 +414,7 @@ window.submitTrade = async function() {
     try {
         const res = await fetch('/api/orders/create', { 
             method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-            body: JSON.stringify({ userName: currentUser.name, userEmail: currentUser.email, mode: currentTradeMode, sendAmount, sendCurrency, getAmount, getCurrency, method, paymentDetails, receivingWallet: wallet }) 
+            body: JSON.stringify({ userName: currentUser.name, userEmail: currentUser.email, mode: currentTradeMode, sendAmount, sendCurrency, getAmount, getCurrency, method, paymentDetails, receivingWallet: wallet, sellType: window.currentSellType || "internal" }) 
         });
         if (res.ok) { 
             if (currentTradeMode === 'sell') { 
@@ -3433,5 +3433,28 @@ window.loadMarkets = function() {
                     </div>
                 </div>
             </div>`;
+    }
+};
+
+window.currentSellType = 'internal';
+window.setSellType = function(type) {
+    window.currentSellType = type;
+    const intBtn = document.getElementById('btnSellInternal');
+    const extBtn = document.getElementById('btnSellExternal');
+    const helper = document.getElementById('sellTypeHelper');
+    
+    if(intBtn) { 
+        intBtn.style.background = type === 'internal' ? '#1a1a2a' : 'transparent'; 
+        intBtn.style.color = type === 'internal' ? '#00d4aa' : '#888'; 
+    }
+    if(extBtn) { 
+        extBtn.style.background = type === 'external' ? '#1a1a2a' : 'transparent'; 
+        extBtn.style.color = type === 'external' ? '#00d4aa' : '#888'; 
+    }
+    
+    if(helper) { 
+        helper.innerText = type === 'internal' 
+            ? 'Sell crypto you already hold in your CoinWave account.' 
+            : 'Sell crypto from MetaMask, Trust Wallet, or Binance by sending it to our deposit address.'; 
     }
 };
