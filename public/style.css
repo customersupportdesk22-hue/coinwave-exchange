@@ -312,3 +312,13 @@ body {
 #market-list {
     padding-bottom: 0px !important; /* Ensures the last coin is not covered */
 }
+
+/* --- Professional Card Upgrades --- */
+.gl-card, .gainers-losers-row > div {
+    background: linear-gradient(180deg, #1f2129 0%, #181A20 100%) !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+.gl-card:hover, .gainers-losers-row > div:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}

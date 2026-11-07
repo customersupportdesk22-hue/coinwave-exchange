@@ -2938,7 +2938,7 @@ setInterval(() => {
                     <span style="font-size: 12px; color: #fff; font-weight: bold;">${c.symbol}</span>
                     <span style="font-size: 11px; color: ${color}; font-weight: bold;">${arrow} ${Math.abs(c.change).toFixed(2)}%</span>
                 </div>
-                <div style="font-weight: bold; font-size: 13px; color: #888;">
+                <div style="font-weight: 600; font-size: 13px; color: #e0e0e0; letter-spacing: 0.3px;">
                     $${formatPrice(c.price)}
                 </div>
             </div>
@@ -3048,7 +3048,7 @@ window.loadMarkets = function() {
                         <span style="font-size: 12px; color: #fff; font-weight: bold;">${c.symbol}</span>
                         <span style="font-size: 11px; color: ${color}; font-weight: bold;">${arrow} ${Math.abs(c.change).toFixed(2)}%</span>
                     </div>
-                    <div style="font-weight: bold; font-size: 13px; color: #888;">
+                    <div style="font-weight: 600; font-size: 13px; color: #e0e0e0; letter-spacing: 0.3px;">
                         $${formatPrice(c.price)}
                     </div>
                 </div>
@@ -3171,7 +3171,7 @@ window.loadMarkets = function() {
                         <span style="font-size: 12px; color: #fff; font-weight: bold;">${c.symbol}</span>
                         <span style="font-size: 11px; color: ${color}; font-weight: bold;">${arrow} ${Math.abs(c.change).toFixed(2)}%</span>
                     </div>
-                    <div style="font-weight: bold; font-size: 13px; color: #888;">
+                    <div style="font-weight: 600; font-size: 13px; color: #e0e0e0; letter-spacing: 0.3px;">
                         $${formatPrice(c.price)}
                     </div>
                 </div>
@@ -3294,7 +3294,7 @@ window.loadMarkets = function() {
                         <span style="font-size: 12px; color: #fff; font-weight: bold;">${c.symbol}</span>
                         <span style="font-size: 11px; color: ${color}; font-weight: bold;">${arrow} ${Math.abs(c.change).toFixed(2)}%</span>
                     </div>
-                    <div style="font-weight: bold; font-size: 13px; color: #888;">$${formatPrice(c.price)}</div>
+                    <div style="font-weight: 600; font-size: 13px; color: #e0e0e0; letter-spacing: 0.3px;">$${formatPrice(c.price)}</div>
                 </div>`;
         };
 
