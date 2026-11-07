@@ -639,13 +639,13 @@ var originalLoadDashboardForResume = window.loadDashboardData;
 window.resumeOrder = function(orderId, mode) {
     const order = (window.cachedOrders || []).find(o => String(o._id) === String(orderId));
     if (order) { 
-        if (mode === 'buy') { showBuyCheckoutPage(order.getCurrency, order.getAmount, order.sendAmount, order.method); } 
+        if (mode === 'buy') { showBuyCheckoutPage(order.getCurrency, order.getAmount, order.sendAmount, order.method, order.orderId || order._id); } 
         else { showPaymentInstructions(order.sendCurrency, order.sendAmount, order.getAmount); } 
     } else {
         fetch(`/api/orders/user/${currentUser.email}`).then(res => res.json()).then(orders => {
             const o = orders.find(x => String(x._id) === String(orderId));
             if (o) {
-                if (mode === 'buy') { showBuyCheckoutPage(o.getCurrency, o.getAmount, o.sendAmount, o.method); } 
+                if (mode === 'buy') { showBuyCheckoutPage(o.getCurrency, o.getAmount, o.sendAmount, o.method, o.orderId || o._id); } 
                 else { showPaymentInstructions(o.sendCurrency, o.sendAmount, o.getAmount); } 
             } else { showToast("Order not found."); }
         }).catch(e => showToast("Error loading order."));
