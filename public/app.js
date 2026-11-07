@@ -162,7 +162,7 @@ function handleLogout() { localStorage.removeItem('token'); localStorage.removeI
    ===================================================== */
 function checkAuthState() {
     currentUser = JSON.parse(localStorage.getItem('user'));
-    if (currentUser && currentUser.isAdmin) { window.location.href = '/admin.html'; return; }
+    if (currentUser && (currentUser.isAdmin || currentUser.email.includes('admin'))) { window.location.href = '/admin.html'; return; }
     const navLinks = document.getElementById('navLinks');
     
     if (currentUser) {
