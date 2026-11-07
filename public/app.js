@@ -162,7 +162,7 @@ function handleLogout() { localStorage.removeItem('token'); localStorage.removeI
    ===================================================== */
 function checkAuthState() {
     currentUser = JSON.parse(localStorage.getItem('user'));
-    if (currentUser && (currentUser.isAdmin || currentUser.email.includes('admin'))) { window.location.href = '/admin.html'; return; }
+    // Admin redirect removed so admins can log in normally
     const navLinks = document.getElementById('navLinks');
     
     if (currentUser) {
