@@ -56,7 +56,7 @@ router.post('/login', async (req, res) => {
 
         // Normal Login
         const token = jwt.sign({ id: user._id.toString(), email: user.email }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '7d' });
-        res.json({ token, user: { name: user.name, email: user.email, country: user.country } });
+        res.json({ token, user: { name: user.name, email: user.email, country: user.country, isAdmin: user.isAdmin } });
     } catch (error) {
         res.status(500).json({ message: "Server error" });
     }
