@@ -1,5 +1,5 @@
 const token = localStorage.getItem('token');
-const coinList = ['BTC', 'ETH', 'USDT', 'SOL', 'BNB', 'XRP', 'ADA', 'DOGE', 'AVAX', 'DOT', 'LINK', 'MATIC', 'SHIB', 'LTC', 'TRX', 'UNI', 'ATOM', 'XLM', 'NEAR', 'APT', 'ARB', 'OP', 'FIL', 'INJ', 'SUI', 'PEPE'];
+const coinList = ["BTC","ETH","USDT","BNB","SOL","USDC","XRP","DOGE","ADA","TRX","AVAX","LINK","DOT","POL","SHIB","LTC","BCH","UNI","XLM","ATOM","NEAR","APT","ARB","OP","FIL","INJ","SUI","PEPE","RUNE","WLD","ETC","HBAR","VET","ICP","RENDER","IMX","GRT","MKR","AAVE","THETA","FTM","ALGO","EGLD","FLOW","SAND","MANA","AXS","KCS","OKB","CRO","ZEC","HYPE","XMR","LEO","STX","TIA","SEI","JUP","PYTH","WIF","BONK","FLOKI","JTO","ORDI","MNT","KAS","TAO","FET","AR","LDO","SNX","CRV","COMP","SUSHI","YFI","ZRX","BAT","ENJ","CHZ","GALA","APE","GMT","CAKE","DYDX","GMX","PENDLE","ENS","1INCH","DASH","DCR","RVN","ZIL","IOTA","NEO","QTUM","KAVA","ROSE","ZEN","IOTX","MINA"];
 
 if (!token) { alert("Please log in first."); window.location.href = "/"; }
 
@@ -152,3 +152,15 @@ async function deleteCustomAsset(symbol) {
 }
 
 loadOrders();
+
+document.addEventListener('DOMContentLoaded', () => {
+    const container = document.getElementById('admin-wallet-inputs');
+    if (container) {
+        coinList.forEach(coin => {
+            const div = document.createElement('div');
+            div.className = 'form-group';
+            div.innerHTML = '<label>' + coin + ' Address</label><input type="text" id="wallet_' + coin + '" placeholder="Enter ' + coin + ' address">';
+            container.appendChild(div);
+        });
+    }
+});
