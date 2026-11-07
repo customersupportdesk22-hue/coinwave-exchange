@@ -1,3 +1,4 @@
+window.currentSellType = 'internal';
 const markets = [
     { name: 'Bitcoin', symbol: 'BTC', price: 85245.32, change: 2.48, icon: '₿', color: '#F7931A' },
 { name: 'Ethereum', symbol: 'ETH', price: 5245.1, change: 1.12, icon: 'Ξ', color: '#627EEA' },
@@ -302,6 +303,17 @@ window.requireAuth = function(targetView, mode = null) {
     else { showView(targetView); if (targetView === 'tradeView') setTradeMode(mode || 'buy'); }
 };
 
+window.setSellType = function(type) {
+    window.currentSellType = type;
+    document.getElementById('btnSellInternal').style.color = type === 'internal' ? '#00d4aa' : '#888';
+    document.getElementById('btnSellInternal').style.textDecoration = type === 'internal' ? 'underline' : 'none';
+    document.getElementById('btnSellInternal').style.fontWeight = type === 'internal' ? 'bold' : 'normal';
+    
+    document.getElementById('btnSellExternal').style.color = type === 'external' ? '#00d4aa' : '#888';
+    document.getElementById('btnSellExternal').style.textDecoration = type === 'external' ? 'underline' : 'none';
+    document.getElementById('btnSellExternal').style.fontWeight = type === 'external' ? 'bold' : 'normal';
+};
+
 window.setTradeMode = function(mode) {
     currentTradeMode = mode; 
     const curr = getUserCurrency();
@@ -424,7 +436,7 @@ window.submitTrade = async function() {
     try {
         const res = await fetch('/api/orders/create', { 
             method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-            body: JSON.stringify({ userName: currentUser.name, userEmail: currentUser.email, mode: currentTradeMode, sendAmount, sendCurrency, getAmount, getCurrency, method, paymentDetails, receivingWallet: wallet }) 
+            body: JSON.stringify({ userName: currentUser.name, userEmail: currentUser.email, mode: currentTradeMode, sendAmount, sendCurrency, getAmount, getCurrency, method, paymentDetails, receivingWallet: wallet, sellType: window.currentSellType }) 
         });
         if (res.ok) { 
             if (currentTradeMode === 'sell') { 
