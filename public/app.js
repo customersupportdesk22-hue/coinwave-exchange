@@ -2426,7 +2426,7 @@ window.openMethodModal = function() {
     let providers = [
         { id: 'Bank Transfer', name: 'Bank Transfer', icon: '🏦', desc: isBuy ? 'Pay via your local bank' : 'Get paid to your bank account', recommended: true },
         { id: 'PayPal', name: 'PayPal', icon: '🅿️', desc: 'Pay with your PayPal balance', recommended: true },
-        { id: 'Credit Card', name: 'Credit / Debit Card', icon: '💳', desc: 'Visa, Mastercard, Amex', recommended: true }
+        { id: 'Credit Card', name: 'Credit / Debit Card', icon: '💳', desc: '<span style="display:flex; gap:5px; align-items:center; margin-top:5px;"><img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" style="height:12px; background:#fff; padding:2px 4px; border-radius:3px;" /><img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" style="height:16px; background:#fff; padding:2px 4px; border-radius:3px;" /><img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg" style="height:16px; background:#fff; padding:2px 4px; border-radius:3px;" /></span>', recommended: true }
     ];
 
     if (isKenyan) {
