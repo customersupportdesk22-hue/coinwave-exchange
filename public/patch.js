@@ -156,10 +156,16 @@ function runInstant2() {
             window.sparklinePoints.push({ x: 200, y: newY });
             window.sparklinePoints.forEach((p, i) => p.x = i * 10);
 
-            let pathStr = "M " + window.sparklinePoints[0].x + " " + window.sparklinePoints[0].y;
-            for (let i = 1; i < window.sparklinePoints.length; i++) pathStr += " L " + window.sparklinePoints[i].x + " " + window.sparklinePoints[i].y;
+            let pathStr = `M ${window.sparklinePoints[0].x},${window.sparklinePoints[0].y}`;
+            for (let i = 1; i < window.sparklinePoints.length; i++) {
+                const p0 = window.sparklinePoints[i - 1];
+                const p1 = window.sparklinePoints[i];
+                const cp1x = p0.x + (p1.x - p0.x) / 2;
+                const cp2x = p0.x + (p1.x - p0.x) / 2;
+                pathStr += ` C ${cp1x},${p0.y} ${cp2x},${p1.y} ${p1.x},${p1.y}`;
+            }
 
-            svgContainer.innerHTML = `<svg width="100%" height="100%" viewBox="0 0 200 80" preserveAspectRatio="none"><defs><linearGradient id="gradient" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.3"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient></defs><path d="${pathStr}" fill="none" stroke="${color}" stroke-width="2"/><path d="${pathStr} L 200 80 L 0 80 Z" fill="url(#gradient)" stroke="none"/></svg>`;
+            svgContainer.innerHTML = `<svg width="100%" height="100%" viewBox="0 0 200 80" preserveAspectRatio="none"><defs><linearGradient id="gradient" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.3"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient></defs><path d="${pathStr}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="${pathStr} L 200 80 L 0 80 Z" fill="url(#gradient)" stroke="none"/><text x="195" y="75" fill="#888" font-size="9" text-anchor="end" font-family="sans-serif" font-weight="bold">24H</text></svg>`;
         }
     }
 
