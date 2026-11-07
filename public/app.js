@@ -700,11 +700,11 @@ window.loadDashboardData = async function() {
             let title, desc, btn, icon;
             if (isBuy) {
                 title = "Pending Fiat Payment";
-                desc = `You have an unpaid order for ${latest.getAmount} ${latest.getCurrency}.`;
+                desc = `You have an unpaid order for ${latest.getAmount} ${latest.getCurrency}.<br><span style="font-size: 11px; color: #aaa; margin-top: 4px; display: inline-block;">Order ID: ${latest.orderId || latest._id}</span>`;
                 btn = "Complete Payment"; icon = "💳";
             } else {
                 title = "Pending Crypto Transfer";
-                desc = `You have a pending order to sell ${latest.sendAmount} ${latest.sendCurrency}.`;
+                desc = `You have a pending order to sell ${latest.sendAmount} ${latest.sendCurrency}.<br><span style="font-size: 11px; color: #aaa; margin-top: 4px; display: inline-block;">Order ID: ${latest.orderId || latest._id}</span>`;
                 btn = "View Crypto Address"; icon = "🪙";
             }
             
