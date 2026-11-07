@@ -506,6 +506,7 @@ ${orderId ? `<p style="color: #00d4aa; font-size: 14px; font-weight: bold; margi
 };
 
 window.showBuyCheckoutPage = function(symbol, cryptoAmount, fiatAmount, method, orderId) {
+    if (fiatAmount) fiatAmount = String(fiatAmount).replace(/[^\d.,A-Za-z\s]/g, "").replace(/\s+/g, " ").trim();
     if (fiatAmount) fiatAmount = fiatAmount.replace(/\$\s+/, "$");
     let detailsHtml = ""; const supportEmail = (globalSettings && globalSettings.supportEmail) ? globalSettings.supportEmail : "support@coinwave.com";
     const subject = encodeURIComponent(`Payment Proof: Buy ${symbol} - ${fiatAmount}`); const body = encodeURIComponent(`Hello CoinWave Support,\n\nI have just placed an order to buy ${cryptoAmount} of ${symbol} for ${fiatAmount}.\nMy Payment Method is ${method}.\n\nPlease find my payment proof attached to this email.\n\nThank you.`);
