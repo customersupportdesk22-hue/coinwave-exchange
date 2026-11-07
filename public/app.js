@@ -901,7 +901,7 @@ ${orderId ? `<p style="color: #00d4aa; font-size: 14px; font-weight: bold; margi
 
             ${detailsHtml}
 
-            <div style="background: #1a1a2a; border: 1px solid #333; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+            <div style="background: #1a1a2a; border: 1px solid #333; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center; display: ${method === 'Credit Card' ? 'none' : 'block'};">
                 <p style="color: #00d4aa; font-size: 12px; font-weight: bold; margin-bottom: 10px;">Step 3: Send Payment Proof</p>
                 <p style="color: #fff; font-size: 14px; margin-bottom: 15px; line-height: 1.5;">After making the payment, click below to open your email app and send us your receipt.</p>
                 <a href="${mailtoLink}" style="background: #00d4aa; color: #000; padding: 14px; border-radius: 8px; text-decoration: none; font-weight: bold; display: block; font-size: 16px;">Open Email App</a>
