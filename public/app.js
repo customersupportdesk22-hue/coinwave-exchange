@@ -177,7 +177,7 @@ function checkAuthState() {
         navLinks.innerHTML = `
             <a href="#" onclick="showView('guestView')">Markets</a>
             <a href="#" onclick="showView('authView', 'login')">Login</a>
-            <a href="#" class="btn-primary" onclick="showView('authView', 'register')">Get Started</a>
+
         `;
         showView('guestView');
     }
