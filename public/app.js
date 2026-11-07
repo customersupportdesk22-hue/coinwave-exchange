@@ -1664,7 +1664,8 @@ window.polishTradeView = async function() {
             
         } catch(e) { 
             console.log(e); 
-            amountLabel.innerHTML = `Amount to Sell (Crypto)`;
+            const fallbackBal = (window.balances && window.balances[coinSymbol]) ? window.balances[coinSymbol] : 0;
+            amountLabel.innerHTML = `Amount to Sell (Crypto) <span style="font-size: 11px; color: #888; float: right; font-weight: normal; text-transform: none;">Available: ${fallbackBal.toFixed(6)} ${coinSymbol}</span>`;
         }
     }
 
@@ -1729,7 +1730,8 @@ window.polishTradeView = async function() {
             receiveLabel.innerHTML = `You will receive (${curr.code}) <span style="color: #0ecb51; font-size: 11px; margin-left: 5px; font-weight: bold; white-space: nowrap;">🎁 (Includes 5% Bonus)</span>`;
             
         } catch(e) { 
-            amountLabel.innerHTML = `Amount to Sell (Crypto)`;
+            const fallbackBal = (window.balances && window.balances[coinSymbol]) ? window.balances[coinSymbol] : 0;
+            amountLabel.innerHTML = `Amount to Sell (Crypto) <span style="font-size: 11px; color: #888; float: right; font-weight: normal; text-transform: none;">Available: ${fallbackBal.toFixed(6)} ${coinSymbol}</span>`;
         }
     }
 
@@ -1772,7 +1774,8 @@ window.polishTradeView = async function() {
         amountLabel.innerHTML = `Amount to Spend (${curr.code})`;
         receiveLabel.innerHTML = `You will receive (Crypto) <span style="color: #0ecb51; font-size: 11px; margin-left: 5px; font-weight: bold; white-space: nowrap;">🎁 (Includes 5% Bonus)</span>`;
     } else {
-        amountLabel.innerHTML = `Amount to Sell (Crypto)`; 
+        const fallbackBal = (window.balances && window.balances[coinSymbol]) ? window.balances[coinSymbol] : 0;
+            amountLabel.innerHTML = `Amount to Sell (Crypto) <span style="font-size: 11px; color: #888; float: right; font-weight: normal; text-transform: none;">Available: ${fallbackBal.toFixed(6)} ${coinSymbol}</span>`; 
         receiveLabel.innerHTML = `You will receive (${curr.code}) <span style="color: #0ecb51; font-size: 11px; margin-left: 5px; font-weight: bold; white-space: nowrap;">🎁 (Includes 5% Bonus)</span>`;
     }
 
