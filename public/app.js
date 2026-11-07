@@ -168,7 +168,7 @@ function checkAuthState() {
     if (currentUser) {
         navLinks.innerHTML = `
             <a href="#" onclick="showView('guestView')">Markets</a>
-            <a href="#" class="profile-avatar-nav" onclick="showView('dashboardView')">${currentUser.name.charAt(0).toUpperCase()}</a>
+            <a href="#" class="profile-avatar-nav" onclick="showView('dashboardView')">${(currentUser.name || currentUser.email || "U").charAt(0).toUpperCase()}</a>
             <a href="#" id="securityNavBtn" onclick="window.open2FAModal()">Security</a>
             <a href="#" class="btn-logout" onclick="handleLogout()">Logout</a>
         `;
