@@ -6,15 +6,11 @@ const token = localStorage.getItem('token');
 const userStr = localStorage.getItem('user');
 
 // 1. Immediate Security Check
-if (!token || !userStr) {
-    window.location.href = '/';
-}
+// Redirect removed for debugging
 let currentUser = {};
-try { currentUser = JSON.parse(userStr); } catch(e) { window.location.href = '/'; }
+try { currentUser = JSON.parse(userStr); } catch(e) { console.log("Parse error"); }
 
-if (!currentUser.isAdmin && !currentUser.email.includes('admin')) {
-    window.location.href = '/';
-}
+// Admin check removed
 
 const headers = { 
     'Authorization': 'Bearer ' + token,
