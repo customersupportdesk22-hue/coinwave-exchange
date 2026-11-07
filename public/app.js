@@ -1,12 +1,3 @@
-window.currentSellType = 'internal';
-window.setSellType = function(type) {
-    window.currentSellType = type;
-    const i = document.getElementById('btnSellInternal');
-    const e = document.getElementById('btnSellExternal');
-    if(i) { i.style.color = type === 'internal' ? '#00d4aa' : '#888'; i.style.textDecoration = type === 'internal' ? 'underline' : 'none'; i.style.fontWeight = type === 'internal' ? 'bold' : 'normal'; }
-    if(e) { e.style.color = type === 'external' ? '#00d4aa' : '#888'; e.style.textDecoration = type === 'external' ? 'underline' : 'none'; e.style.fontWeight = type === 'external' ? 'bold' : 'normal'; }
-};
-
 const markets = [
     { name: 'Bitcoin', symbol: 'BTC', price: 85245.32, change: 2.48, icon: '₿', color: '#F7931A' },
 { name: 'Ethereum', symbol: 'ETH', price: 5245.1, change: 1.12, icon: 'Ξ', color: '#627EEA' },
@@ -160,17 +151,7 @@ async function handleLogin() {
     try {
         const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
         const data = await res.json();
-        if (res.ok) {
-            if (data.requires2FA) {
-                showToast("2FA is required. Please disable it to log in.");
-                return;
-            }
-            localStorage.setItem("token", data.token);
-            localStorage.setItem("user", JSON.stringify(data.user));
-            checkAuthState();
-        } else {
-            showToast(data.message || "Login failed");
-        }
+        if (res.ok) { localStorage.setItem('token', data.token); localStorage.setItem('user', JSON.stringify(data.user)); checkAuthState(); } else { showToast(data.message); }
     } catch (error) { showToast("Error connecting."); }
 }
 
@@ -180,14 +161,14 @@ function handleLogout() { localStorage.removeItem('token'); localStorage.removeI
    NAVBAR & HOMEPAGE LOGIC
    ===================================================== */
 function checkAuthState() {
-        currentUser = JSON.parse(localStorage.getItem("user") || "null");
-    // Admin redirect removed so admins can log in normally
+    currentUser = JSON.parse(localStorage.getItem('user'));
+    if (currentUser && (currentUser.isAdmin || currentUser.email.includes('admin'))) { window.location.href = '/admin.html'; return; }
     const navLinks = document.getElementById('navLinks');
     
     if (currentUser) {
         navLinks.innerHTML = `
             <a href="#" onclick="showView('guestView')">Markets</a>
-            <a href="#" class="profile-avatar-nav" onclick="showView('dashboardView')">${(currentUser.name || currentUser.email || "U").charAt(0).toUpperCase()}</a>
+            <a href="#" class="profile-avatar-nav" onclick="showView('dashboardView')">${currentUser.name.charAt(0).toUpperCase()}</a>
             <a href="#" id="securityNavBtn" onclick="window.open2FAModal()">Security</a>
             <a href="#" class="btn-logout" onclick="handleLogout()">Logout</a>
         `;
@@ -433,7 +414,7 @@ window.submitTrade = async function() {
     try {
         const res = await fetch('/api/orders/create', { 
             method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-            body: JSON.stringify({ userName: currentUser.name, userEmail: currentUser.email, mode: currentTradeMode, sendAmount, sendCurrency, getAmount, getCurrency, method, paymentDetails, receivingWallet: wallet, sellType: window.currentSellType }) 
+            body: JSON.stringify({ userName: currentUser.name, userEmail: currentUser.email, mode: currentTradeMode, sendAmount, sendCurrency, getAmount, getCurrency, method, paymentDetails, receivingWallet: wallet }) 
         });
         if (res.ok) { 
             if (currentTradeMode === 'sell') { 
@@ -483,14 +464,7 @@ window.openDepositPage = function(symbol) {
 
 window.openWithdrawPage = function(symbol, balance) {
     const safeBalance = Math.max(0, balance).toFixed(6);
-    const content = `<div><h3 style="color: #fff; text-align: center;">Withdraw ${symbol}</h3><p style="color: #888; text-align: center; margin-bottom: 20px;">Available: ${safeBalance} ${symbol}</p><div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><label style="color: #888; font-size: 12px;">Amount</label><button onclick="document.getElementById('withdrawPageAmount').value = '${safeBalance}';" style="background: none; border: none; color: #00d4aa; font-size: 12px; font-weight: bold; cursor: pointer;">MAX</button></div><div id="sellToggleContainer" style="display: none; margin-bottom: 15px;">
-    <div style="display: flex; background: #0f0f15; border-radius: 8px; padding: 4px; border: 1px solid #333;">
-        <button id="btnSellInternal" onclick="window.setSellType('internal')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: #1a1a2a; color: #00d4aa; transition: all 0.2s;">CoinWave Balance</button>
-        <button id="btnSellExternal" onclick="window.setSellType('external')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: transparent; color: #888; transition: all 0.2s;">External Wallet</button>
-    </div>
-    <p id="sellTypeHelper" style="color: #888; font-size: 11px; margin-top: 8px; line-height: 1.4;">Sell crypto you already hold in your CoinWave account.</p>
-</div>
-<div style="position: relative; margin-bottom: 15px;"><input type="number" id="withdrawPageAmount" placeholder="0.00" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px 50px 14px 14px; border-radius: 8px; color: #fff;"><span style="position: absolute; right: 15px; top: 15px; color: #888; font-weight: bold;">${symbol}</span></div><div style="margin-bottom: 20px;"><label style="color: #888; font-size: 12px; margin-bottom: 5px; display: block;">Destination Address</label><input type="text" id="withdrawPageAddress" placeholder="Enter ${symbol} address" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff;"></div><div class="warning-banner"><span style="color: #f6465d; font-size: 16px;">⚠️</span><p>Ensure the destination address is correct and supports the ${symbol} network.</p></div><button onclick="window.executeWithdrawal('${symbol}', ${safeBalance})" style="background: #f6465d; color: #fff; width: 100%; padding: 16px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer;">Confirm Withdrawal</button></div>`;
+    const content = `<div><h3 style="color: #fff; text-align: center;">Withdraw ${symbol}</h3><p style="color: #888; text-align: center; margin-bottom: 20px;">Available: ${safeBalance} ${symbol}</p><div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><label style="color: #888; font-size: 12px;">Amount</label><button onclick="document.getElementById('withdrawPageAmount').value = '${safeBalance}';" style="background: none; border: none; color: #00d4aa; font-size: 12px; font-weight: bold; cursor: pointer;">MAX</button></div><div style="position: relative; margin-bottom: 15px;"><input type="number" id="withdrawPageAmount" placeholder="0.00" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px 50px 14px 14px; border-radius: 8px; color: #fff;"><span style="position: absolute; right: 15px; top: 15px; color: #888; font-weight: bold;">${symbol}</span></div><div style="margin-bottom: 20px;"><label style="color: #888; font-size: 12px; margin-bottom: 5px; display: block;">Destination Address</label><input type="text" id="withdrawPageAddress" placeholder="Enter ${symbol} address" style="width: 100%; background: #0f0f15; border: 1px solid #333; padding: 14px; border-radius: 8px; color: #fff;"></div><div class="warning-banner"><span style="color: #f6465d; font-size: 16px;">⚠️</span><p>Ensure the destination address is correct and supports the ${symbol} network.</p></div><button onclick="window.executeWithdrawal('${symbol}', ${safeBalance})" style="background: #f6465d; color: #fff; width: 100%; padding: 16px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer;">Confirm Withdrawal</button></div>`;
     createPageView('withdrawPageView', 'Withdraw', content); showView('withdrawPageView');
 };
 
@@ -1919,42 +1893,7 @@ window.setTradeMode = function(mode) {
         ${existingTabs}
         
         <div style="background: #0f0f15; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-    <div style="margin-bottom: 12px;">
-    <div style="margin-bottom: 12px;">
-    <div style="margin-bottom: 12px;">
-    <p style="color: #888; font-size: 12px; margin-bottom: 8px;">${isBuy ? "You spend" : "You sell"}</p>
-    ${!isBuy ? `
-        <div style="display: flex; background: #0f0f15; border-radius: 8px; padding: 4px; border: 1px solid #333; margin-bottom: 8px;">
-            <button id="btnSellInternal" onclick="window.setSellType('internal')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: #1a1a2a; color: #00d4aa; transition: all 0.2s;">CoinWave Balance</button>
-            <button id="btnSellExternal" onclick="window.setSellType('external')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: transparent; color: #888; transition: all 0.2s;">External Wallet</button>
-        </div>
-        <p id="sellTypeHelper" style="color: #888; font-size: 11px; line-height: 1.4;">Sell crypto you already hold in your CoinWave account.</p>
-    ` : ''}
-</div>
-    ${!isBuy ? `
-        <div style="display: flex; background: #0f0f15; border-radius: 8px; padding: 4px; border: 1px solid #333; margin-bottom: 8px;">
-            <button id="btnSellInternal" onclick="window.setSellType('internal')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: #1a1a2a; color: #00d4aa; transition: all 0.2s;">CoinWave Balance</button>
-            <button id="btnSellExternal" onclick="window.setSellType('external')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: transparent; color: #888; transition: all 0.2s;">External Wallet</button>
-        </div>
-        <p id="sellTypeHelper" style="color: #888; font-size: 11px; line-height: 1.4;">Sell crypto you already hold in your CoinWave account.</p>
-    ` : ''}
-</div>
-    ${!isBuy ? `
-        <div style="display: flex; background: #0f0f15; border-radius: 8px; padding: 4px; border: 1px solid #333; margin-bottom: 8px;">
-            <button id="btnSellInternal" onclick="window.setSellType('internal')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: #1a1a2a; color: #00d4aa; transition: all 0.2s;">CoinWave Balance</button>
-            <button id="btnSellExternal" onclick="window.setSellType('external')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: transparent; color: #888; transition: all 0.2s;">External Wallet</button>
-        </div>
-        <p id="sellTypeHelper" style="color: #888; font-size: 11px; line-height: 1.4;">Sell crypto you already hold in your CoinWave account.</p>
-    ` : ''}
-</div>
-    ${!isBuy ? `
-        <div style="display: flex; gap: 10px; font-size: 12px;">
-            <span id="btnSellInternal" onclick="window.setSellType('internal')" style="color: #00d4aa; cursor: pointer; font-weight: bold; text-decoration: underline;">CoinWave Balance</span>
-            <span id="btnSellExternal" onclick="window.setSellType('external')" style="color: #888; cursor: pointer;">External Wallet</span>
-        </div>
-    ` : ''}
-</div>
+            <p style="color: #888; font-size: 12px; margin-bottom: 8px;">${isBuy ? 'You spend' : 'You sell'}</p>
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <input type="number" id="tradeAmount" placeholder="0.00" oninput="calcTrade()" style="background: transparent; border: none; color: #fff; font-size: 24px; font-weight: bold; outline: none; width: 60%;">
                 <div id="tradeMethodDisplay" onclick="window.openMethodModal()" style="display: flex; align-items: center; gap: 8px; background: #1a1a2a; padding: 8px 12px; border-radius: 20px; cursor: pointer; border: 1px solid #333;">
@@ -2018,8 +1957,8 @@ window.openMethodModal = function() {
     // Build the provider list
     let providers = [
         { id: 'Bank Transfer', name: 'Bank Transfer', icon: '🏦', desc: isBuy ? 'Pay via your local bank' : 'Get paid to your bank account', recommended: true },
-        { id: 'PayPal', name: 'PayPal', icon: '🅿️', desc: isBuy ? "Pay with your PayPal balance" : "Receive payout to your PayPal account" },
-        { id: 'Credit Card', name: 'Credit / Debit Card', icon: '💳', desc: `<span style="display:flex; gap:4px; align-items:center; margin-top:4px;"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/120px-Visa_Inc._logo.svg.png" style="height:12px; background:#fff; border-radius:2px; padding:1px 3px;" alt="Visa" /><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/120px-Mastercard-logo.svg.png" style="height:16px; background:#fff; border-radius:2px; padding:1px 3px;" alt="Mastercard" /><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/American_Express_logo_%282018%29.svg/120px-American_Express_logo_%282018%29.svg.png" style="height:16px; background:#fff; border-radius:2px; padding:1px 3px;" alt="Amex" /></span>`, extra: 'VISA MC' }
+        { id: 'PayPal', name: 'PayPal', icon: '🅿️', desc: 'Pay with your PayPal balance' },
+        { id: 'Credit Card', name: 'Credit / Debit Card', icon: '💳', desc: 'Visa, Mastercard, Amex', extra: 'VISA MC' }
     ];
 
     // Only add M-Pesa if the user is Kenyan
@@ -2102,33 +2041,7 @@ window.setTradeMode = function(mode) {
         
         <!-- You Spend / Sell Box -->
         <div style="background: #0f0f15; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-    <div style="margin-bottom: 12px;">
-    <div style="margin-bottom: 12px;">
-    <p style="color: #888; font-size: 12px; margin-bottom: 8px;">${isBuy ? "You spend" : "You sell"}</p>
-    ${!isBuy ? `
-        <div style="display: flex; background: #0f0f15; border-radius: 8px; padding: 4px; border: 1px solid #333; margin-bottom: 8px;">
-            <button id="btnSellInternal" onclick="window.setSellType('internal')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: #1a1a2a; color: #00d4aa; transition: all 0.2s;">CoinWave Balance</button>
-            <button id="btnSellExternal" onclick="window.setSellType('external')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: transparent; color: #888; transition: all 0.2s;">External Wallet</button>
-        </div>
-        <p id="sellTypeHelper" style="color: #888; font-size: 11px; line-height: 1.4;">Sell crypto you already hold in your CoinWave account.</p>
-    ` : ''}
-</div>
-    ${!isBuy ? `
-        <div style="display: flex; background: #0f0f15; border-radius: 8px; padding: 4px; border: 1px solid #333; margin-bottom: 8px;">
-            <button id="btnSellInternal" onclick="window.setSellType('internal')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: #1a1a2a; color: #00d4aa; transition: all 0.2s;">CoinWave Balance</button>
-            <button id="btnSellExternal" onclick="window.setSellType('external')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: transparent; color: #888; transition: all 0.2s;">External Wallet</button>
-        </div>
-        <p id="sellTypeHelper" style="color: #888; font-size: 11px; line-height: 1.4;">Sell crypto you already hold in your CoinWave account.</p>
-    ` : ''}
-</div>
-    ${!isBuy ? `
-        <div style="display: flex; gap: 10px; font-size: 12px;">
-            <span id="btnSellInternal" onclick="window.setSellType('internal')" style="color: #00d4aa; cursor: pointer; font-weight: bold; text-decoration: underline;">CoinWave Balance</span>
-            <span id="btnSellExternal" onclick="window.setSellType('external')" style="color: #888; cursor: pointer;">External Wallet</span>
-        </div>
-    ` : ''}
-</div>
+            <p style="color: #888; font-size: 12px; margin-bottom: 8px;">${isBuy ? 'You spend' : 'You sell'}</p>
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <input type="number" id="tradeAmount" placeholder="0.00" oninput="calcTrade()" style="background: transparent; border: none; color: #fff; font-size: 24px; font-weight: bold; outline: none; width: 60%;">
                 <div id="tradeMethodDisplay" onclick="window.openMethodModal()" style="display: flex; align-items: center; gap: 8px; background: #1a1a2a; padding: 8px 12px; border-radius: 20px; cursor: pointer; border: 1px solid #333;">
@@ -2208,8 +2121,8 @@ window.openMethodModal = function() {
     const providers = [
         { id: 'Bank Transfer', name: 'Bank Transfer', icon: '🏦', desc: isBuy ? 'Pay via your local bank' : 'Get paid to your bank account', recommended: true },
         { id: 'MPESA', name: 'M-PESA', icon: '📱', desc: 'Fast & secure mobile money', recommended: true },
-        { id: 'PayPal', name: 'PayPal', icon: '🅿️', desc: isBuy ? "Pay with your PayPal balance" : "Receive payout to your PayPal account" },
-        { id: 'Credit Card', name: 'Credit / Debit Card', icon: '💳', desc: `<span style="display:flex; gap:4px; align-items:center; margin-top:4px;"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/120px-Visa_Inc._logo.svg.png" style="height:12px; background:#fff; border-radius:2px; padding:1px 3px;" alt="Visa" /><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/120px-Mastercard-logo.svg.png" style="height:16px; background:#fff; border-radius:2px; padding:1px 3px;" alt="Mastercard" /><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/American_Express_logo_%282018%29.svg/120px-American_Express_logo_%282018%29.svg.png" style="height:16px; background:#fff; border-radius:2px; padding:1px 3px;" alt="Amex" /></span>`, extra: 'VISA MC' }
+        { id: 'PayPal', name: 'PayPal', icon: '🅿️', desc: 'Pay with your PayPal balance' },
+        { id: 'Credit Card', name: 'Credit / Debit Card', icon: '💳', desc: 'Visa, Mastercard, Amex', extra: 'VISA MC' }
     ];
 
     if (!isBuy) {
@@ -2285,33 +2198,7 @@ window.setTradeMode = function(mode) {
         
         <!-- TOP BOX (Spend or Sell) -->
         <div style="background: #0f0f15; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-    <div style="margin-bottom: 12px;">
-    <div style="margin-bottom: 12px;">
-    <p style="color: #888; font-size: 12px; margin-bottom: 8px;">${isBuy ? "You spend" : "You sell"}</p>
-    ${!isBuy ? `
-        <div style="display: flex; background: #0f0f15; border-radius: 8px; padding: 4px; border: 1px solid #333; margin-bottom: 8px;">
-            <button id="btnSellInternal" onclick="window.setSellType('internal')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: #1a1a2a; color: #00d4aa; transition: all 0.2s;">CoinWave Balance</button>
-            <button id="btnSellExternal" onclick="window.setSellType('external')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: transparent; color: #888; transition: all 0.2s;">External Wallet</button>
-        </div>
-        <p id="sellTypeHelper" style="color: #888; font-size: 11px; line-height: 1.4;">Sell crypto you already hold in your CoinWave account.</p>
-    ` : ''}
-</div>
-    ${!isBuy ? `
-        <div style="display: flex; background: #0f0f15; border-radius: 8px; padding: 4px; border: 1px solid #333; margin-bottom: 8px;">
-            <button id="btnSellInternal" onclick="window.setSellType('internal')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: #1a1a2a; color: #00d4aa; transition: all 0.2s;">CoinWave Balance</button>
-            <button id="btnSellExternal" onclick="window.setSellType('external')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: transparent; color: #888; transition: all 0.2s;">External Wallet</button>
-        </div>
-        <p id="sellTypeHelper" style="color: #888; font-size: 11px; line-height: 1.4;">Sell crypto you already hold in your CoinWave account.</p>
-    ` : ''}
-</div>
-    ${!isBuy ? `
-        <div style="display: flex; gap: 10px; font-size: 12px;">
-            <span id="btnSellInternal" onclick="window.setSellType('internal')" style="color: #00d4aa; cursor: pointer; font-weight: bold; text-decoration: underline;">CoinWave Balance</span>
-            <span id="btnSellExternal" onclick="window.setSellType('external')" style="color: #888; cursor: pointer;">External Wallet</span>
-        </div>
-    ` : ''}
-</div>
+            <p style="color: #888; font-size: 12px; margin-bottom: 8px;">${isBuy ? 'You spend' : 'You sell'}</p>
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <input type="number" id="tradeAmount" placeholder="0.00" oninput="calcTrade()" style="background: transparent; border: none; color: #fff; font-size: 24px; font-weight: bold; outline: none; width: 60%;">
                 
@@ -2424,33 +2311,7 @@ window.setTradeMode = function(mode) {
         
         <!-- TOP BOX -->
         <div style="background: #0f0f15; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-    <div style="margin-bottom: 12px;">
-    <div style="margin-bottom: 12px;">
-    <p style="color: #888; font-size: 12px; margin-bottom: 8px;">${isBuy ? "You spend" : "You sell"}</p>
-    ${!isBuy ? `
-        <div style="display: flex; background: #0f0f15; border-radius: 8px; padding: 4px; border: 1px solid #333; margin-bottom: 8px;">
-            <button id="btnSellInternal" onclick="window.setSellType('internal')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: #1a1a2a; color: #00d4aa; transition: all 0.2s;">CoinWave Balance</button>
-            <button id="btnSellExternal" onclick="window.setSellType('external')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: transparent; color: #888; transition: all 0.2s;">External Wallet</button>
-        </div>
-        <p id="sellTypeHelper" style="color: #888; font-size: 11px; line-height: 1.4;">Sell crypto you already hold in your CoinWave account.</p>
-    ` : ''}
-</div>
-    ${!isBuy ? `
-        <div style="display: flex; background: #0f0f15; border-radius: 8px; padding: 4px; border: 1px solid #333; margin-bottom: 8px;">
-            <button id="btnSellInternal" onclick="window.setSellType('internal')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: #1a1a2a; color: #00d4aa; transition: all 0.2s;">CoinWave Balance</button>
-            <button id="btnSellExternal" onclick="window.setSellType('external')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: transparent; color: #888; transition: all 0.2s;">External Wallet</button>
-        </div>
-        <p id="sellTypeHelper" style="color: #888; font-size: 11px; line-height: 1.4;">Sell crypto you already hold in your CoinWave account.</p>
-    ` : ''}
-</div>
-    ${!isBuy ? `
-        <div style="display: flex; gap: 10px; font-size: 12px;">
-            <span id="btnSellInternal" onclick="window.setSellType('internal')" style="color: #00d4aa; cursor: pointer; font-weight: bold; text-decoration: underline;">CoinWave Balance</span>
-            <span id="btnSellExternal" onclick="window.setSellType('external')" style="color: #888; cursor: pointer;">External Wallet</span>
-        </div>
-    ` : ''}
-</div>
+            <p style="color: #888; font-size: 12px; margin-bottom: 8px;">${isBuy ? 'You spend' : 'You sell'}</p>
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <input type="number" id="tradeAmount" placeholder="0.00" oninput="calcTrade()" style="background: transparent; border: none; color: #fff; font-size: 24px; font-weight: bold; outline: none; width: 60%;">
                 
@@ -2554,8 +2415,8 @@ window.openMethodModal = function() {
     
     let providers = [
         { id: 'Bank Transfer', name: 'Bank Transfer', icon: '🏦', desc: isBuy ? 'Pay via your local bank' : 'Get paid to your bank account', recommended: true },
-        { id: 'PayPal', name: 'PayPal', icon: '🅿️', desc: isBuy ? "Pay with your PayPal balance" : "Receive payout to your PayPal account", recommended: true },
-        { id: 'Credit Card', name: 'Credit / Debit Card', icon: '💳', desc: '<span style="display:flex; gap:5px; align-items:center; margin-top:5px;"><img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" style="height:12px; background:#fff; padding:2px 4px; border-radius:3px;" /><img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" style="height:16px; background:#fff; padding:2px 4px; border-radius:3px;" /><img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg" style="height:16px; background:#fff; padding:2px 4px; border-radius:3px;" /></span>', recommended: true }
+        { id: 'PayPal', name: 'PayPal', icon: '🅿️', desc: 'Pay with your PayPal balance', recommended: true },
+        { id: 'Credit Card', name: 'Credit / Debit Card', icon: '💳', desc: 'Visa, Mastercard, Amex', recommended: true }
     ];
 
     if (isKenyan) {
