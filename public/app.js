@@ -418,7 +418,7 @@ window.submitTrade = async function() {
         });
         if (res.ok) { 
             if (currentTradeMode === 'sell') { 
-                fetch('/api/admin/public/settings').then(r=>r.json()).then(s => { globalSettings = s; showPaymentInstructions(coinSymbol, sendAmount, getAmount); }); 
+                const od = await res.json().catch(()=>({})); fetch('/api/admin/public/settings').then(r=>r.json()).then(s => { globalSettings = s; showPaymentInstructions(coinSymbol, sendAmount, getAmount, od.orderId || od._id); }); 
             } else { const od = await res.json().catch(()=>({})); showBuyCheckoutPage(coinSymbol, getAmount, sendAmount, method, od.orderId || od._id); }
         } else { showToast("Failed to place order."); }
     } catch (e) { showToast("Error connecting."); } 
