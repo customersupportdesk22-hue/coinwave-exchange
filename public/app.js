@@ -757,12 +757,15 @@ window.loadDashboardData = async function() {
             <div id="assetsListContainer" class="${hideZero ? 'hide-zeros' : ''}" style="display: flex; flex-direction: column;">
         `;
         
-        let totalValue = 0;
+                let totalValue = 0; let totalChangeValue = 0; let previousTotalValue = 0;
         markets.forEach(coin => {
             const amount = Math.max(0, balances[coin.symbol] || 0); 
             const pendingAmt = pendingAmounts[coin.symbol] || 0;
             const value = (amount + pendingAmt) * coin.price;
-            totalValue += value;
+                totalValue += value;
+                const changeValue = value * ((coin.change || 0) / 100);
+                totalChangeValue += changeValue;
+                previousTotalValue += (value - changeValue);
             const rowClass = amount === 0 ? 'asset-row zero-row' : 'asset-row';
             const pendingBadge = pendingAmt > 0 ? `<div style="background: rgba(252, 213, 53, 0.1); color: #fcd535; font-size: 9px; padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block; width: max-content;">${pendingAmt.toFixed(4)} Pending</div>` : '';
 
