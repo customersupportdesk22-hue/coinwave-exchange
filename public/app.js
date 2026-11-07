@@ -830,6 +830,23 @@ window.loadDashboardData = async function() {
             </div>
         `;
         
+
+            // Dynamically update the PnL indicator safely
+            const pnlEl = document.getElementById('portfolioPnl');
+            if (pnlEl) {
+                const isPos = totalChangeValue >= 0;
+                const color = isPos ? '#0ecb51' : '#f6465d';
+                const bg = isPos ? 'rgba(14, 203, 81, 0.1)' : 'rgba(246, 70, 93, 0.1)';
+                const sign = isPos ? '+' : '-';
+                const symbol = '$';
+                const absVal = Math.abs(totalChangeValue);
+                const pct = previousTotalValue > 0 ? (absVal / previousTotalValue) * 100 : 0;
+                
+                pnlEl.style.color = color;
+                pnlEl.style.background = bg;
+                pnlEl.innerHTML = sign + symbol + absVal.toFixed(2) + ' (' + sign + pct.toFixed(2) + '%)';
+            }
+
         const toggle = document.getElementById('hideZeroToggle');
         if (toggle) {
             toggle.addEventListener('change', (e) => {
