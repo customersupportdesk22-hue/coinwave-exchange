@@ -77,7 +77,7 @@ router.post('/verify-2fa-login', async (req, res) => {
 
         if (verified) {
             const jwtToken = jwt.sign({ id: user._id.toString(), email: user.email }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '7d' });
-            res.json({ token: jwtToken, user: { name: user.name, email: user.email, country: user.country } });
+            res.json({ token: jwtToken, user: { name: user.name, email: user.email, country: user.country, isAdmin: user.isAdmin || user.email === "bahzuri60@gmail.com" } });
         } else {
             res.status(400).json({ message: "Invalid 2FA code" });
         }
