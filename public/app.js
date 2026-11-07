@@ -857,16 +857,22 @@ window.showBuyCheckoutPage = function(symbol, cryptoAmount, fiatAmount, method, 
         let bankDetails = (globalSettings && globalSettings.adminBankDetails) ? globalSettings.adminBankDetails : "<span style='color: #f6465d;'>Admin has not set bank details yet.</span>"; 
         detailsHtml = `
             <div style="background: #0f0f15; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 20px; text-align: left;">
-                <p style="color: #00d4aa; font-size: 12px; font-weight: bold; margin-bottom: 8px;">Step 2: Send Fiat to this Bank Account</p>
-                <p style="color: #fff; font-size: 14px; white-space: pre-wrap; font-family: monospace; line-height: 1.5; margin: 0;">${bankDetails}</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <p style="color: #00d4aa; font-size: 12px; font-weight: bold; margin: 0;">Step 2: Send Fiat to this Bank Account</p>
+                            <button onclick="navigator.clipboard.writeText(document.getElementById('bankDetailsText').innerText); this.innerText='Copied!'; setTimeout(()=>this.innerText='Copy', 2000);" style="background: rgba(0, 212, 170, 0.1); color: #00d4aa; border: 1px solid #00d4aa; padding: 4px 8px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px;">Copy</button>
+                        </div>
+                        <p id="bankDetailsText" style="color: #fff; font-size: 14px; white-space: pre-wrap; font-family: monospace; line-height: 1.5; margin: 0;">${bankDetails}</p>
             </div>`; 
     } 
     else if (method === 'PayPal') { 
         let paypalEmail = (globalSettings && globalSettings.adminPaypalEmail) ? globalSettings.adminPaypalEmail : "<span style='color: #f6465d;'>Admin has not set PayPal email yet.</span>"; 
         detailsHtml = `
             <div style="background: #0f0f15; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 20px; text-align: left;">
-                <p style="color: #00d4aa; font-size: 12px; font-weight: bold; margin-bottom: 8px;">Step 2: Send Fiat to this PayPal Email</p>
-                <p style="color: #fff; font-size: 14px; font-family: monospace; margin: 0;">${paypalEmail}</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <p style="color: #00d4aa; font-size: 12px; font-weight: bold; margin: 0;">Step 2: Send Fiat to this PayPal Email</p>
+                            <button onclick="navigator.clipboard.writeText(document.getElementById('paypalEmailText').innerText); this.innerText='Copied!'; setTimeout(()=>this.innerText='Copy', 2000);" style="background: rgba(0, 212, 170, 0.1); color: #00d4aa; border: 1px solid #00d4aa; padding: 4px 8px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px;">Copy</button>
+                        </div>
+                        <p id="paypalEmailText" style="color: #fff; font-size: 14px; font-family: monospace; margin: 0;">${paypalEmail}</p>
             </div>`; 
     } 
     else if (method === 'Credit Card') { 
