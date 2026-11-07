@@ -151,7 +151,17 @@ async function handleLogin() {
     try {
         const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
         const data = await res.json();
-        if (res.ok) { localStorage.setItem('token', data.token); localStorage.setItem('user', JSON.stringify(data.user)); checkAuthState(); } else { showToast(data.message); }
+        if (res.ok) {
+            if (data.requires2FA) {
+                showToast("2FA is required. Please disable it to log in.");
+                return;
+            }
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("user", JSON.stringify(data.user));
+            checkAuthState();
+        } else {
+            showToast(data.message || "Login failed");
+        }
     } catch (error) { showToast("Error connecting."); }
 }
 
@@ -161,7 +171,7 @@ function handleLogout() { localStorage.removeItem('token'); localStorage.removeI
    NAVBAR & HOMEPAGE LOGIC
    ===================================================== */
 function checkAuthState() {
-    currentUser = JSON.parse(localStorage.getItem('user'));
+        currentUser = JSON.parse(localStorage.getItem("user") || "null");
     // Admin redirect removed so admins can log in normally
     const navLinks = document.getElementById('navLinks');
     
