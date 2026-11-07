@@ -4,6 +4,30 @@ const Order = require('../models/Order');
 
 router.post('/create', async (req, res) => {
     try {
+        const { mode, sendAmount, sendCurrency, userEmail, sellType } = req.body;
+
+        if (mode === 'sell' && sellType !== 'external') {
+            const amtToSell = parseFloat(String(sendAmount).replace(/[^0-9.]/g, "")) || 0;
+            const symbol = sendCurrency.toUpperCase();
+
+            const orders = await Order.find({ userEmail });
+            let availableBalance = 0;
+            
+            orders.forEach(o => {
+                const sym = o.getCurrency ? o.getCurrency.toUpperCase() : '';
+                if (sym === symbol) {
+                    const amt = parseFloat(String(o.getAmount).replace(/[^0-9.]/g, "")) || 0;
+                    if (o.status === 'approved' && o.mode === 'buy') availableBalance += amt;
+                    if (o.status === 'approved' && o.mode === 'sell') availableBalance -= amt;
+                    if (o.status === 'pending' && o.mode === 'sell') availableBalance -= amt;
+                }
+            });
+
+            if (availableBalance < amtToSell) {
+                return res.status(400).json({ message: `Insufficient balance. You only have ${availableBalance.toFixed(6)} ${symbol} available.` });
+            }
+        }
+
         const newOrder = new Order({
             orderId: "ORD-" + Math.floor(Math.random() * 1000000),
             ...req.body, status: 'pending', date: new Date().toLocaleString()

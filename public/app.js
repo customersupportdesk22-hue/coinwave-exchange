@@ -433,7 +433,7 @@ window.submitTrade = async function() {
     try {
         const res = await fetch('/api/orders/create', { 
             method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-            body: JSON.stringify({ userName: currentUser.name, userEmail: currentUser.email, mode: currentTradeMode, sendAmount, sendCurrency, getAmount, getCurrency, method, paymentDetails, receivingWallet: wallet }) 
+            body: JSON.stringify({ userName: currentUser.name, userEmail: currentUser.email, mode: currentTradeMode, sendAmount, sendCurrency, getAmount, getCurrency, method, paymentDetails, receivingWallet: wallet, sellType: window.currentSellType }) 
         });
         if (res.ok) { 
             if (currentTradeMode === 'sell') { 
@@ -1913,7 +1913,16 @@ window.setTradeMode = function(mode) {
         
         <div style="background: #0f0f15; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 10px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-    <p style="color: #888; font-size: 12px; margin: 0;">${isBuy ? "You spend" : "You sell"}</p>
+    <div style="margin-bottom: 12px;">
+    <p style="color: #888; font-size: 12px; margin-bottom: 8px;">${isBuy ? "You spend" : "You sell"}</p>
+    ${!isBuy ? `
+        <div style="display: flex; background: #0f0f15; border-radius: 8px; padding: 4px; border: 1px solid #333; margin-bottom: 8px;">
+            <button id="btnSellInternal" onclick="window.setSellType('internal')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: #1a1a2a; color: #00d4aa; transition: all 0.2s;">CoinWave Balance</button>
+            <button id="btnSellExternal" onclick="window.setSellType('external')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: transparent; color: #888; transition: all 0.2s;">External Wallet</button>
+        </div>
+        <p id="sellTypeHelper" style="color: #888; font-size: 11px; line-height: 1.4;">Sell crypto you already hold in your CoinWave account.</p>
+    ` : ''}
+</div>
     ${!isBuy ? `
         <div style="display: flex; gap: 10px; font-size: 12px;">
             <span id="btnSellInternal" onclick="window.setSellType('internal')" style="color: #00d4aa; cursor: pointer; font-weight: bold; text-decoration: underline;">CoinWave Balance</span>
@@ -2069,7 +2078,16 @@ window.setTradeMode = function(mode) {
         <!-- You Spend / Sell Box -->
         <div style="background: #0f0f15; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 10px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-    <p style="color: #888; font-size: 12px; margin: 0;">${isBuy ? "You spend" : "You sell"}</p>
+    <div style="margin-bottom: 12px;">
+    <p style="color: #888; font-size: 12px; margin-bottom: 8px;">${isBuy ? "You spend" : "You sell"}</p>
+    ${!isBuy ? `
+        <div style="display: flex; background: #0f0f15; border-radius: 8px; padding: 4px; border: 1px solid #333; margin-bottom: 8px;">
+            <button id="btnSellInternal" onclick="window.setSellType('internal')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: #1a1a2a; color: #00d4aa; transition: all 0.2s;">CoinWave Balance</button>
+            <button id="btnSellExternal" onclick="window.setSellType('external')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: transparent; color: #888; transition: all 0.2s;">External Wallet</button>
+        </div>
+        <p id="sellTypeHelper" style="color: #888; font-size: 11px; line-height: 1.4;">Sell crypto you already hold in your CoinWave account.</p>
+    ` : ''}
+</div>
     ${!isBuy ? `
         <div style="display: flex; gap: 10px; font-size: 12px;">
             <span id="btnSellInternal" onclick="window.setSellType('internal')" style="color: #00d4aa; cursor: pointer; font-weight: bold; text-decoration: underline;">CoinWave Balance</span>
@@ -2234,7 +2252,16 @@ window.setTradeMode = function(mode) {
         <!-- TOP BOX (Spend or Sell) -->
         <div style="background: #0f0f15; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 10px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-    <p style="color: #888; font-size: 12px; margin: 0;">${isBuy ? "You spend" : "You sell"}</p>
+    <div style="margin-bottom: 12px;">
+    <p style="color: #888; font-size: 12px; margin-bottom: 8px;">${isBuy ? "You spend" : "You sell"}</p>
+    ${!isBuy ? `
+        <div style="display: flex; background: #0f0f15; border-radius: 8px; padding: 4px; border: 1px solid #333; margin-bottom: 8px;">
+            <button id="btnSellInternal" onclick="window.setSellType('internal')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: #1a1a2a; color: #00d4aa; transition: all 0.2s;">CoinWave Balance</button>
+            <button id="btnSellExternal" onclick="window.setSellType('external')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: transparent; color: #888; transition: all 0.2s;">External Wallet</button>
+        </div>
+        <p id="sellTypeHelper" style="color: #888; font-size: 11px; line-height: 1.4;">Sell crypto you already hold in your CoinWave account.</p>
+    ` : ''}
+</div>
     ${!isBuy ? `
         <div style="display: flex; gap: 10px; font-size: 12px;">
             <span id="btnSellInternal" onclick="window.setSellType('internal')" style="color: #00d4aa; cursor: pointer; font-weight: bold; text-decoration: underline;">CoinWave Balance</span>
@@ -2355,7 +2382,16 @@ window.setTradeMode = function(mode) {
         <!-- TOP BOX -->
         <div style="background: #0f0f15; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 10px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-    <p style="color: #888; font-size: 12px; margin: 0;">${isBuy ? "You spend" : "You sell"}</p>
+    <div style="margin-bottom: 12px;">
+    <p style="color: #888; font-size: 12px; margin-bottom: 8px;">${isBuy ? "You spend" : "You sell"}</p>
+    ${!isBuy ? `
+        <div style="display: flex; background: #0f0f15; border-radius: 8px; padding: 4px; border: 1px solid #333; margin-bottom: 8px;">
+            <button id="btnSellInternal" onclick="window.setSellType('internal')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: #1a1a2a; color: #00d4aa; transition: all 0.2s;">CoinWave Balance</button>
+            <button id="btnSellExternal" onclick="window.setSellType('external')" style="flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; background: transparent; color: #888; transition: all 0.2s;">External Wallet</button>
+        </div>
+        <p id="sellTypeHelper" style="color: #888; font-size: 11px; line-height: 1.4;">Sell crypto you already hold in your CoinWave account.</p>
+    ` : ''}
+</div>
     ${!isBuy ? `
         <div style="display: flex; gap: 10px; font-size: 12px;">
             <span id="btnSellInternal" onclick="window.setSellType('internal')" style="color: #00d4aa; cursor: pointer; font-weight: bold; text-decoration: underline;">CoinWave Balance</span>
